@@ -1,38 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using DependencyInjection.Resolution;
+﻿using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Core
+namespace DependencyInjection.Core;
+
+internal sealed class InitializableCollection : IInitializableCollection
 {
-    internal sealed class InitializableCollection : IInitializableCollection
+    private static readonly Type s_initializableType = typeof(IInitializable);
+
+    private readonly IList<Type> _initializableRegistrationTypes;
+    private readonly IRegistrationResolver _registrationResolver;
+
+    public InitializableCollection(IRegistrationResolver registrationResolver)
     {
-        private static readonly Type s_initializableType = typeof(IInitializable);
+        _initializableRegistrationTypes = new List<Type>();
+        _registrationResolver = registrationResolver;
+    }
 
-        private readonly IList<Type> _initializableRegistrationTypes;
-        private readonly IRegistrationResolver _registrationResolver;
-
-        public InitializableCollection(IRegistrationResolver registrationResolver)
+    public void TryAdd(Type registrationType, Type implementationType)
+    {
+        // TODO: Very costly operation. Find better way.
+        if (s_initializableType.IsAssignableFrom(implementationType))
         {
-            _initializableRegistrationTypes = new List<Type>();
-            _registrationResolver = registrationResolver;
+            _initializableRegistrationTypes.Add(registrationType);
         }
+    }
 
-        public void TryAdd(Type registrationType, Type implementationType)
+    public void Initialize()
+    {
+        foreach (var initializableRegistrationType in _initializableRegistrationTypes)
         {
-            // TODO: Very costly operation. Find better way.
-            if (s_initializableType.IsAssignableFrom(implementationType))
-            {
-                _initializableRegistrationTypes.Add(registrationType);
-            }
-        }
-
-        public void Initialize()
-        {
-            foreach (var initializableRegistrationType in _initializableRegistrationTypes)
-            {
-                var initializable = (IInitializable)_registrationResolver.Resolve(initializableRegistrationType);
-                initializable.Initialize();
-            }
+            var initializable = (IInitializable)_registrationResolver.Resolve(initializableRegistrationType);
+            initializable.Initialize();
         }
     }
 }

@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace DependencyInjection.Core;
 
-namespace DependencyInjection.Core
+internal interface IInitializableCollection : IInitializable
 {
-    internal interface IInitializableCollection : IInitializable
-    {
-        void TryAdd(Type registrationType, Type implementationType);
-    }
+    void TryAdd(Type registrationType, Type implementationType);
 }

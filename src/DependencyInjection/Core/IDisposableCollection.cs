@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace DependencyInjection.Core;
 
-namespace DependencyInjection.Core
+internal interface IDisposableCollection : IDisposable
 {
-    internal interface IDisposableCollection : IDisposable
-    {
-        void TryAdd(object disposableObject);
-    }
+    void TryAdd(object disposableObject);
 }

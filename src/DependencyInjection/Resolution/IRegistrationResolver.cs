@@ -1,9 +1,6 @@
-﻿using System;
+﻿namespace DependencyInjection.Resolution;
 
-namespace DependencyInjection.Resolution
+public interface IRegistrationResolver
 {
-    public interface IRegistrationResolver
-    {
-        object Resolve(Type registrationType);
-    }
+    object Resolve(Type registrationType);
 }

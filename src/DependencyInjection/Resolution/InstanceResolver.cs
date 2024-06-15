@@ -1,17 +1,16 @@
-﻿namespace DependencyInjection.Resolution
+﻿namespace DependencyInjection.Resolution;
+
+internal sealed class InstanceResolver : IInstanceResolver
 {
-    internal sealed class InstanceResolver : IInstanceResolver
+    private readonly object _implementationInstance;
+
+    public InstanceResolver(object implementationInstance)
     {
-        private readonly object _implementationInstance;
+        _implementationInstance = implementationInstance;
+    }
 
-        public InstanceResolver(object implementationInstance)
-        {
-            _implementationInstance = implementationInstance;
-        }
-
-        public object Resolve()
-        {
-            return _implementationInstance;
-        }
+    public object Resolve()
+    {
+        return _implementationInstance;
     }
 }

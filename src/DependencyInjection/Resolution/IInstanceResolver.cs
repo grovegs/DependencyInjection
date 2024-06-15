@@ -1,7 +1,6 @@
-﻿namespace DependencyInjection.Resolution
+﻿namespace DependencyInjection.Resolution;
+
+internal interface IInstanceResolver
 {
-    internal interface IInstanceResolver
-    {
-        object Resolve();
-    }
+    object Resolve();
 }

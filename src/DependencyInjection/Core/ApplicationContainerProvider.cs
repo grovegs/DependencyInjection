@@ -1,17 +1,16 @@
-﻿namespace DependencyInjection.Core
+﻿namespace DependencyInjection.Core;
+
+public static class ApplicationContainerProvider
 {
-    public static class ApplicationContainerProvider
+    private static IContainer s_applicationContainer;
+
+    public static IContainer Get()
     {
-        private static IContainer s_applicationContainer;
+        return s_applicationContainer;
+    }
 
-        public static IContainer Get()
-        {
-            return s_applicationContainer;
-        }
-
-        internal static void Set(IContainer applicationContainer)
-        {
-            s_applicationContainer = applicationContainer;
-        }
+    internal static void Set(IContainer applicationContainer)
+    {
+        s_applicationContainer = applicationContainer;
     }
 }

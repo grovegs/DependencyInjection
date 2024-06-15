@@ -1,7 +1,6 @@
-﻿namespace DependencyInjection.Core
+﻿namespace DependencyInjection.Core;
+
+public interface IContainerBuilder : IContainerConfigurer
 {
-    public interface IContainerBuilder : IContainerConfigurer
-    {
-        IContainer Build();
-    }
+    IContainer Build();
 }

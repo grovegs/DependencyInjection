@@ -1,31 +1,27 @@
-﻿using System.Collections.Generic;
-using System;
+﻿namespace DependencyInjection.Core;
 
-namespace DependencyInjection.Core
+internal sealed class DisposableCollection : IDisposableCollection
 {
-    internal sealed class DisposableCollection : IDisposableCollection
+    private readonly Stack<IDisposable> _disposables;
+
+    public DisposableCollection()
     {
-        private readonly Stack<IDisposable> _disposables;
+        _disposables = new Stack<IDisposable>();
+    }
 
-        public DisposableCollection()
+    public void TryAdd(object disposableObject)
+    {
+        if (disposableObject is IDisposable disposable)
         {
-            _disposables = new Stack<IDisposable>();
+            _disposables.Push(disposable);
         }
+    }
 
-        public void TryAdd(object disposableObject)
+    public void Dispose()
+    {
+        while (_disposables.TryPop(out var disposable))
         {
-            if (disposableObject is IDisposable disposable)
-            {
-                _disposables.Push(disposable);
-            }
-        }
-
-        public void Dispose()
-        {
-            while (_disposables.TryPop(out var disposable))
-            {
-                disposable.Dispose();
-            }
+            disposable.Dispose();
         }
     }
 }

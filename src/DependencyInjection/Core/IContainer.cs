@@ -1,11 +1,9 @@
-﻿using System;
-using DependencyInjection.Resolution;
+﻿using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Core
+namespace DependencyInjection.Core;
+
+public interface IContainer : IRegistrationResolver, IDisposable
 {
-    public interface IContainer : IRegistrationResolver, IDisposable
-    {
-        void AddChild(IContainer child);
-        void RemoveChild(IContainer child);
-    }
+    void AddChild(IContainer child);
+    void RemoveChild(IContainer child);
 }

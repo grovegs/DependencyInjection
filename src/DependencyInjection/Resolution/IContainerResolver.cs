@@ -1,10 +1,7 @@
-﻿using System;
+﻿namespace DependencyInjection.Resolution;
 
-namespace DependencyInjection.Resolution
+internal interface IContainerResolver : IRegistrationResolver
 {
-    internal interface IContainerResolver : IRegistrationResolver
-    {
-        void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver);
-        void Clear();
-    }
+    void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver);
+    void Clear();
 }

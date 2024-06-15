@@ -1,7 +1,6 @@
-﻿namespace DependencyInjection.Core
+﻿namespace DependencyInjection.Core;
+
+public interface IInitializable
 {
-    public interface IInitializable
-    {
-        void Initialize();
-    }
+    void Initialize();
 }

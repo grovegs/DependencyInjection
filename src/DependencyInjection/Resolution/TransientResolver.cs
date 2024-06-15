@@ -1,17 +1,16 @@
-﻿namespace DependencyInjection.Resolution
+﻿namespace DependencyInjection.Resolution;
+
+internal sealed class TransientResolver : IInstanceResolver
 {
-    internal sealed class TransientResolver : IInstanceResolver
+    private readonly IObjectResolver _objectResolver;
+
+    public TransientResolver(IObjectResolver objectResolver)
     {
-        private readonly IObjectResolver _objectResolver;
+        _objectResolver = objectResolver;
+    }
 
-        public TransientResolver(IObjectResolver objectResolver)
-        {
-            _objectResolver = objectResolver;
-        }
-
-        public object Resolve()
-        {
-            return _objectResolver.Resolve();
-        }
+    public object Resolve()
+    {
+        return _objectResolver.Resolve();
     }
 }
