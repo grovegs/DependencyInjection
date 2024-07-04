@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GodotSharp" Version="4.3.0-beta.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\DependencyInjection\DependencyInjection.csproj" />
   </ItemGroup>
 
