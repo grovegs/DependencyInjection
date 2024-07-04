@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyInjection.Godot", "DependencyInjection.Godot.csproj", "{F5AA335B-63C8-4D71-9C6E-0F03A063DFC0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F5AA335B-63C8-4D71-9C6E-0F03A063DFC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5AA335B-63C8-4D71-9C6E-0F03A063DFC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5AA335B-63C8-4D71-9C6E-0F03A063DFC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5AA335B-63C8-4D71-9C6E-0F03A063DFC0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6820FFF4-A492-4AD4-8304-BF83BF97A938}
+	EndGlobalSection
+EndGlobal
