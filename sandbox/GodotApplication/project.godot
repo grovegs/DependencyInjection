@@ -11,12 +11,21 @@ config_version=5
 [application]
 
 config/name="GodotApplication"
-config/features=PackedStringArray("4.3", "Mobile")
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.3", "C#", "Mobile")
 config/icon="res://icon.svg"
+
+[autoload]
+
+ApplicationInitializer="*res://addons/DependencyInjection/ApplicationInitializer.cs"
 
 [dotnet]
 
 project/assembly_name="GodotApplication"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/DependencyInjection/plugin.cfg")
 
 [rendering]
 

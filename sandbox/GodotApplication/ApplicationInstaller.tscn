@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dw2tego245wrt"]
+
+[ext_resource type="Script" path="res://ApplicationInstaller.cs" id="1_2rmf2"]
+
+[node name="ApplicationInstaller" type="Node"]
+script = ExtResource("1_2rmf2")
