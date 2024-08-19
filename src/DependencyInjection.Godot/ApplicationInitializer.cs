@@ -23,3 +23,13 @@ public sealed class ApplicationInitializer : IDisposable
         applicationContainer.Dispose();
     }
 }
+
+public interface IA
+{
+
+}
+
+public class A : IA
+{
+
+}

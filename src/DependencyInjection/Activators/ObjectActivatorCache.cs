@@ -2,7 +2,7 @@
 
 internal static class ObjectActivatorCache
 {
-    private readonly static Dictionary<Type, IObjectActivator> s_objectActivatorsByImplementationTypes = new();
+    private readonly static Dictionary<Type, IObjectActivator> s_objectActivatorsByImplementationTypes = [];
 
     public static bool TryGet(Type implementationType, out IObjectActivator objectActivator)
     {
