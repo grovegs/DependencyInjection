@@ -11,7 +11,7 @@ public sealed class ConstructorInjectorTests
     [Fact]
     public void Inject_OneParameterClassWithConstructor_ShouldReturnSameInstanceOfParameter()
     {
-        var containerResolver = new ContainerResolver(Container.Root);
+        var containerResolver = new ContainerResolver(Containers.Root);
         var zeroParameterClass = new ZeroParameterClass();
         var objectResolver = new InstanceResolver(zeroParameterClass);
         containerResolver.AddInstanceResolver(typeof(IZeroParameterClass), objectResolver);

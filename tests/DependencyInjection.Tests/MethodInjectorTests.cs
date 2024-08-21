@@ -10,7 +10,7 @@ public sealed class MethodInjectorTests
     [Fact]
     public void Inject_ClassWithInjectableMethod_ShouldReturnSameInstanceOfParameter()
     {
-        var containerResolver = new ContainerResolver(Container.Root);
+        var containerResolver = new ContainerResolver(Containers.Root);
         var zeroParameterClass = new ZeroParameterClass();
         var objectResolver = new InstanceResolver(zeroParameterClass);
         containerResolver.AddInstanceResolver(typeof(IZeroParameterClass), objectResolver);
