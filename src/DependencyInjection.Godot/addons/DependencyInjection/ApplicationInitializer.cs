@@ -11,15 +11,14 @@ public sealed partial class ApplicationInitializer : Node
         var installerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
         var installer = installerScene.Instantiate<NodeInstaller>();
         installer.Install(containerBuilder);
-        var applicationContainer = containerBuilder.Build();
-        ApplicationContainerProvider.Set(applicationContainer);
+        Containers.Application = containerBuilder.Build();
         installer.Free();
     }
 
     public override void _ExitTree()
     {
-        var applicationContainer = ApplicationContainerProvider.Get();
-        applicationContainer.Dispose();
+        var applicationContainer = Containers.Application;
+        applicationContainer?.Dispose();
     }
 
     public override void _Notification(int what)
