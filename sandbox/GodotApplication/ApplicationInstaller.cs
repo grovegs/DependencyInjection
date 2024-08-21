@@ -1,9 +1,10 @@
-using Godot;
 using DependencyInjection.Core;
+using DependencyInjection.Godot;
+using Godot;
 
-public partial class ApplicationInstaller : Node, IInstaller
+public partial class ApplicationInstaller : NodeInstaller
 {
-	public void Install(IContainerConfigurer containerConfigurer)
+	public override void Install(IContainerConfigurer containerConfigurer)
 	{
 		GD.Print("Test");
 	}

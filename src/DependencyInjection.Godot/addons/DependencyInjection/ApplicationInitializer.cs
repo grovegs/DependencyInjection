@@ -1,21 +1,29 @@
+﻿using DependencyInjection.Core;
 using Godot;
 
-public partial class ApplicationInitializer : Node
+namespace DependencyInjection.Godot;
+
+public sealed partial class ApplicationInitializer : Node
 {
-	private DependencyInjection.Godot.ApplicationInitializer _applicationInitializer;
+    public override void _EnterTree()
+    {
+        var containerBuilder = new ContainerBuilder(Containers.Root);
+        var installerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
+        var installer = installerScene.Instantiate<NodeInstaller>();
+        installer.Install(containerBuilder);
+        var applicationContainer = containerBuilder.Build();
+        ApplicationContainerProvider.Set(applicationContainer);
+        installer.Free();
+    }
 
-	public override void _EnterTree()
-	{
-		_applicationInitializer = new DependencyInjection.Godot.ApplicationInitializer();
-	}
+    public override void _ExitTree()
+    {
+        var applicationContainer = ApplicationContainerProvider.Get();
+        applicationContainer.Dispose();
+    }
 
-	public override void _ExitTree()
-	{
-		_applicationInitializer.Dispose();
-	}
-
-	public override void _Notification(int what)
-	{
-		GD.Print(what);
-	}
+    public override void _Notification(int what)
+    {
+        GD.Print(what);
+    }
 }

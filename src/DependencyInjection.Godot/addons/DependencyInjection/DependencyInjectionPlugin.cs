@@ -1,6 +1,8 @@
 #if TOOLS
 using Godot;
 
+namespace DependencyInjection.Godot;
+
 [Tool]
 public partial class DependencyInjectionPlugin : EditorPlugin
 {

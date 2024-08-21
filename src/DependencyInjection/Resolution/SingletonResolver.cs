@@ -3,7 +3,7 @@
 internal sealed class SingletonResolver : IInstanceResolver
 {
     private readonly IObjectResolver _objectResolver;
-    private object _implementationInstance;
+    private object? _implementationInstance;
 
     public SingletonResolver(IObjectResolver objectResolver)
     {

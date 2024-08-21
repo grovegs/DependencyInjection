@@ -2,14 +2,14 @@
 
 public static class ApplicationContainerProvider
 {
-    private static IContainer s_applicationContainer;
+    private static IContainer? s_applicationContainer;
 
     public static IContainer Get()
     {
-        return s_applicationContainer;
+        return s_applicationContainer!;
     }
 
-    internal static void Set(IContainer applicationContainer)
+    public static void Set(IContainer applicationContainer)
     {
         s_applicationContainer = applicationContainer;
     }

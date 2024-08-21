@@ -4,8 +4,6 @@ namespace DependencyInjection.Core;
 
 internal sealed class Container : IContainer
 {
-    public static readonly IContainer Root = new RootContainer();
-
     private readonly IContainerResolver _resolver;
     private readonly IDisposableCollection _disposables;
     private readonly IList<IContainer> _children;
