@@ -2,7 +2,7 @@ using DependencyInjection.Core;
 using DependencyInjection.Godot;
 using Godot;
 
-public partial class ApplicationInstaller : Installer
+public sealed partial class MainInstaller : Installer
 {
 	public override void Install(IContainerConfigurer containerConfigurer)
 	{
