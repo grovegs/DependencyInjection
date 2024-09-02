@@ -11,7 +11,7 @@ internal sealed class InitializableCollection : IInitializableCollection
 
     public InitializableCollection(IRegistrationResolver registrationResolver)
     {
-        _initializableRegistrationTypes = new List<Type>();
+        _initializableRegistrationTypes = [];
         _registrationResolver = registrationResolver;
     }
 
@@ -28,8 +28,8 @@ internal sealed class InitializableCollection : IInitializableCollection
     {
         foreach (var initializableRegistrationType in _initializableRegistrationTypes)
         {
-            var initializable = (IInitializable)_registrationResolver.Resolve(initializableRegistrationType);
-            initializable.Initialize();
+            var initializable = _registrationResolver.Resolve(initializableRegistrationType) as IInitializable;
+            initializable?.Initialize();
         }
     }
 }
