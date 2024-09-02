@@ -4,7 +4,7 @@ namespace DependencyInjection.Tests.Fakes;
 
 internal sealed class ClassWithInjectableMethod
 {
-    private IZeroParameterClass _zeroParameterClass;
+    private IZeroParameterClass? _zeroParameterClass;
 
     public ClassWithInjectableMethod()
     {
@@ -17,7 +17,7 @@ internal sealed class ClassWithInjectableMethod
         _zeroParameterClass = zeroParameterClass;
     }
 
-    public IZeroParameterClass GetZeroParameterClass()
+    public IZeroParameterClass? GetZeroParameterClass()
     {
         return _zeroParameterClass;
     }

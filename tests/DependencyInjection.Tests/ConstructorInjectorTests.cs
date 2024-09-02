@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using DependencyInjection.Core;
 using DependencyInjection.Injectors;
 using DependencyInjection.Resolution;
 using DependencyInjection.Tests.Fakes;
@@ -11,7 +10,7 @@ public sealed class ConstructorInjectorTests
     [Fact]
     public void Inject_OneParameterClassWithConstructor_ShouldReturnSameInstanceOfParameter()
     {
-        var containerResolver = new ContainerResolver(Containers.Root);
+        var containerResolver = new ContainerResolver(null);
         var zeroParameterClass = new ZeroParameterClass();
         var objectResolver = new InstanceResolver(zeroParameterClass);
         containerResolver.AddInstanceResolver(typeof(IZeroParameterClass), objectResolver);

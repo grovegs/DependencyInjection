@@ -2,7 +2,7 @@
 
 internal sealed class OneParameterClass : IOneParameterClass
 {
-    private readonly IZeroParameterClass _zeroParameterClass;
+    private readonly IZeroParameterClass? _zeroParameterClass;
 
     public OneParameterClass()
     {
@@ -14,7 +14,7 @@ internal sealed class OneParameterClass : IOneParameterClass
         _zeroParameterClass = zeroParameterClass;
     }
 
-    public IZeroParameterClass GetZeroParameterClass()
+    public IZeroParameterClass? GetZeroParameterClass()
     {
         return _zeroParameterClass;
     }

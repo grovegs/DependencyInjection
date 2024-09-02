@@ -4,18 +4,20 @@ namespace DependencyInjection.Core;
 
 public sealed class ContainerBuilder : IContainerBuilder
 {
-    private readonly IContainerResolver _containerResolver;
-    private readonly IInitializableCollection _initializableCollection;
-    private readonly IDisposableCollection _disposableCollection;
-    private readonly IList<IContainer> _children;
-    private readonly IContainer _parent;
+    private readonly ContainerResolver _containerResolver;
+    private readonly InitializableCollection _initializableCollection;
+    private readonly DisposableCollection _disposableCollection;
+    private readonly List<IContainer> _children;
+    private readonly string _name;
+    private readonly IContainer? _parent;
 
-    public ContainerBuilder(IContainer parent)
+    public ContainerBuilder(string name, IContainer? parent)
     {
         _containerResolver = new ContainerResolver(parent);
         _initializableCollection = new InitializableCollection(_containerResolver);
         _disposableCollection = new DisposableCollection();
         _children = [];
+        _name = name;
         _parent = parent;
     }
 
@@ -43,8 +45,8 @@ public sealed class ContainerBuilder : IContainerBuilder
 
     public IContainer Build()
     {
-        var container = new Container(_containerResolver, _disposableCollection, _children, _parent);
-        _parent.AddChild(container);
+        var container = new Container(_name, _containerResolver, _disposableCollection, _children, _parent);
+        _parent?.AddChild(container);
         _initializableCollection.Initialize();
         return container;
     }

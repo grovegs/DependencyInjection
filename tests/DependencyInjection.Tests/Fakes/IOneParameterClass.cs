@@ -2,5 +2,5 @@
 
 internal interface IOneParameterClass
 {
-    IZeroParameterClass GetZeroParameterClass();
+    IZeroParameterClass? GetZeroParameterClass();
 }

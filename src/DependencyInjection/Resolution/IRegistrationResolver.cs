@@ -2,5 +2,5 @@
 
 public interface IRegistrationResolver
 {
-    object Resolve(Type registrationType);
+    object? Resolve(Type registrationType);
 }
