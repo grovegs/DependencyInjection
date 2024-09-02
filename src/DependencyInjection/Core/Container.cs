@@ -24,19 +24,44 @@ public sealed class Container : IContainer
         _parent = parent;
     }
 
-    public static IContainer Create(string name, IContainer parent, IInstaller installer)
+    public static IContainer Create(string name, IContainer parent, Action<IContainerConfigurer> configurer)
     {
         var builder = new ContainerBuilder(name, parent);
-        installer.Install(builder);
+        configurer.Invoke(builder);
         var container = builder.Build();
         ContainerCache.Add(container);
         return container;
+    }
+
+    public static IContainer Create(ReadOnlySpan<char> path, Action<IContainerConfigurer> configurer)
+    {
+        var nameSeperatorIndex = path.LastIndexOf('/');
+        var name = path[(nameSeperatorIndex + 1)..].ToString();
+        var parentPath = path[..nameSeperatorIndex];
+        var parent = ContainerCache.Find(parentPath);
+        return Create(name, parent!, configurer);
+    }
+
+    public static IContainer Create(string name, IContainer parent, IInstaller installer)
+    {
+        return Create(name, parent, installer.Install);
+    }
+
+    public static IContainer Create(ReadOnlySpan<char> path, IInstaller installer)
+    {
+        return Create(path, installer.Install);
     }
 
     public static void Dispose(IContainer container)
     {
         container.Dispose();
         ContainerCache.Remove(container);
+    }
+
+    public static void Dispose(ReadOnlySpan<char> path)
+    {
+        var container = ContainerCache.Find(path);
+        Dispose(container!);
     }
 
     public static IContainer? Find(ReadOnlySpan<char> path)

@@ -2,7 +2,7 @@
 
 namespace DependencyInjection.Core;
 
-public sealed class ContainerBuilder : IContainerBuilder
+internal sealed class ContainerBuilder : IContainerBuilder
 {
     private readonly ContainerResolver _containerResolver;
     private readonly InitializableCollection _initializableCollection;
