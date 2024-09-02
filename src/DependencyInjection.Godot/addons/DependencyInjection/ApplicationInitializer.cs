@@ -29,7 +29,7 @@ public sealed partial class ApplicationInitializer : Node
             return;
         }
 
-        var container = Container.Find("root")?.Create("scene", installer);
+        var container = Container.Find("root")?.AddChild("scene", installer);
         installer.Free();
         node.TreeExiting += () => container?.Dispose();
     }

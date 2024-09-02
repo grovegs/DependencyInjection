@@ -10,7 +10,7 @@ public sealed class NullContainer : IContainer
     {
     }
 
-    public IContainer? Create(string name, IInstaller installer)
+    public IContainer? AddChild(string name, IInstaller installer)
     {
         return null;
     }

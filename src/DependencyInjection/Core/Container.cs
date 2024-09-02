@@ -45,12 +45,6 @@ public sealed class Container : IContainer
         return container;
     }
 
-    public IContainer? Create(string name, IInstaller installer)
-    {
-        var container = Create(name, _parent, installer);
-        return container;
-    }
-
     public void Dispose()
     {
         _disposables.Dispose();
