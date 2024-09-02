@@ -1,30 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using DependencyInjection.Core;
+﻿using DependencyInjection.Core;
 using Godot;
+using Container = DependencyInjection.Core.Container;
 
 namespace DependencyInjection.Godot;
 
 public sealed partial class ApplicationInitializer : Node
 {
-    private Dictionary<ReadOnlyMemory<char>, IContainer> _keyValuePairs;
-
-    public override void _EnterTree()
+    public override void _Ready()
     {
-        var containerBuilder = new ContainerBuilder(Containers.Root);
         var installerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
         var installer = installerScene.Instantiate<Installer>();
-        installer.Install(containerBuilder);
-        Containers.Application = containerBuilder.Build();
+        var container = Container.Create("root", new NullContainer(), installer);
         installer.Free();
-        GetTree().Root.ChildEnteredTree += OnSceneAdded;
-        GetTree().Root.ChildExitingTree += OnSceneRemoved;
-    }
-
-    public override void _ExitTree()
-    {
-        var applicationContainer = Containers.Application;
-        applicationContainer?.Dispose();
+        var root = GetTree().Root;
+        root.TreeExiting += () => container?.Dispose();
+        root.ChildEnteredTree += OnSceneAdded;
     }
 
     private void OnSceneAdded(Node node)
@@ -39,19 +29,8 @@ public sealed partial class ApplicationInitializer : Node
             return;
         }
 
-        var containerBuilder = new ContainerBuilder(Containers.Application!);
-        installer.Install(containerBuilder);
-        Containers.Scene = containerBuilder.Build();
+        var container = Container.Find("root")?.Create("scene", installer);
         installer.Free();
-        //TODO: Find installer and create container with installer. Free installer.
-    }
-
-    private void OnSceneRemoved(Node node)
-    {
-        //TODO: Find depended container and dispose.
-    }
-
-    public override void _Notification(int what)
-    {
+        node.TreeExiting += () => container?.Dispose();
     }
 }

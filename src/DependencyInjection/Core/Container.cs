@@ -2,24 +2,51 @@ using DependencyInjection.Resolution;
 
 namespace DependencyInjection.Core;
 
-internal sealed class Container : IContainer
+public sealed class Container : IContainer
 {
     private readonly string _name;
     private readonly IContainerResolver _resolver;
     private readonly IDisposableCollection _disposables;
     private readonly IList<IContainer> _children;
-    private readonly IContainer? _parent;
+    private readonly IContainer _parent;
 
     public string Name => _name;
-    public IContainer? Parent => _parent;
+    public IContainer Parent => _parent;
 
-    public Container(string name, IContainerResolver resolver, IDisposableCollection disposables, IList<IContainer> children, IContainer? parent)
+    internal Container(string name, IContainerResolver resolver, IDisposableCollection disposables, IList<IContainer> children, IContainer parent)
     {
         _name = name;
         _resolver = resolver;
         _disposables = disposables;
         _children = children;
         _parent = parent;
+    }
+
+    public static IContainer Create(string name, IContainer parent, IInstaller installer)
+    {
+        var builder = new ContainerBuilder(name, parent);
+        installer.Install(builder);
+        var container = builder.Build();
+        ContainerCache.Add(container);
+        return container;
+    }
+
+    public static void Dispose(IContainer container)
+    {
+        container.Dispose();
+        ContainerCache.Remove(container);
+    }
+
+    public static IContainer? Find(ReadOnlySpan<char> path)
+    {
+        var container = ContainerCache.Find(path);
+        return container;
+    }
+
+    public IContainer? Create(string name, IInstaller installer)
+    {
+        var container = Create(name, _parent, installer);
+        return container;
     }
 
     public void Dispose()
