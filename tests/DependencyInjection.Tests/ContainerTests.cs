@@ -9,7 +9,7 @@ public sealed class ContainerTests
     [Fact]
     public void Build_Container_InitializableClassShouldBeInitialized()
     {
-        var containerBuilder = new ContainerBuilder("Container", null);
+        var containerBuilder = new ContainerBuilder("Container", Container.Empty);
         containerBuilder.AddSingleton(typeof(IInitializableClass), typeof(InitializableClass));
         var container = containerBuilder.Build();
         var initializableInstance = container.Resolve(typeof(IInitializableClass)) as IInitializableClass;
@@ -19,7 +19,7 @@ public sealed class ContainerTests
     [Fact]
     public void Dispose_ParentContainer_ChildContainerResolverShouldReturnNull()
     {
-        var parentBuilder = new ContainerBuilder("Parent", null);
+        var parentBuilder = new ContainerBuilder("Parent", Container.Empty);
         parentBuilder.AddSingleton(typeof(ZeroParameterClass));
         var parentContainer = parentBuilder.Build();
         var childBuilder = new ContainerBuilder("Child", parentContainer);
@@ -35,7 +35,7 @@ public sealed class ContainerTests
     [Fact]
     public void Dispose_Container_ResolvedDisposableShouldBeDisposed()
     {
-        var containerBuilder = new ContainerBuilder("Container", null);
+        var containerBuilder = new ContainerBuilder("Container", Container.Empty);
         containerBuilder.AddSingleton(typeof(IDisposableClass), typeof(DisposableClass));
         var container = containerBuilder.Build();
         var disposableInstance = container.Resolve(typeof(IDisposableClass)) as IDisposableClass;
@@ -46,7 +46,7 @@ public sealed class ContainerTests
     [Fact]
     public void Dispose_ParentContainer_ResolvedChildDisposableShouldBeDisposed()
     {
-        var parentBuilder = new ContainerBuilder("Parent", null);
+        var parentBuilder = new ContainerBuilder("Parent", Container.Empty);
         parentBuilder.AddSingleton(typeof(ZeroParameterClass));
         var parentContainer = parentBuilder.Build();
         var childBuilder = new ContainerBuilder("Child", parentContainer);
@@ -60,7 +60,7 @@ public sealed class ContainerTests
     [Fact]
     public void Resolve_ParentImplementationFromChild_ChildContainerResolverShouldReturnInstanceOfParentImplementation()
     {
-        var parentBuilder = new ContainerBuilder("Parent", null);
+        var parentBuilder = new ContainerBuilder("Parent", Container.Empty);
         var zeroParameterClass = new ZeroParameterClass();
         parentBuilder.AddInstance(zeroParameterClass);
         var parentContainer = parentBuilder.Build();
@@ -113,7 +113,7 @@ public sealed class ContainerTests
         var mockChildren = new Mock<IList<IContainer>>();
 
         // Act
-        var container = new Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockChildren.Object, null);
+        var container = new Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockChildren.Object, Container.Empty);
 
         // Assert
         Assert.Null(container.Parent);

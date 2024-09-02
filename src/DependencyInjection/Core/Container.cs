@@ -4,6 +4,8 @@ namespace DependencyInjection.Core;
 
 public sealed class Container : IContainer
 {
+    public static readonly IContainer Empty = new NullContainer();
+
     private readonly string _name;
     private readonly IContainerResolver _resolver;
     private readonly IDisposableCollection _disposables;

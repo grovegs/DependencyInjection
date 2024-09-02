@@ -9,9 +9,9 @@ public sealed class ContainerBuilder : IContainerBuilder
     private readonly DisposableCollection _disposableCollection;
     private readonly List<IContainer> _children;
     private readonly string _name;
-    private readonly IContainer? _parent;
+    private readonly IContainer _parent;
 
-    public ContainerBuilder(string name, IContainer? parent)
+    public ContainerBuilder(string name, IContainer parent)
     {
         _containerResolver = new ContainerResolver(parent);
         _initializableCollection = new InitializableCollection(_containerResolver);

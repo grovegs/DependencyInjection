@@ -10,7 +10,7 @@ public sealed partial class ApplicationInitializer : Node
     {
         var installerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
         var installer = installerScene.Instantiate<Installer>();
-        var container = Container.Create("root", new NullContainer(), installer);
+        var container = Container.Create("root", Container.Empty, installer);
         installer.Free();
         var root = GetTree().Root;
         root.TreeExiting += () => container?.Dispose();
