@@ -10,11 +10,6 @@ public sealed class NullContainer : IContainer
     {
     }
 
-    public IContainer? AddChild(string name, IInstaller installer)
-    {
-        return null;
-    }
-
     public void Dispose()
     {
     }
