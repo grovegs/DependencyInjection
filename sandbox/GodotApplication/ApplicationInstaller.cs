@@ -1,4 +1,4 @@
-using DependencyInjection.Core;
+using DependencyInjection;
 using DependencyInjection.Godot;
 using Godot;
 

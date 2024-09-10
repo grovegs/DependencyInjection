@@ -2,10 +2,8 @@ using DependencyInjection.Resolution;
 
 namespace DependencyInjection.Core;
 
-public sealed class Container : IContainer
+internal sealed class Container : IContainer
 {
-    public static readonly IContainer Empty = new NullContainer();
-
     private readonly string _name;
     private readonly IContainerResolver _resolver;
     private readonly IDisposableCollection _disposables;
@@ -15,59 +13,13 @@ public sealed class Container : IContainer
     public string Name => _name;
     public IContainer Parent => _parent;
 
-    internal Container(string name, IContainerResolver resolver, IDisposableCollection disposables, IList<IContainer> children, IContainer parent)
+    internal Container(string name, IContainerResolver resolver, IDisposableCollection disposables, IContainer parent)
     {
         _name = name;
         _resolver = resolver;
         _disposables = disposables;
-        _children = children;
+        _children = [];
         _parent = parent;
-    }
-
-    public static IContainer Create(string name, IContainer parent, Action<IContainerConfigurer> configurer)
-    {
-        var builder = new ContainerBuilder(name, parent);
-        configurer.Invoke(builder);
-        var container = builder.Build();
-        ContainerCache.Add(container);
-        return container;
-    }
-
-    public static IContainer Create(ReadOnlySpan<char> path, Action<IContainerConfigurer> configurer)
-    {
-        var nameSeperatorIndex = path.LastIndexOf('/');
-        var name = path[(nameSeperatorIndex + 1)..].ToString();
-        var parentPath = path[..nameSeperatorIndex];
-        var parent = ContainerCache.Find(parentPath);
-        return Create(name, parent!, configurer);
-    }
-
-    public static IContainer Create(string name, IContainer parent, IInstaller installer)
-    {
-        return Create(name, parent, installer.Install);
-    }
-
-    public static IContainer Create(ReadOnlySpan<char> path, IInstaller installer)
-    {
-        return Create(path, installer.Install);
-    }
-
-    public static void Dispose(IContainer container)
-    {
-        container.Dispose();
-        ContainerCache.Remove(container);
-    }
-
-    public static void Dispose(ReadOnlySpan<char> path)
-    {
-        var container = ContainerCache.Find(path);
-        Dispose(container!);
-    }
-
-    public static IContainer? Find(ReadOnlySpan<char> path)
-    {
-        var container = ContainerCache.Find(path);
-        return container;
     }
 
     public void Dispose()
@@ -82,7 +34,7 @@ public sealed class Container : IContainer
 
         _resolver.Clear();
         _children.Clear();
-        _parent?.RemoveChild(this);
+        _parent.RemoveChild(this);
     }
 
     public void AddChild(IContainer child)

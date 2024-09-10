@@ -1,11 +1,11 @@
-using DependencyInjection.Core;
+using DependencyInjection;
 using DependencyInjection.Godot;
 using Godot;
 
 public sealed partial class MainInstaller : Installer
 {
-	public override void Install(IContainerConfigurer containerConfigurer)
-	{
-		GD.Print("Test");
-	}
+    public override void Install(IContainerConfigurer containerConfigurer)
+    {
+        GD.Print("Test");
+    }
 }

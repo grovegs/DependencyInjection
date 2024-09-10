@@ -1,12 +1,14 @@
 namespace DependencyInjection.Core;
 
-internal static class ContainerCache
+internal sealed class ContainerCache : IContainerCache
 {
-    private static readonly List<IContainer> s_containers = [];
+    public static readonly ContainerCache Shared = new();
 
-    public static IContainer? Find(ReadOnlySpan<char> path)
+    private readonly List<IContainer> _containers = [];
+
+    public IContainer? Find(ReadOnlySpan<char> path)
     {
-        foreach (var container in s_containers)
+        foreach (var container in _containers)
         {
             var currentContainer = container;
             var currentPath = path;
@@ -34,18 +36,18 @@ internal static class ContainerCache
         return null;
     }
 
-    public static void Add(IContainer container)
+    public void Add(IContainer container)
     {
-        s_containers.Add(container);
+        _containers.Add(container);
     }
 
-    public static void Remove(IContainer container)
+    public void Remove(IContainer container)
     {
-        s_containers.Remove(container);
+        _containers.Remove(container);
     }
 
-    public static void Clear()
+    public void Clear()
     {
-        s_containers.Clear();
+        _containers.Clear();
     }
 }

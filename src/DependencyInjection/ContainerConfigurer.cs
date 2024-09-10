@@ -1,24 +1,19 @@
-﻿using DependencyInjection.Resolution;
+﻿using DependencyInjection.Core;
+using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Core;
+namespace DependencyInjection;
 
-internal sealed class ContainerBuilder : IContainerBuilder
+internal sealed class ContainerConfigurer : IContainerConfigurer
 {
-    private readonly ContainerResolver _containerResolver;
-    private readonly InitializableCollection _initializableCollection;
-    private readonly DisposableCollection _disposableCollection;
-    private readonly List<IContainer> _children;
-    private readonly string _name;
-    private readonly IContainer _parent;
+    private readonly IContainerResolver _containerResolver;
+    private readonly IInitializableCollection _initializableCollection;
+    private readonly IDisposableCollection _disposableCollection;
 
-    public ContainerBuilder(string name, IContainer parent)
+    public ContainerConfigurer(IContainerResolver containerResolver, IInitializableCollection initializableCollection, IDisposableCollection disposableCollection)
     {
-        _containerResolver = new ContainerResolver(parent);
-        _initializableCollection = new InitializableCollection(_containerResolver);
-        _disposableCollection = new DisposableCollection();
-        _children = [];
-        _name = name;
-        _parent = parent;
+        _containerResolver = containerResolver;
+        _initializableCollection = initializableCollection;
+        _disposableCollection = disposableCollection;
     }
 
     public void AddInstance(Type registrationType, object implementationInstance)
@@ -41,13 +36,5 @@ internal sealed class ContainerBuilder : IContainerBuilder
         var instanceResolver = new TransientResolver(objectResolver);
         _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
         _initializableCollection.TryAdd(registrationType, implementationType);
-    }
-
-    public IContainer Build()
-    {
-        var container = new Container(_name, _containerResolver, _disposableCollection, _children, _parent);
-        _parent?.AddChild(container);
-        _initializableCollection.Initialize();
-        return container;
     }
 }
