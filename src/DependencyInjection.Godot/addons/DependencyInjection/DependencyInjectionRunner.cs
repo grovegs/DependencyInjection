@@ -3,7 +3,7 @@ using Godot;
 
 namespace DependencyInjection.Godot;
 
-public sealed partial class ApplicationInitializer : Node
+public sealed partial class DependencyInjectionRunner : Node
 {
     public override void _Ready()
     {

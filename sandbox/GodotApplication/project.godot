@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-ApplicationInitializer="*res://addons/DependencyInjection/ApplicationInitializer.cs"
+DependencyInjectionRunner="*res://addons/DependencyInjection/DependencyInjectionRunner.cs"
 
 [dotnet]
 
