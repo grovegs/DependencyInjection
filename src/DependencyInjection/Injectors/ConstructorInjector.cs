@@ -6,7 +6,7 @@ namespace DependencyInjection.Injectors;
 
 internal static class ConstructorInjector
 {
-    private const BindingFlags CostructorBindingFlags = BindingFlags.Public | BindingFlags.Instance;
+    private const BindingFlags ConstructorBindingFlags = BindingFlags.Public | BindingFlags.Instance;
 
     public static void Inject(object uninitializedObject, IRegistrationResolver registrationResolver)
     {
@@ -34,7 +34,7 @@ internal static class ConstructorInjector
 
     private static bool TryFindConstructorInfo(Type implementationType, out ConstructorInfo? foundConstructorInfo)
     {
-        var constructorInfos = implementationType.GetConstructors(CostructorBindingFlags);
+        var constructorInfos = implementationType.GetConstructors(ConstructorBindingFlags);
         var foundParametersCount = int.MinValue;
 
         foreach (var constructorInfo in constructorInfos)
