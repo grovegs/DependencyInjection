@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using DependencyInjection.Activators;
 using DependencyInjection.Core;
 using DependencyInjection.Injectors;
 
@@ -22,7 +23,6 @@ internal sealed class ObjectResolver : IObjectResolver
         var instance = RuntimeHelpers.GetUninitializedObject(_implementationType);
         ConstructorInjector.Inject(instance, _registrationResolver);
         _disposableCollection.TryAdd(instance);
-
         return instance;
     }
 }

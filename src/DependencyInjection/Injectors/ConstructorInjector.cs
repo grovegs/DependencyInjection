@@ -12,34 +12,28 @@ internal static class ConstructorInjector
     {
         var implementationType = uninitializedObject.GetType();
 
-        if (!ObjectActivatorCache.TryGet(implementationType, out var objectActivator))
+        if (!TryCreateObjectActivator(implementationType, out var objectActivator))
         {
-            if (!TryCreateObjectActivator(implementationType, out objectActivator))
-            {
-                return;
-            }
-
-            ObjectActivatorCache.Add(implementationType, objectActivator);
+            return;
         }
 
-        MethodBaseInjector.Inject(uninitializedObject, objectActivator, registrationResolver);
+        MethodBaseInjector.Inject(uninitializedObject, objectActivator!, registrationResolver);
     }
 
-    private static bool TryCreateObjectActivator(Type implementationType, out IObjectActivator objectActivator)
+    private static bool TryCreateObjectActivator(Type implementationType, out IObjectActivator? objectActivator)
     {
-        objectActivator = null;
-
         if (TryFindConstructorInfo(implementationType, out var constructorInfo))
         {
-            objectActivator = new MethodBaseActivator(constructorInfo);
+            objectActivator = new MethodBaseActivator(constructorInfo!);
+            return true;
         }
 
-        return objectActivator != null;
+        objectActivator = null;
+        return false;
     }
 
-    private static bool TryFindConstructorInfo(Type implementationType, out ConstructorInfo foundConstructorInfo)
+    private static bool TryFindConstructorInfo(Type implementationType, out ConstructorInfo? foundConstructorInfo)
     {
-        foundConstructorInfo = null;
         var constructorInfos = implementationType.GetConstructors(CostructorBindingFlags);
         var foundParametersCount = int.MinValue;
 
@@ -51,8 +45,10 @@ internal static class ConstructorInjector
 
             foundConstructorInfo = constructorInfo;
             foundParametersCount = parametersCount;
+            return true;
         }
 
-        return foundConstructorInfo != null;
+        foundConstructorInfo = null;
+        return false;
     }
 }
