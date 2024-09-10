@@ -18,8 +18,8 @@ public sealed class NullContainer : IContainer
     {
     }
 
-    public object? Resolve(Type registrationType)
+    public object Resolve(Type registrationType)
     {
-        return null;
+        return null!;
     }
 }

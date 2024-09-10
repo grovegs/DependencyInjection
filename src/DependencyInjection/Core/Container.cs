@@ -47,7 +47,7 @@ internal sealed class Container : IContainer
         _children.Remove(child);
     }
 
-    public object? Resolve(Type registrationType)
+    public object Resolve(Type registrationType)
     {
         return _resolver.Resolve(registrationType);
     }
