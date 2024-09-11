@@ -35,6 +35,7 @@ internal static class MethodInjector
 
     private static bool TryFindMethodInfo(Type implementationType, out MethodInfo? foundMethodInfo)
     {
+        foundMethodInfo = null;
         var methodInfos = implementationType.GetMethods(MethodBindingFlags);
         var foundParametersCount = int.MinValue;
 
@@ -48,10 +49,8 @@ internal static class MethodInjector
 
             foundMethodInfo = methodInfo;
             foundParametersCount = parametersCount;
-            return true;
         }
 
-        foundMethodInfo = null;
-        return false;
+        return foundMethodInfo != null;
     }
 }
