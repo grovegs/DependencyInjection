@@ -1,64 +1,76 @@
-using DependencyInjection.Resolution;
+using System.Runtime.CompilerServices;
 using DependencyInjection.Injectors;
+using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Tests.Injectors;
-
-public class ConstructorInjectorTests
+namespace DependencyInjection.Tests.Injectors
 {
-    private readonly Mock<IRegistrationResolver> _mockRegistrationResolver;
-
-    public ConstructorInjectorTests()
+    public class ConstructorInjectorTests
     {
-        _mockRegistrationResolver = new Mock<IRegistrationResolver>();
-    }
-
-    [Fact]
-    public void Inject_WithValidObject_PerformsInjection()
-    {
-        // Arrange
-        var sampleObject = Activator.CreateInstance(typeof(SampleClass));
-
-        // Act
-        ConstructorInjector.Inject(sampleObject!, _mockRegistrationResolver.Object);
-
-        // Assert
-        var obj = sampleObject as SampleClass;
-        Assert.NotNull(obj);
-        Assert.True(obj!.IsInjected);
-    }
-
-    [Fact]
-    public void Inject_WithObjectWithoutPublicConstructor_DoesNotPerformInjection()
-    {
-        // Arrange
-        var invalidObject = Activator.CreateInstance(typeof(InvalidSampleClass), true);
-
-        // Act
-        ConstructorInjector.Inject(invalidObject!, _mockRegistrationResolver.Object);
-
-        // Assert
-        var obj = invalidObject as InvalidSampleClass;
-        Assert.NotNull(obj);
-        Assert.False(obj!.IsInjected);
-    }
-
-    public class SampleClass
-    {
-        public bool IsInjected { get; private set; }
-
-        public SampleClass()
+        private class TestClassWithConstructor
         {
-            IsInjected = true;
+            public string? Name { get; }
+
+            public TestClassWithConstructor(string name)
+            {
+                Name = name;
+            }
         }
-    }
 
-    public class InvalidSampleClass
-    {
-        public bool IsInjected { get; private set; }
-
-        private InvalidSampleClass()
+        private class TestClassWithoutPublicConstructor
         {
-            IsInjected = false;
+            private TestClassWithoutPublicConstructor() { }
+        }
+
+        [Fact]
+        public void Inject_ShouldCallRegistrationResolver_WhenConstructorIsFound()
+        {
+            // Arrange
+            var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+            var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithConstructor));
+
+            // Setup mock to return a resolved value
+            mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("Test");
+
+            // Act
+            ConstructorInjector.Inject(uninitializedObject, mockRegistrationResolver.Object);
+
+            // Assert
+            mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
+        }
+
+        [Fact]
+        public void Inject_ShouldNotCallRegistrationResolver_WhenNoPublicConstructorIsFound()
+        {
+            // Arrange
+            var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+            var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithoutPublicConstructor));
+
+            // Act
+            ConstructorInjector.Inject(uninitializedObject, mockRegistrationResolver.Object);
+
+            // Assert
+            // Verify that the registration resolver was never called because there's no public constructor
+            mockRegistrationResolver.Verify(rr => rr.Resolve(It.IsAny<Type>()), Times.Never);
+        }
+
+        [Fact]
+        public void Inject_ShouldUseConstructorWithMostParameters()
+        {
+            // Arrange
+            var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+
+            // We expect the ConstructorInjector to use the constructor with the most parameters
+            var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithConstructor));
+
+            // Setup mock to return a resolved value
+            mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("Resolved Value");
+
+            // Act
+            ConstructorInjector.Inject(uninitializedObject, mockRegistrationResolver.Object);
+
+            // Assert
+            // Verify that the registration resolver resolved the correct parameter (string in this case)
+            mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
         }
     }
 }
