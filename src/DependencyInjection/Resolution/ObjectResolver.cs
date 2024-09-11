@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using DependencyInjection.Activators;
 using DependencyInjection.Core;
 using DependencyInjection.Injectors;
 
