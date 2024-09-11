@@ -2,9 +2,9 @@ namespace DependencyInjection.Core;
 
 public static class ContainerExtensions
 {
-    public static IContainer AddChild(this IContainer container, string name, IContainerCache cache, Action<IContainerConfigurer> configurer)
+    public static IContainer AddChild(this IContainer container, string name, IContainerCache cache, Action<IContainerConfigurer> configure)
     {
-        return DependencyInjection.Container.Create(name, container, cache, configurer);
+        return DependencyInjection.Container.Create(name, container, cache, configure);
     }
 
     public static IContainer AddChild(this IContainer container, string name, IContainerCache cache, IInstaller installer)
@@ -12,10 +12,10 @@ public static class ContainerExtensions
         return DependencyInjection.Container.Create(name, container, cache, installer.Install);
     }
 
-    public static IContainer AddChild(this IContainer container, string name, Action<IContainerConfigurer> configurer)
+    public static IContainer AddChild(this IContainer container, string name, Action<IContainerConfigurer> configure)
     {
         var cache = ContainerCache.Shared;
-        return AddChild(container, name, cache, configurer);
+        return AddChild(container, name, cache, configure);
     }
 
     public static IContainer AddChild(this IContainer container, string name, IInstaller installer)
