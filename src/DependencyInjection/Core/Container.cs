@@ -9,6 +9,7 @@ internal sealed class Container : IContainer
     private readonly IDisposableCollection _disposables;
     private readonly IList<IContainer> _children;
     private readonly IContainer _parent;
+    private bool _isDisposed;
 
     public string Name => _name;
     public IContainer Parent => _parent;
@@ -20,10 +21,16 @@ internal sealed class Container : IContainer
         _disposables = disposables;
         _children = [];
         _parent = parent;
+        _isDisposed = false;
     }
 
     public void Dispose()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
         _disposables.Dispose();
 
         for (var i = _children.Count - 1; i >= 0; i--)
@@ -35,6 +42,7 @@ internal sealed class Container : IContainer
         _resolver.Clear();
         _children.Clear();
         _parent.RemoveChild(this);
+        _isDisposed = true;
     }
 
     public void AddChild(IContainer child)
