@@ -28,7 +28,6 @@ public class ContainerTests
         var mockResolver = new Mock<IContainerResolver>();
         var mockDisposables = new Mock<IDisposableCollection>();
         var mockParent = new Mock<IContainer>();
-
         var container = new DependencyInjection.Core.Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockParent.Object);
         var mockChild = new Mock<IContainer>();
 
@@ -47,7 +46,6 @@ public class ContainerTests
         var mockResolver = new Mock<IContainerResolver>();
         var mockDisposables = new Mock<IDisposableCollection>();
         var mockParent = new Mock<IContainer>();
-
         var container = new DependencyInjection.Core.Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockParent.Object);
         var mockChild = new Mock<IContainer>();
 
@@ -66,11 +64,9 @@ public class ContainerTests
         var mockResolver = new Mock<IContainerResolver>();
         var mockDisposables = new Mock<IDisposableCollection>();
         var mockParent = new Mock<IContainer>();
-
         var container = new DependencyInjection.Core.Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockParent.Object);
         var child1 = new Mock<IContainer>();
         var child2 = new Mock<IContainer>();
-
         container.AddChild(child1.Object);
         container.AddChild(child2.Object);
 
