@@ -40,7 +40,7 @@ public class ContainerTests
     }
 
     [Fact]
-    public void AddChild_ShouldThrowExceptionForAlreadyAddedContainer()
+    public void AddChild_ShouldThrowExceptionWhenAddingAlreadyAddedContainer()
     {
         // Arrange
         var mockResolver = new Mock<IContainerResolver>();
@@ -54,6 +54,26 @@ public class ContainerTests
 
         // Assert
         Assert.Throws<ArgumentException>(() => container.AddChild(mockChild.Object));
+    }
+
+    [Fact]
+    public void AddChild_ShouldThrowExceptionWhenAddingAlreadyAddedContainerWithSameName()
+    {
+        // Arrange
+        var mockResolver = new Mock<IContainerResolver>();
+        var mockDisposables = new Mock<IDisposableCollection>();
+        var mockParent = new Mock<IContainer>();
+        var container = new DependencyInjection.Core.Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockParent.Object);
+        var mockChild1 = new Mock<IContainer>();
+        mockChild1.SetupGet(c => c.Name).Returns("Child");
+        var mockChild2 = new Mock<IContainer>();
+        mockChild2.SetupGet(c => c.Name).Returns("Child");
+
+        // Act
+        container.AddChild(mockChild1.Object);
+
+        // Assert
+        Assert.Throws<ArgumentException>(() => container.AddChild(mockChild2.Object));
     }
 
     [Fact]
