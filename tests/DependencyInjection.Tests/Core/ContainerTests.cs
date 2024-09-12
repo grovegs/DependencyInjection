@@ -48,6 +48,7 @@ public class ContainerTests
         var mockParent = new Mock<IContainer>();
         var container = new DependencyInjection.Core.Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockParent.Object);
         var mockChild = new Mock<IContainer>();
+        mockChild.SetupGet(c => c.Name).Returns("Child");
 
         // Act
         container.AddChild(mockChild.Object);
@@ -103,7 +104,9 @@ public class ContainerTests
         var mockParent = new Mock<IContainer>();
         var container = new DependencyInjection.Core.Container("TestContainer", mockResolver.Object, mockDisposables.Object, mockParent.Object);
         var child1 = new Mock<IContainer>();
+        child1.SetupGet(c => c.Name).Returns("Child1");
         var child2 = new Mock<IContainer>();
+        child2.SetupGet(c => c.Name).Returns("Child2");
         container.AddChild(child1.Object);
         container.AddChild(child2.Object);
 
