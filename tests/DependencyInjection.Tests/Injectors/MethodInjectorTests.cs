@@ -9,11 +9,33 @@ public class MethodInjectorTests
     private class TestClassWithInjectMethod
     {
         public bool MethodCalled { get; private set; } = false;
+        public string? StringValue { get; private set; }
 
         [Inject]
-        public void Initialize(string name)
+        public void Initialize(string value)
         {
             MethodCalled = true;
+            StringValue = value;
+        }
+    }
+
+
+    private class TestClassWithMultipleInjectMethods
+    {
+        public string? StringValue { get; private set; }
+        public int IntValue { get; private set; }
+
+        [Inject]
+        public void InjectMethod1(string value)
+        {
+            StringValue = value;
+        }
+
+        [Inject]
+        public void InjectMethod2(string value, int number)
+        {
+            StringValue = value;
+            IntValue = number;
         }
     }
 
@@ -35,6 +57,7 @@ public class MethodInjectorTests
 
         // Assert
         Assert.True(testObject.MethodCalled);
+        Assert.Equal("ResolvedValue", testObject.StringValue);
         mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
     }
 
@@ -56,7 +79,7 @@ public class MethodInjectorTests
     public void Inject_ShouldSelectMethodWithMostParameters_WhenMultipleInjectMethodsExist()
     {
         // Arrange
-        var testObject = new ClassWithMultipleInjectMethods();
+        var testObject = new TestClassWithMultipleInjectMethods();
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("StringValue");
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(int))).Returns(42);
@@ -69,24 +92,5 @@ public class MethodInjectorTests
         Assert.Equal(42, testObject.IntValue);
         mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
         mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(int)), Times.Once);
-    }
-
-    private class ClassWithMultipleInjectMethods
-    {
-        public string? StringValue { get; private set; }
-        public int IntValue { get; private set; }
-
-        [Inject]
-        public void InjectMethod1(string value)
-        {
-            StringValue = value;
-        }
-
-        [Inject]
-        public void InjectMethod2(string value, int number)
-        {
-            StringValue = value;
-            IntValue = number;
-        }
     }
 }
