@@ -2,7 +2,7 @@ using DependencyInjection.Caching;
 using DependencyInjection.Collections;
 using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Tests.Core;
+namespace DependencyInjection.Tests;
 
 public class ContainerTests
 {
