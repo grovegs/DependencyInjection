@@ -6,7 +6,7 @@ internal sealed class InitializableCollection : IInitializableCollection
 {
     private static readonly Type s_initializableType = typeof(IInitializable);
 
-    private readonly IList<Type> _initializableRegistrationTypes;
+    private readonly List<Type> _initializableRegistrationTypes;
     private readonly IRegistrationResolver _registrationResolver;
 
     public InitializableCollection(IRegistrationResolver registrationResolver)
