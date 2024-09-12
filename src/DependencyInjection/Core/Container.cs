@@ -47,6 +47,11 @@ internal sealed class Container : IContainer
 
     public void AddChild(IContainer child)
     {
+        if (_children.Contains(child))
+        {
+            throw new ArgumentException("Child already exists in container.");
+        }
+
         _children.Add(child);
     }
 
