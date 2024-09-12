@@ -3,14 +3,34 @@ using DependencyInjection.Resolution;
 
 namespace DependencyInjection;
 
-public static class Container
+internal sealed class Container : IContainer
 {
-    internal static IContainer Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
+    private readonly string _name;
+    private readonly IContainerResolver _resolver;
+    private readonly IDisposableCollection _disposables;
+    private readonly IList<IContainer> _children;
+    private readonly IContainer _parent;
+    private bool _isDisposed;
+
+    public string Name => _name;
+    public IContainer Parent => _parent;
+
+    public Container(string name, IContainerResolver resolver, IDisposableCollection disposables, IContainer parent)
+    {
+        _name = name;
+        _resolver = resolver;
+        _disposables = disposables;
+        _children = [];
+        _parent = parent;
+        _isDisposed = false;
+    }
+
+    public static IContainer Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
     {
         var resolver = new ContainerResolver(parent);
         var initializables = new InitializableCollection(resolver);
         var disposables = new DisposableCollection();
-        var container = new Core.Container(name, resolver, disposables, parent);
+        var container = new Container(name, resolver, disposables, parent);
         var configurer = new ContainerConfigurer(resolver, initializables, disposables);
         configure.Invoke(configurer);
         parent.AddChild(container);
@@ -19,7 +39,7 @@ public static class Container
         return container;
     }
 
-    internal static IContainer Create(ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
+    public static IContainer Create(ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
     {
         var nameSeperatorIndex = path.LastIndexOf('/');
         var name = path[(nameSeperatorIndex + 1)..].ToString();
@@ -28,45 +48,75 @@ public static class Container
         return Create(name, parent, cache, configure);
     }
 
-    internal static void Dispose(IContainer container, IContainerCache cache)
+    public static void Dispose(IContainer container, IContainerCache cache)
     {
         container.Dispose();
         cache.Remove(container);
     }
 
-    internal static void Dispose(ReadOnlySpan<char> path, IContainerCache cache)
+    public static void Dispose(ReadOnlySpan<char> path, IContainerCache cache)
     {
         var container = cache.Find(path);
         Dispose(container!, cache);
     }
 
-    internal static IContainer? Find(ReadOnlySpan<char> path, IContainerCache cache)
+    public static IContainer? Find(ReadOnlySpan<char> path, IContainerCache cache)
     {
         var container = cache.Find(path);
         return container;
     }
 
-    public static IContainer Create(string name, IContainer parent, Action<IContainerConfigurer> configure)
+    public void Dispose()
     {
-        var cache = ContainerCache.Shared;
-        return Create(name, parent, cache, configure);
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _disposables.Dispose();
+
+        for (var i = _children.Count - 1; i >= 0; i--)
+        {
+            var child = _children[i];
+            child.Dispose();
+        }
+
+        _resolver.Clear();
+        _children.Clear();
+        _parent.RemoveChild(this);
+        _isDisposed = true;
     }
 
-    public static IContainer Create(ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
+    private bool ContainsChild(IContainer child)
     {
-        var cache = ContainerCache.Shared;
-        return Create(path, cache, configure);
+        foreach (var existingChild in _children)
+        {
+            if (existingChild.Name.Equals(child.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    public static void Dispose(IContainer container)
+    public void AddChild(IContainer child)
     {
-        var cache = ContainerCache.Shared;
-        Dispose(container, cache);
+        if (ContainsChild(child))
+        {
+            throw new ArgumentException($"A child container with the same name already exists in the parent container. Child Name: {child.Name}, Parent Container Name: {Name}");
+        }
+
+        _children.Add(child);
     }
 
-    public static IContainer? Find(ReadOnlySpan<char> path)
+    public void RemoveChild(IContainer child)
     {
-        var cache = ContainerCache.Shared;
-        return Find(path, cache);
+        _children.Remove(child);
+    }
+
+    public object Resolve(Type registrationType)
+    {
+        return _resolver.Resolve(registrationType);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using DependencyInjection.Core;
 using Godot;
 
-namespace DependencyInjection.Godot;
+namespace DependencyInjection;
 
 public sealed partial class DependencyInjectionRunner : Node
 {
@@ -9,10 +9,10 @@ public sealed partial class DependencyInjectionRunner : Node
     {
         var installerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
         var installer = installerScene.Instantiate<Installer>();
-        var container = Container.Create("root", new NullContainer(), installer.Install);
+        var container = DI.CreateContainer("root", new NullContainer(), installer.Install);
         installer.Free();
         var root = GetTree().Root;
-        root.TreeExiting += () => container?.Dispose();
+        root.TreeExiting += () => DI.DisposeContainer(container);
         root.ChildEnteredTree += OnSceneAdded;
     }
 
@@ -28,8 +28,15 @@ public sealed partial class DependencyInjectionRunner : Node
             return;
         }
 
-        var container = Container.Find("root")?.AddChild("scene", installer);
+        var root = DI.FindContainer("root");
+
+        if (root != null)
+        {
+            var container = root.AddChild("scene", installer);
+            installer.Free();
+            node.TreeExiting += () => DI.DisposeContainer(container);
+        }
+
         installer.Free();
-        node.TreeExiting += () => container?.Dispose();
     }
 }

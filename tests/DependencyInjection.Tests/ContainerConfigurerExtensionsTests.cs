@@ -1,5 +1,3 @@
-using DependencyInjection.Core;
-
 namespace DependencyInjection.Tests;
 
 public class ContainerConfigurerExtensionsTests
@@ -69,14 +67,13 @@ public class ContainerConfigurerExtensionsTests
     public void AddSingleton_Generic_ShouldAddSingletonWithType()
     {
         // Arrange
-        var instance = new Mock<IInitializable>().Object;
         var mockContainerConfigurer = new Mock<IContainerConfigurer>();
 
         // Act
         mockContainerConfigurer.Object.AddSingleton<IInitializable, MockInitializable>();
 
         // Assert
-        mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(IInitializable), instance.GetType()), Times.Once);
+        mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(IInitializable), typeof(MockInitializable)), Times.Once);
     }
 
     [Fact]

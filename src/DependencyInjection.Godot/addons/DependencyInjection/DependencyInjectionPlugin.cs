@@ -1,7 +1,7 @@
 #if TOOLS
 using Godot;
 
-namespace DependencyInjection.Godot;
+namespace DependencyInjection;
 
 [Tool]
 public partial class DependencyInjectionPlugin : EditorPlugin

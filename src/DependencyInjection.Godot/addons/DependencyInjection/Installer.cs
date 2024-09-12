@@ -1,7 +1,6 @@
-using DependencyInjection.Core;
 using Godot;
 
-namespace DependencyInjection.Godot;
+namespace DependencyInjection;
 
 public abstract partial class Installer : Node, IInstaller
 {

@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using DependencyInjection.Activators;
-using DependencyInjection.Core;
 using DependencyInjection.Resolution;
 
 namespace DependencyInjection.Injectors;

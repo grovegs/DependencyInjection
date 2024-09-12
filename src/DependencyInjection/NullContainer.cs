@@ -1,4 +1,4 @@
-namespace DependencyInjection.Core;
+namespace DependencyInjection;
 
 public sealed class NullContainer : IContainer
 {

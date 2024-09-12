@@ -1,6 +1,5 @@
 using DependencyInjection.Injectors;
 using DependencyInjection.Resolution;
-using DependencyInjection.Core;
 
 namespace DependencyInjection.Tests.Injectors;
 

@@ -1,6 +1,6 @@
 using DependencyInjection.Core;
 
-namespace DependencyInjection.Tests.Core;
+namespace DependencyInjection.Tests;
 
 public class ContainerExtensionsTests
 {
