@@ -10,7 +10,7 @@ public static class DI
         return Container.Create(name, parent, cache, configure);
     }
 
-    public static IContainer Create(ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
+    public static IContainer CreateContainer(ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
     {
         var cache = ContainerCache.Shared;
         return Container.Create(path, cache, configure);
@@ -20,6 +20,12 @@ public static class DI
     {
         var cache = ContainerCache.Shared;
         Container.Dispose(container, cache);
+    }
+
+    public static void DisposeContainer(ReadOnlySpan<char> path)
+    {
+        var cache = ContainerCache.Shared;
+        Container.Dispose(path, cache);
     }
 
     public static IContainer? FindContainer(ReadOnlySpan<char> path)
