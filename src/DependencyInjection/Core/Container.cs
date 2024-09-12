@@ -45,11 +45,24 @@ internal sealed class Container : IContainer
         _isDisposed = true;
     }
 
+    private bool ContainsChild(IContainer child)
+    {
+        foreach (var existingChild in _children)
+        {
+            if (existingChild.Name.Equals(child.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void AddChild(IContainer child)
     {
-        if (_children.Contains(child))
+        if (ContainsChild(child))
         {
-            throw new ArgumentException("Child already exists in container.");
+            throw new ArgumentException($"A child container with the same name already exists in the parent container. Child Name: {child.Name}, Parent Container Name: {Name}");
         }
 
         _children.Add(child);
