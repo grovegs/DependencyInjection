@@ -27,8 +27,6 @@ namespace DependencyInjection.Tests.Injectors
             // Arrange
             var mockRegistrationResolver = new Mock<IRegistrationResolver>();
             var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithConstructor));
-
-            // Setup mock to return a resolved value
             mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("Test");
 
             // Act
@@ -49,7 +47,6 @@ namespace DependencyInjection.Tests.Injectors
             ConstructorInjector.Inject(uninitializedObject, mockRegistrationResolver.Object);
 
             // Assert
-            // Verify that the registration resolver was never called because there's no public constructor
             mockRegistrationResolver.Verify(rr => rr.Resolve(It.IsAny<Type>()), Times.Never);
         }
 
@@ -58,18 +55,13 @@ namespace DependencyInjection.Tests.Injectors
         {
             // Arrange
             var mockRegistrationResolver = new Mock<IRegistrationResolver>();
-
-            // We expect the ConstructorInjector to use the constructor with the most parameters
             var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithConstructor));
-
-            // Setup mock to return a resolved value
             mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("Resolved Value");
 
             // Act
             ConstructorInjector.Inject(uninitializedObject, mockRegistrationResolver.Object);
 
             // Assert
-            // Verify that the registration resolver resolved the correct parameter (string in this case)
             mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
         }
     }
