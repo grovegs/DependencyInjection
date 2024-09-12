@@ -1,4 +1,6 @@
-﻿namespace DependencyInjection.Core;
+﻿using System.Collections;
+
+namespace DependencyInjection.Core;
 
 internal sealed class DisposableCollection : IDisposableCollection
 {
@@ -23,5 +25,15 @@ internal sealed class DisposableCollection : IDisposableCollection
         {
             disposable.Dispose();
         }
+    }
+
+    public IEnumerator<IDisposable> GetEnumerator()
+    {
+        return _disposables.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }
