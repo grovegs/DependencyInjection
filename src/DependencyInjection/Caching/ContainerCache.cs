@@ -1,4 +1,4 @@
-namespace DependencyInjection.Core;
+namespace DependencyInjection.Caching;
 
 internal sealed class ContainerCache : IContainerCache
 {

@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace DependencyInjection.Core;
+namespace DependencyInjection.Collections;
 
 internal sealed class DisposableCollection : IDisposableCollection
 {

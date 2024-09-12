@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using DependencyInjection.Core;
+using DependencyInjection.Collections;
 using DependencyInjection.Injectors;
 
 namespace DependencyInjection.Resolution;

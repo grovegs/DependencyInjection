@@ -1,6 +1,6 @@
 ﻿using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Core;
+namespace DependencyInjection.Collections;
 
 internal sealed class InitializableCollection : IInitializableCollection
 {

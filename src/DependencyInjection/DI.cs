@@ -1,4 +1,4 @@
-using DependencyInjection.Core;
+using DependencyInjection.Caching;
 
 namespace DependencyInjection;
 

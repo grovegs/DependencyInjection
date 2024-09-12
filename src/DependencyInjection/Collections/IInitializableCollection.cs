@@ -1,4 +1,4 @@
-﻿namespace DependencyInjection.Core;
+﻿namespace DependencyInjection.Collections;
 
 internal interface IInitializableCollection : IInitializable
 {

@@ -1,4 +1,5 @@
-using DependencyInjection.Core;
+using DependencyInjection.Caching;
+using DependencyInjection.Collections;
 using DependencyInjection.Resolution;
 
 namespace DependencyInjection;

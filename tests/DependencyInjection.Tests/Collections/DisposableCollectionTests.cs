@@ -1,6 +1,6 @@
-using DependencyInjection.Core;
+using DependencyInjection.Collections;
 
-namespace DependencyInjection.Tests.Core
+namespace DependencyInjection.Tests.Collections
 {
     public class DisposableCollectionTests
     {

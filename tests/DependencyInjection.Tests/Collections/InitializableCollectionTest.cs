@@ -1,7 +1,7 @@
-using DependencyInjection.Core;
+using DependencyInjection.Collections;
 using DependencyInjection.Resolution;
 
-namespace DependencyInjection.Tests.Core;
+namespace DependencyInjection.Tests.Collections;
 
 public class InitializableCollectionTests
 {

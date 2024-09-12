@@ -1,4 +1,4 @@
-using DependencyInjection.Core;
+using DependencyInjection.Collections;
 using DependencyInjection.Resolution;
 
 namespace DependencyInjection.Tests.Resolution;
