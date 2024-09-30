@@ -1,5 +1,4 @@
 using DependencyInjection;
-using DependencyInjection.Godot;
 using Godot;
 
 public partial class ApplicationInstaller : Installer
