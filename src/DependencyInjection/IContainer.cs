@@ -2,11 +2,10 @@
 
 namespace DependencyInjection;
 
-public interface IContainer : IRegistrationResolver
+public interface IContainer : IRegistrationResolver, IDisposable
 {
     string Name { get; }
     IContainer? Parent { get; }
     void AddChild(IContainer child);
-    internal void RemoveChild(IContainer child);
-    internal void Dispose();
+    void RemoveChild(IContainer child);
 }

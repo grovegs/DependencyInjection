@@ -6,7 +6,7 @@ internal sealed class ContainerCache : IContainerCache
 
     private readonly List<IContainer> _containers = [];
 
-    public IContainer? Find(ReadOnlySpan<char> path)
+    public IContainer? Find(in ReadOnlySpan<char> path)
     {
         foreach (var container in _containers)
         {

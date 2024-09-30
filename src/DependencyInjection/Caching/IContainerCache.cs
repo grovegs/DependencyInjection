@@ -2,7 +2,7 @@ namespace DependencyInjection.Caching;
 
 public interface IContainerCache
 {
-    IContainer? Find(ReadOnlySpan<char> path);
+    IContainer? Find(in ReadOnlySpan<char> path);
     void Add(IContainer container);
     void Remove(IContainer container);
     void Clear();

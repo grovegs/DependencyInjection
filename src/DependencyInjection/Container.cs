@@ -4,43 +4,45 @@ using DependencyInjection.Resolution;
 
 namespace DependencyInjection;
 
-internal sealed class Container : IContainer
+public sealed class Container : IContainer
 {
     private readonly string _name;
     private readonly IContainerResolver _resolver;
+    private readonly IContainerCache _cache;
     private readonly IDisposableCollection _disposables;
-    private readonly IList<IContainer> _children;
+    private readonly List<IContainer> _children;
     private readonly IContainer _parent;
     private bool _isDisposed;
 
     public string Name => _name;
     public IContainer Parent => _parent;
 
-    public Container(string name, IContainerResolver resolver, IDisposableCollection disposables, IContainer parent)
+    internal Container(string name, IContainerResolver resolver, IContainerCache cache, IDisposableCollection disposables, IContainer parent)
     {
         _name = name;
         _resolver = resolver;
+        _cache = cache;
         _disposables = disposables;
         _children = [];
         _parent = parent;
         _isDisposed = false;
+        _parent.AddChild(this);
+        _cache.Add(this);
     }
 
-    public static IContainer Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
+    internal static IContainer Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
     {
         var resolver = new ContainerResolver(parent);
-        var initializables = new InitializableCollection(resolver);
         var disposables = new DisposableCollection();
-        var container = new Container(name, resolver, disposables, parent);
+        var container = new Container(name, resolver, cache, disposables, parent);
+        var initializables = new InitializableCollection(resolver);
         var configurer = new ContainerConfigurer(resolver, initializables, disposables);
         configure.Invoke(configurer);
-        parent.AddChild(container);
-        cache.Add(container);
         initializables.Initialize();
         return container;
     }
 
-    public static IContainer Create(ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
+    internal static IContainer Create(in ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
     {
         var nameSeperatorIndex = path.LastIndexOf('/');
         var name = path[(nameSeperatorIndex + 1)..].ToString();
@@ -49,22 +51,40 @@ internal sealed class Container : IContainer
         return Create(name, parent, cache, configure);
     }
 
-    public static void Dispose(IContainer container, IContainerCache cache)
+    public static IContainer Create(string name, IContainer parent, Action<IContainerConfigurer> configure)
     {
-        container.Dispose();
-        cache.Remove(container);
+        var cache = ContainerCache.Shared;
+        return Create(name, parent, cache, configure);
     }
 
-    public static void Dispose(ReadOnlySpan<char> path, IContainerCache cache)
+    public static IContainer Create(in ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
+    {
+        var cache = ContainerCache.Shared;
+        return Create(path, cache, configure);
+    }
+
+    internal static void Dispose(in ReadOnlySpan<char> path, IContainerCache cache)
     {
         var container = cache.Find(path);
-        Dispose(container!, cache);
+        container?.Dispose();
     }
 
-    public static IContainer? Find(ReadOnlySpan<char> path, IContainerCache cache)
+    public static void Dispose(in ReadOnlySpan<char> path)
+    {
+        var container = Find(path);
+        container?.Dispose();
+    }
+
+    internal static IContainer? Find(in ReadOnlySpan<char> path, IContainerCache cache)
     {
         var container = cache.Find(path);
         return container;
+    }
+
+    public static IContainer? Find(in ReadOnlySpan<char> path)
+    {
+        var cache = ContainerCache.Shared;
+        return Find(path, cache);
     }
 
     public void Dispose()
@@ -84,6 +104,7 @@ internal sealed class Container : IContainer
 
         _resolver.Clear();
         _children.Clear();
+        _cache.Remove(this);
         _parent.RemoveChild(this);
         _isDisposed = true;
     }
