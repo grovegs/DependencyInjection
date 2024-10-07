@@ -1,0 +1,36 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="GodotApplication"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.3", "C#", "Mobile")
+config/icon="res://icon.svg"
+
+[autoload]
+
+DependencyInjector="*res://addons/DependencyInjection/DependencyInjector.cs"
+
+[dependency_injection]
+
+root_installer="res://RootInstaller.tscn"
+
+[dotnet]
+
+project/assembly_name="GodotApplication"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/DependencyInjection/plugin.cfg")
+
+[rendering]
+
+renderer/rendering_method="mobile"

@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using DependencyInjection.Activators;
-using DependencyInjection.Core;
 using DependencyInjection.Resolution;
 
 namespace DependencyInjection.Injectors;
@@ -13,29 +12,27 @@ internal static class MethodInjector
     {
         var implementationType = uninitializedObject.GetType();
 
-        if (!ObjectActivatorCache.TryGet(implementationType, out var objectActivator))
+        if (!TryCreateObjectActivator(implementationType, out var objectActivator))
         {
-            if (!TryCreateObjectActivator(implementationType, out objectActivator)) return;
-
-            ObjectActivatorCache.Add(implementationType, objectActivator);
+            return;
         }
 
-        MethodBaseInjector.Inject(uninitializedObject, objectActivator, registrationResolver);
+        MethodBaseInjector.Inject(uninitializedObject, objectActivator!, registrationResolver);
     }
 
-    private static bool TryCreateObjectActivator(Type implementationType, out IObjectActivator objectActivator)
+    private static bool TryCreateObjectActivator(Type implementationType, out IObjectActivator? objectActivator)
     {
         objectActivator = null;
 
         if (TryFindMethodInfo(implementationType, out var constructorInfo))
         {
-            objectActivator = new MethodBaseActivator(constructorInfo);
+            objectActivator = new MethodBaseActivator(constructorInfo!);
         }
 
         return objectActivator != null;
     }
 
-    private static bool TryFindMethodInfo(Type implementationType, out MethodInfo foundMethodInfo)
+    private static bool TryFindMethodInfo(Type implementationType, out MethodInfo? foundMethodInfo)
     {
         foundMethodInfo = null;
         var methodInfos = implementationType.GetMethods(MethodBindingFlags);

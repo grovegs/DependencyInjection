@@ -1,14 +1,12 @@
-﻿namespace DependencyInjection.Resolution;
+namespace DependencyInjection.Resolution;
 
-internal sealed class ContainerResolver : IContainerResolver
+internal sealed class RootContainerResolver : IContainerResolver
 {
     private readonly Dictionary<Type, IInstanceResolver> _instanceResolversByRegistrationTypes;
-    private readonly IRegistrationResolver _parent;
 
-    public ContainerResolver(IRegistrationResolver parent)
+    public RootContainerResolver()
     {
         _instanceResolversByRegistrationTypes = [];
-        _parent = parent;
     }
 
     public object Resolve(Type registrationType)
@@ -18,7 +16,7 @@ internal sealed class ContainerResolver : IContainerResolver
             return instanceResolver.Resolve();
         }
 
-        return _parent.Resolve(registrationType);
+        throw new InvalidOperationException($"No registration found for type {registrationType}.");
     }
 
     public void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver)
