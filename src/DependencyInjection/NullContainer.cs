@@ -20,6 +20,6 @@ public sealed class NullContainer : IContainer
 
     public object Resolve(Type registrationType)
     {
-        throw new InvalidOperationException("Cannot resolve from a null container.");
+        return null!;
     }
 }

@@ -17,32 +17,37 @@ public sealed class Container : IContainer
     public string Name => _name;
     public IContainer Parent => _parent;
 
-    internal Container(string name, IContainerResolver resolver, IContainerCache cache, IDisposableCollection disposables, IContainer parent)
+    internal Container(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache, IDisposableCollection disposables, Action<IContainerConfigurer> configure)
     {
         _name = name;
+        _parent = parent;
         _resolver = resolver;
         _cache = cache;
         _disposables = disposables;
         _children = [];
-        _parent = parent;
         _isDisposed = false;
         _parent.AddChild(this);
         _cache.Add(this);
-    }
-
-    internal static IContainer Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
-    {
-        var resolver = new ContainerResolver(parent);
-        var disposables = new DisposableCollection();
-        var container = new Container(name, resolver, cache, disposables, parent);
         var initializables = new InitializableCollection(resolver);
         var configurer = new ContainerConfigurer(resolver, initializables, disposables);
         configure.Invoke(configurer);
         initializables.Initialize();
+    }
+
+    internal static Container Create(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache, Action<IContainerConfigurer> configure)
+    {
+        var disposables = new DisposableCollection();
+        var container = new Container(name, parent, resolver, cache, disposables, configure);
         return container;
     }
 
-    internal static IContainer Create(in ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
+    internal static Container Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
+    {
+        var resolver = new ContainerResolver(parent);
+        return Create(name, parent, resolver, cache, configure);
+    }
+
+    internal static Container Create(in ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
     {
         var nameSeperatorIndex = path.LastIndexOf('/');
         var name = path[(nameSeperatorIndex + 1)..].ToString();
@@ -51,13 +56,13 @@ public sealed class Container : IContainer
         return Create(name, parent, cache, configure);
     }
 
-    public static IContainer Create(string name, IContainer parent, Action<IContainerConfigurer> configure)
+    public static Container Create(string name, IContainer parent, Action<IContainerConfigurer> configure)
     {
         var cache = ContainerCache.Shared;
         return Create(name, parent, cache, configure);
     }
 
-    public static IContainer Create(in ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
+    public static Container Create(in ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
     {
         var cache = ContainerCache.Shared;
         return Create(path, cache, configure);

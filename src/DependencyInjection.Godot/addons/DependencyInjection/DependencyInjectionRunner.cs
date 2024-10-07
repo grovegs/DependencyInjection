@@ -8,10 +8,10 @@ public sealed partial class DependencyInjectionRunner : Node
     {
         var installerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
         var installer = installerScene.Instantiate<Installer>();
-        var container = Container.Create("root", new NullContainer(), installer.Install);
+        var rootContainer = RootContainer.Create(installer.Install);
         installer.Free();
         var root = GetTree().Root;
-        root.TreeExiting += container.Dispose;
+        root.TreeExiting += rootContainer.Dispose;
         root.ChildEnteredTree += OnSceneAdded;
     }
 
@@ -27,7 +27,7 @@ public sealed partial class DependencyInjectionRunner : Node
             return;
         }
 
-        var root = Container.Find("root");
+        var root = Container.Find(string.Empty);
 
         if (root != null)
         {
