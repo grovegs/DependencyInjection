@@ -35,10 +35,11 @@ public class ContainerTests
         // Act
         var container = new Container(
             "TestContainer",
+            mockParentContainer.Object,
             mockResolver.Object,
             mockCache.Object,
             mockDisposables.Object,
-            mockParentContainer.Object
+            _ => { }
         );
 
         // Assert
@@ -56,14 +57,13 @@ public class ContainerTests
         var mockCache = new Mock<IContainerCache>();
         var mockDisposables = new Mock<IDisposableCollection>();
         var mockParentContainer = new Mock<IContainer>();
-
-        // Instantiate the container with the mock parent
         var container = new Container(
             "TestContainer",
+            mockParentContainer.Object,
             mockResolver.Object,
             mockCache.Object,
             mockDisposables.Object,
-            mockParentContainer.Object
+            _ => { }
         );
 
         var childMock = new Mock<IContainer>();
@@ -88,10 +88,11 @@ public class ContainerTests
         var mockParentContainer = new Mock<IContainer>();
         var container = new Container(
             "TestContainer",
+            mockParentContainer.Object,
             mockResolver.Object,
             mockCache.Object,
             mockDisposables.Object,
-            mockParentContainer.Object
+            _ => { }
         );
 
         var childMock = new Mock<IContainer>();
@@ -113,10 +114,11 @@ public class ContainerTests
         var mockParentContainer = new Mock<IContainer>();
         var container = new Container(
             "TestContainer",
+            mockParentContainer.Object,
             mockResolver.Object,
             mockCache.Object,
             mockDisposables.Object,
-            mockParentContainer.Object
+            _ => { }
         );
 
         var childMock = new Mock<IContainer>();
@@ -142,10 +144,11 @@ public class ContainerTests
         var mockParentContainer = new Mock<IContainer>();
         var container = new Container(
             "TestContainer",
+            mockParentContainer.Object,
             mockResolver.Object,
             mockCache.Object,
             mockDisposables.Object,
-            mockParentContainer.Object
+            _ => { }
         );
 
         // Act
@@ -167,10 +170,11 @@ public class ContainerTests
         var mockParentContainer = new Mock<IContainer>();
         var container = new Container(
             "TestContainer",
+            mockParentContainer.Object,
             mockResolver.Object,
             mockCache.Object,
             mockDisposables.Object,
-            mockParentContainer.Object
+            _ => { }
         );
 
         var mockObject = new object();
