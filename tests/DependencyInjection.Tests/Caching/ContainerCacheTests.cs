@@ -20,7 +20,7 @@ public class ContainerCacheTests
     {
         // Arrange
         var rootContainer = new Mock<IContainer>();
-        rootContainer.SetupGet(c => c.Name).Returns("root");
+        rootContainer.SetupGet(c => c.Name).Returns(string.Empty);
         rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
         var childContainer = new Mock<IContainer>();
         childContainer.SetupGet(c => c.Name).Returns("child");
@@ -34,14 +34,14 @@ public class ContainerCacheTests
         containerCache.Add(grandchildContainer.Object);
 
         // Act
-        var result = containerCache.Find("root/child/grandchild");
+        var result = containerCache.Find("/child/grandchild");
 
         // Assert
         Assert.Equal(grandchildContainer.Object, result);
     }
 
     [Fact]
-    public void Find_ShouldReturnRootContainer_WhenPathIsEmpty()
+    public void Find_ShouldReturnEmptyNameContainer_WhenPathIsEmpty()
     {
         // Arrange
         var rootContainer = new Mock<IContainer>();
@@ -58,7 +58,7 @@ public class ContainerCacheTests
     }
 
     [Fact]
-    public void Find_ShouldReturnRootContainer_WhenPathIsSlash()
+    public void Find_ShouldReturnEmptyNameContainer_WhenPathIsSlash()
     {
         // Arrange
         var rootContainer = new Mock<IContainer>();
