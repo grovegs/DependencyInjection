@@ -8,12 +8,12 @@ public partial class DependencyInjectionPlugin : EditorPlugin
 {
 	public override void _EnterTree()
 	{
-		AddAutoloadSingleton(nameof(DependencyInjectionRunner), $"res://addons/DependencyInjection/{nameof(DependencyInjectionRunner)}.cs");
+		AddAutoloadSingleton(nameof(DependencyInjector), $"res://addons/DependencyInjection/{nameof(DependencyInjector)}.cs");
 	}
 
 	public override void _ExitTree()
 	{
-		RemoveAutoloadSingleton(nameof(DependencyInjectionRunner));
+		RemoveAutoloadSingleton(nameof(DependencyInjector));
 	}
 }
 #endif
