@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 DependencyInjector="*res://addons/DependencyInjection/DependencyInjector.cs"
 
+[dependency_injection]
+
+root_installer="res://RootInstaller.tscn"
+
 [dotnet]
 
 project/assembly_name="GodotApplication"

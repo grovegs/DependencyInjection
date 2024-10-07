@@ -2,7 +2,7 @@ using Godot;
 
 namespace DependencyInjection;
 
-public abstract partial class Installer : Node, IInstaller
+public abstract partial class InstallerBase : Node, IInstaller
 {
     [Export] private string _path;
 

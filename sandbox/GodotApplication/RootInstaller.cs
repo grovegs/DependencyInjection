@@ -1,7 +1,7 @@
 using DependencyInjection;
 using Godot;
 
-public partial class ApplicationInstaller : RootInstaller
+public partial class RootInstaller : RootInstallerBase
 {
 	public override void Install(IContainerConfigurer containerConfigurer)
 	{

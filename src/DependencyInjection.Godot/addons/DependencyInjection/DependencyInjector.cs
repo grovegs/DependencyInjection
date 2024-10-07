@@ -6,8 +6,9 @@ public sealed partial class DependencyInjector : Node
 {
     public override void _Ready()
     {
-        var rootInstallerScene = ResourceLoader.Load<PackedScene>("res://ApplicationInstaller.tscn");
-        var rootInstaller = rootInstallerScene.Instantiate<RootInstaller>();
+        var rootInstallerPath = Settings.GetRootInstallerSetting();
+        var rootInstallerScene = ResourceLoader.Load<PackedScene>(rootInstallerPath);
+        var rootInstaller = rootInstallerScene.Instantiate<RootInstallerBase>();
         var rootContainer = RootContainer.Create(rootInstaller.Install);
         rootInstaller.Free();
         var root = GetTree().Root;
@@ -17,7 +18,7 @@ public sealed partial class DependencyInjector : Node
 
     private void OnInstallerAdded(Node addedNode)
     {
-        if (addedNode is not Installer installer)
+        if (addedNode is not InstallerBase installer)
         {
             return;
         }

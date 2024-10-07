@@ -2,7 +2,7 @@ using DependencyInjection;
 using Godot;
 using Container = DependencyInjection.Container;
 
-public sealed partial class MainInstaller : Installer
+public sealed partial class MainInstaller : InstallerBase
 {
     [Export] private NodeExample _instance;
 
