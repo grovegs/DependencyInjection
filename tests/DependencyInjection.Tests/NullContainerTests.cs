@@ -67,13 +67,16 @@ public class NullContainerTests
     }
 
     [Fact]
-    public void Resolve_ShouldThrowException()
+    public void Resolve_ShouldReturnNull()
     {
         // Arrange
         var nullContainer = new NullContainer();
         var registrationType = typeof(object);
 
-        // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => nullContainer.Resolve(registrationType));
+        // Act
+        var result = nullContainer.Resolve(registrationType);
+
+        // Assert
+        Assert.Null(result);
     }
 }
