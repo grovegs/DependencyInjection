@@ -1,0 +1,39 @@
+name: Build Project
+
+on:
+  workflow_call:
+    inputs:
+      project-path:
+        description: 'The path to the .NET solution or project'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        dotnet-version: [7.x, 8.x]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+
+    - name: Install Dependencies
+      run: dotnet restore ${{ inputs.project-path }}
+
+    - name: Build Solution
+      run: dotnet build ${{ inputs.project-path }} --configuration Release --no-restore
