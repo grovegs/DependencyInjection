@@ -41,6 +41,40 @@ public class ContainerCacheTests
     }
 
     [Fact]
+    public void Find_ShouldReturnRootContainer_WhenPathIsEmpty()
+    {
+        // Arrange
+        var rootContainer = new Mock<IContainer>();
+        rootContainer.SetupGet(c => c.Name).Returns(string.Empty);
+        rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
+        var containerCache = new ContainerCache();
+        containerCache.Add(rootContainer.Object);
+
+        // Act
+        var result = containerCache.Find(string.Empty);
+
+        // Assert
+        Assert.Equal(rootContainer.Object, result);
+    }
+
+    [Fact]
+    public void Find_ShouldReturnRootContainer_WhenPathIsSlash()
+    {
+        // Arrange
+        var rootContainer = new Mock<IContainer>();
+        rootContainer.SetupGet(c => c.Name).Returns(string.Empty);
+        rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
+        var containerCache = new ContainerCache();
+        containerCache.Add(rootContainer.Object);
+
+        // Act
+        var result = containerCache.Find("/");
+
+        // Assert
+        Assert.Equal(rootContainer.Object, result);
+    }
+
+    [Fact]
     public void Find_ShouldReturnNull_WhenPathDoesNotMatch()
     {
         // Arrange
