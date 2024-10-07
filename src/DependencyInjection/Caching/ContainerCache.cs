@@ -8,6 +8,11 @@ internal sealed class ContainerCache : IContainerCache
 
     public IContainer? Find(in ReadOnlySpan<char> path)
     {
+        if (path.SequenceEqual("/"))
+        {
+            return _containers.FirstOrDefault(c => string.Equals(c.Name, string.Empty, StringComparison.OrdinalIgnoreCase));
+        }
+
         foreach (var container in _containers)
         {
             var currentContainer = container;
