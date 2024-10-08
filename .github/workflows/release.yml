@@ -1,0 +1,39 @@
+name: 🚀 Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of the package to publish (e.g., 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  release:
+    name: 🚀 Release on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    steps:
+      - name: 🤖 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: 📦 Restore Dependencies
+        run: dotnet restore src/DependencyInjection/DependencyInjection.csproj
+
+      - name: 🏗️ Build Project
+        run: dotnet build --no-restore --configuration Release src/DependencyInjection/DependencyInjection.csproj
+
+      - name: 🏗️ Pack NuGet Package
+        run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ github.event.inputs.version }} -o ./nupkg src/DependencyInjection/DependencyInjection.csproj
+
+      - name: 🚀 Publish to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
