@@ -79,3 +79,7 @@ mono_crash.*.json
 
 # Generated Visual Studio ignores
 *.generated.sln
+
+### NuGet ###
+# Ignore NuGet package files
+*.nupkg
