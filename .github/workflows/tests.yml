@@ -10,7 +10,7 @@ on:
 
 jobs:
   tests:
-    name: Run Tests on ${{ matrix.os }} 🖥️
+    name: 🖥️ Run Tests on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
