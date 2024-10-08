@@ -14,7 +14,7 @@
     <Authors>onurtnrkl</Authors>
     <Copyright>© onurtnrkl</Copyright>
 
-    <PackageId>Godot.DependencyInjection</PackageId>
+    <PackageId>onurtnrkl.DependencyInjection</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageProjectUrl>https://github.com/onurtnrkl/godot-dependency-injection</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
