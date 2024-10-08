@@ -3,40 +3,43 @@ name: 🚀 Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version of the package to publish (e.g., 1.0.0)"
+      version_bump:
+        description: "Select the version to increment"
         required: true
-        default: "1.0.0"
+        default: "patch"
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
 
 jobs:
   release:
-    name: 🚀 Release on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
     env:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
+      NUGET_PACKAGE_OUTPUT: ./nupkg
+
     steps:
-      - name: 🔍 Checkout Code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup .NET SDK
+      - name: 🛠️ Set Up .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
 
       - name: 📦 Restore Dependencies
-        run: dotnet restore src/DependencyInjection/DependencyInjection.csproj
+        run: dotnet restore $PROJECT_PATH
 
-      - name: 🔨 Build Project
-        run: dotnet build --no-restore --configuration Release src/DependencyInjection/DependencyInjection.csproj
+      - name: 🔧 Build Project
+        run: dotnet build --no-restore --configuration Release $PROJECT_PATH
 
-      - name: 📦 Pack NuGet Package
-        run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ github.event.inputs.version }} -o ./nupkg src/DependencyInjection/DependencyInjection.csproj
+      - name: 🗳️ Pack NuGet Package
+        run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
 
-      - name: 🚀 Publish to NuGet
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      - name: 📤 Publish NuGet Package
+        run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
-      - name: 🎮 Pack Godot Addon
-        run: sed -i 's/version="[^"]*"/version="'${{ github.event.inputs.version }}'"/' src/DependencyInjection.Godot/addons/DependencyInjection/plugin.cfg
+      - name: 🎮 Update Godot Addon Version
+        run: sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' src/DependencyInjection.Godot/addons/DependencyInjection/plugin.cfg
