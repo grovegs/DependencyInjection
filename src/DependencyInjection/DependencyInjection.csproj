@@ -4,22 +4,32 @@
     <TargetFramework>net8.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>1591;1573</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <Authors>Your Name</Authors>
-    <Company>Your Company</Company>
-    <Description>A brief description of your package.</Description>
-    <PackageProjectUrl>https://github.com/YourRepo/YourProject</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/YourRepo/YourProject</RepositoryUrl>
-    <PackageTags>tag1; tag2; tag3</PackageTags>
+    <Title>Dependency Injection</Title>
+    <Description>Dependency injection for Godot.</Description>
+    <Company>onurtnrkl</Company>
+    <Authors>onurtnrkl</Authors>
+    <Copyright>© onurtnrkl</Copyright>
+
+    <PackageId>Godot.DependencyInjection</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <PackageProjectUrl>https://github.com/onurtnrkl/godot-dependency-injection</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>Icon.png</PackageIcon>
+    <PackageTags>godot;dependencyinjection;di</PackageTags>
+
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/onurtnrkl/godot-dependency-injection</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../../README.md" Pack="true" PackagePath="" />
-    <None Include="../../LICENSE" Pack="true" PackagePath="" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../../Icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>
