@@ -2,8 +2,24 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <Authors>Your Name</Authors>
+    <Company>Your Company</Company>
+    <Description>A brief description of your package.</Description>
+    <PackageProjectUrl>https://github.com/YourRepo/YourProject</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/YourRepo/YourProject</RepositoryUrl>
+    <PackageTags>tag1; tag2; tag3</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="" />
+  </ItemGroup>
 
 </Project>
