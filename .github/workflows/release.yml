@@ -37,3 +37,6 @@ jobs:
 
       - name: 🚀 Publish to NuGet
         run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        
+      - name: 🏗️ Pack Godot Addon
+        run: sed -i '' 's/version="[^"]*"/version="${{ github.event.inputs.version }}"/' src/DependencyInjection.Godot/addons/DependencyInjection/plugin.cfg
