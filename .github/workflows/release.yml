@@ -15,7 +15,11 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
     env:
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
       NUGET_PACKAGE_OUTPUT: ./nupkg
@@ -34,6 +38,21 @@ jobs:
 
       - name: 🔧 Build Project
         run: dotnet build --no-restore --configuration Release $PROJECT_PATH
+
+      - name: 🧮 Calculate New Version
+        id: calculate_version
+        run: |
+          current_version=$(grep -oP '(?<=version=")[^"]+' src/DependencyInjection.Godot/addons/DependencyInjection/plugin.cfg)
+          echo "Current Version: $current_version"
+          IFS='.' read -r major minor patch <<< "$current_version"
+          case "${{ github.event.inputs.version_bump }}" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          new_version="$major.$minor.$patch"
+          echo "New Version: $new_version"
+          echo "::set-output name=new_version::$new_version"
 
       - name: 🗳️ Pack NuGet Package
         run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
