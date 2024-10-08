@@ -19,7 +19,6 @@
     <PackageProjectUrl>https://github.com/onurtnrkl/godot-dependency-injection</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>Icon.png</PackageIcon>
     <PackageTags>godot;dependencyinjection;di</PackageTags>
 
