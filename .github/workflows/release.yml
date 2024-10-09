@@ -24,6 +24,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
       GODOT_ADDON_PATH: src/DependencyInjection.Godot/addons/DependencyInjection
+      GODOT_ADDON_NAME: dependency-injection
       NUGET_PACKAGE_OUTPUT: ./nupkg
 
     steps:
@@ -80,7 +81,7 @@ jobs:
 
       - name: 📦 Compress Godot Addon
         run: |
-          zip -r dependency-injection-godot-v${{ steps.calculate_version.outputs.new_version }}.zip $GODOT_ADDON_PATH
+          zip -r ${{ env.GODOT_ADDON_NAME }}-godot-v${{ steps.calculate_version.outputs.new_version }}.zip $GODOT_ADDON_PATH
         shell: bash
 
       - name: 🔖 Create Tag and Push
@@ -118,6 +119,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dependency-injection-godot-v${{ steps.calculate_version.outputs.new_version }}.zip
-          asset_name: dependency-injection-godot-v${{ steps.calculate_version.outputs.new_version }}.zip
+          asset_path: ./${{ env.GODOT_ADDON_NAME }}-godot-v${{ steps.calculate_version.outputs.new_version }}.zip
+          asset_name: ${{ env.GODOT_ADDON_NAME }}-godot-v${{ steps.calculate_version.outputs.new_version }}.zip
           asset_content_type: application/zip
