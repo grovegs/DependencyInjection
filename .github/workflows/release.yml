@@ -76,14 +76,6 @@ jobs:
       - name: 🚀 Publish NuGet Package
         run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
-      - name: 🔄 Update Godot Addon Version
-        run: sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' $GODOT_ADDON_PATH/plugin.cfg
-
-      - name: 📦 Compress Godot Addon
-        run: |
-          zip -r ${{ env.GODOT_ADDON_NAME }}-godot-v${{ steps.calculate_version.outputs.new_version }}.zip $GODOT_ADDON_PATH
-        shell: bash
-
       - name: 🔖 Create Tag and Push
         run: |
           git config user.name "GitHub Actions"
@@ -114,6 +106,14 @@ jobs:
           body_path: CHANGELOG.md
           draft: false
           prerelease: false
+
+      - name: 🔄 Update Godot Addon Version
+        run: sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' $GODOT_ADDON_PATH/plugin.cfg
+
+      - name: 📦 Compress Godot Addon
+        run: |
+          zip -r ${{ env.GODOT_ADDON_NAME }}-godot-v${{ steps.calculate_version.outputs.new_version }}.zip $GODOT_ADDON_PATH
+        shell: bash
 
       - name: 📤 Upload Godot Addon to Release
         uses: actions/upload-release-asset@v1
