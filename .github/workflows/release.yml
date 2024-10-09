@@ -21,17 +21,18 @@ jobs:
         os: [ubuntu-latest]
 
     env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
       GODOT_ADDON_PATH: src/DependencyInjection.Godot/addons/DependencyInjection
       NUGET_PACKAGE_OUTPUT: ./nupkg
 
     steps:
-      - name: 🔄 Checkout Code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ⚙️ Setup .NET SDK
+      - name: 🛠️ Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
@@ -42,14 +43,14 @@ jobs:
       - name: 🏗️ Build Project
         run: dotnet build --no-restore --configuration Release $PROJECT_PATH
 
-      - name: 🏷️ Get Latest Tag
+      - name: 🔖 Get Latest Tag
         id: get_tag
         run: |
           if git fetch --tags && git tag | grep -q .; then
             latest_tag=$(git describe --tags --abbrev=0)
             echo "Latest Tag: $latest_tag"
           else
-            latest_tag="0.0.0"  # Set a default version if no tags exist
+            latest_tag="0.0.0"
             echo "No tags found. Using default version: $latest_tag"
           fi
           echo "::set-output name=latest_tag::$latest_tag"
@@ -67,16 +68,41 @@ jobs:
           new_version="$major.$minor.$patch"
           echo "::set-output name=new_version::$new_version"
 
-      - name: 🗳️ Pack NuGet Package
+      - name: 📦 Pack NuGet Package
         run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
 
-      - name: 📤 Publish NuGet Package
+      - name: 🚀 Publish NuGet Package
         run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
-      - name: 📝 Update Godot Addon Version
+      - name: 🔄 Update Godot Addon Version
         run: sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' $GODOT_ADDON_PATH/plugin.cfg
 
-      - name: 🏷️ Create Tag
+      - name: 🔖 Create Tag and Push
         run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           git tag "v${{ steps.calculate_version.outputs.new_version }}"
           git push origin "v${{ steps.calculate_version.outputs.new_version }}"
+
+      - name: 📦 Install conventional-changelog-cli
+        run: npm install -g conventional-changelog-cli
+
+      - name: 📝 Generate Changelog
+        run: conventional-changelog -p conventionalcommits -i CHANGELOG.md -s -r 0
+
+      - name: 📤 Commit and Push Changelog
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: update changelog for version v${{ steps.calculate_version.outputs.new_version }}"
+          git push origin
+
+      - name: 📝 Create GitHub Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ steps.calculate_version.outputs.new_version }}"
+          release_name: "Release v${{ steps.calculate_version.outputs.new_version }}"
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
