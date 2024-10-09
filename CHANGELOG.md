@@ -1,4 +1,6 @@
 ##  (2024-10-09)
+## [0.1.4](https://github.com/onurtnrkl/godot-dependency-injection/compare/0.1.3...0.1.4) (2024-10-09)
+## [0.1.3](https://github.com/onurtnrkl/godot-dependency-injection/compare/0.1.2...0.1.3) (2024-10-09)
 ## [0.1.2](https://github.com/onurtnrkl/godot-dependency-injection/compare/0.1.1...0.1.2) (2024-10-09)
 ## [0.0.3](https://github.com/onurtnrkl/godot-dependency-injection/compare/0.0.2...0.0.3) (2024-10-09)
 
