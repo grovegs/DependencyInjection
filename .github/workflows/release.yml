@@ -46,12 +46,13 @@ jobs:
       - name: 🔖 Get Latest Tag
         id: get_tag
         run: |
-          if git fetch --tags && git tag | grep -q .; then
-            latest_tag=$(git describe --tags --abbrev=0)
-            echo "Latest Tag: $latest_tag"
-          else
+          git fetch --tags
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          if [ -z "$latest_tag" ]; then
             latest_tag="0.0.0"
             echo "No tags found. Using default version: $latest_tag"
+          else
+            echo "Latest Tag: $latest_tag"
           fi
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
