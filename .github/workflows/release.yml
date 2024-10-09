@@ -53,7 +53,7 @@ jobs:
             latest_tag="0.0.0"
             echo "No tags found. Using default version: $latest_tag"
           fi
-          echo "::set-output name=latest_tag::$latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
       - name: 🧮 Calculate New Version
         id: calculate_version
@@ -66,7 +66,7 @@ jobs:
             patch) patch=$((patch + 1)) ;;
           esac
           new_version="$major.$minor.$patch"
-          echo "::set-output name=new_version::$new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
       - name: 📦 Pack NuGet Package
         run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
@@ -81,8 +81,8 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag "v${{ steps.calculate_version.outputs.new_version }}"
-          git push origin "v${{ steps.calculate_version.outputs.new_version }}"
+          git tag "${{ steps.calculate_version.outputs.new_version }}"
+          git push origin "${{ steps.calculate_version.outputs.new_version }}"
 
       - name: 📦 Install conventional-changelog-cli
         run: npm install -g conventional-changelog-cli
@@ -95,14 +95,14 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add CHANGELOG.md
-          git commit -m "docs: update changelog for version v${{ steps.calculate_version.outputs.new_version }}"
+          git commit -m "docs: update changelog for version ${{ steps.calculate_version.outputs.new_version }}"
           git push origin
 
       - name: 📝 Create GitHub Release
         uses: actions/create-release@v1
         with:
-          tag_name: "v${{ steps.calculate_version.outputs.new_version }}"
-          release_name: "Release v${{ steps.calculate_version.outputs.new_version }}"
+          tag_name: "${{ steps.calculate_version.outputs.new_version }}"
+          release_name: "Release ${{ steps.calculate_version.outputs.new_version }}"
           body_path: CHANGELOG.md
           draft: false
           prerelease: false
