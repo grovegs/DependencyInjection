@@ -22,15 +22,16 @@ jobs:
 
     env:
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
+      GODOT_ADDON_PATH: src/DependencyInjection.Godot/addons/DependencyInjection
       NUGET_PACKAGE_OUTPUT: ./nupkg
 
     steps:
-      - name: 📥 Checkout Code
+      - name: 🔄 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ⚙️ Set Up .NET SDK
+      - name: ⚙️ Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
@@ -38,21 +39,25 @@ jobs:
       - name: 📦 Restore Dependencies
         run: dotnet restore $PROJECT_PATH
 
-      - name: 🔨 Build Project
+      - name: 🏗️ Build Project
         run: dotnet build --no-restore --configuration Release $PROJECT_PATH
 
       - name: 🏷️ Get Latest Tag
         id: get_tag
         run: |
-          latest_tag=$(git describe --tags --abbrev=0)
-          echo "Latest Tag: $latest_tag"
+          if git fetch --tags && git tag | grep -q .; then
+            latest_tag=$(git describe --tags --abbrev=0)
+            echo "Latest Tag: $latest_tag"
+          else
+            latest_tag="0.0.0"  # Set a default version if no tags exist
+            echo "No tags found. Using default version: $latest_tag"
+          fi
           echo "::set-output name=latest_tag::$latest_tag"
 
-      - name: 📈 Calculate New Version
+      - name: 🧮 Calculate New Version
         id: calculate_version
         run: |
           current_version="${{ steps.get_tag.outputs.latest_tag }}"
-          echo "Current Version: $current_version"
           IFS='.' read -r major minor patch <<< "$current_version"
           case "${{ github.event.inputs.version_bump }}" in
             major) major=$((major + 1)); minor=0; patch=0 ;;
@@ -60,17 +65,16 @@ jobs:
             patch) patch=$((patch + 1)) ;;
           esac
           new_version="$major.$minor.$patch"
-          echo "New Version: $new_version"
           echo "::set-output name=new_version::$new_version"
 
-      - name: 📦 Pack NuGet Package
+      - name: 🗳️ Pack NuGet Package
         run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
 
-      - name: 🌟 Publish NuGet Package
+      - name: 📤 Publish NuGet Package
         run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
-      - name: 🎮 Update Godot Addon Version
-        run: sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' src/DependencyInjection.Godot/addons/DependencyInjection/plugin.cfg
+      - name: 📝 Update Godot Addon Version
+        run: sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' $GODOT_ADDON_PATH/plugin.cfg
 
       - name: 🏷️ Create Tag
         run: |
