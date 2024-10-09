@@ -112,7 +112,7 @@ jobs:
 
       - name: 📦 Compress Godot Addon
         run: |
-          zip -rj ${{ env.GODOT_ADDON_PATH }}.zip ${{ env.GODOT_ADDON_PATH }}/*
+          zip -rj ${{ env.GODOT_ADDON_PATH }}.zip ${{ env.GODOT_ADDON_PATH }}
         shell: bash
 
       - name: 📤 Upload Godot Addon to Release
