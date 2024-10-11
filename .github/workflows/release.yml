@@ -75,7 +75,7 @@ jobs:
         run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
 
       - name: 🚀 Publish NuGet Package
-        run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/dependency-injection-${{ steps.calculate_version.outputs.new_version }}.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
       - name: 🔖 Create Tag and Push
         run: |
@@ -89,11 +89,11 @@ jobs:
           mkdir -p $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }}/DependencyInjection
           cp -r $GODOT_ADDON_PATH/* $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }}/DependencyInjection/
           sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }}/DependencyInjection/plugin.cfg
-          zip -r ${{ env.GODOT_ADDON_NAME }}-${{ steps.calculate_version.outputs.new_version }}-godot-addon.zip -j $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }} -x '*.zip'
+          cd $TEMP_FOLDER && zip -r ${{ env.GODOT_ADDON_NAME }}-${{ steps.calculate_version.outputs.new_version }}-godot-addon.zip ${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }} -x '*.zip'
         shell: bash
 
       - name: 📝 Create GitHub Release with Auto-Generated Notes
         run: |
-          gh release create ${{ steps.calculate_version.outputs.new_version }} $NUGET_PACKAGE_OUTPUT/dependency-injection-${{ steps.calculate_version.outputs.new_version }}.nupkg ${{ env.GODOT_ADDON_NAME }}-${{ steps.calculate_version.outputs.new_version }}-godot-addon.zip \
+          gh release create ${{ steps.calculate_version.outputs.new_version }} $NUGET_PACKAGE_OUTPUT/dependency-injection-${{ steps.calculate_version.outputs.new_version }}.nupkg $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-${{ steps.calculate_version.outputs.new_version }}-godot-addon.zip \
           --title "dependency-injection-${{ steps.calculate_version.outputs.new_version }}" \
           --generate-notes
