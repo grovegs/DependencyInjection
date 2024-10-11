@@ -22,11 +22,9 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PROJECT_NAME: dependency-injection
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
       GODOT_ADDON_PATH: src/DependencyInjection.Godot/addons/DependencyInjection
-      GODOT_ADDON_NAME: dependency-injection
-      NUGET_PACKAGE_OUTPUT: ./nupkg
-      TEMP_FOLDER: ./temp
 
     steps:
       - name: 📥 Checkout Code
@@ -58,7 +56,7 @@ jobs:
           fi
           echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
-      - name: 🧮 Calculate New Version
+      - name: 🧮 Calculate Version
         id: calculate_version
         run: |
           current_version="${{ steps.get_tag.outputs.latest_tag }}"
@@ -68,32 +66,31 @@ jobs:
             minor) minor=$((minor + 1)); patch=0 ;;
             patch) patch=$((patch + 1)) ;;
           esac
-          new_version="$major.$minor.$patch"
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "PROJECT_VERSION=$major.$minor.$patch" >> $GITHUB_ENV
 
       - name: 📦 Pack NuGet Package
-        run: dotnet pack --no-build --configuration Release /p:PackageVersion=${{ steps.calculate_version.outputs.new_version }} -o $NUGET_PACKAGE_OUTPUT $PROJECT_PATH
+        run: dotnet pack --no-build --configuration Release /p:PackageVersion=$PROJECT_VERSION -o $RUNNER_TEMP $PROJECT_PATH
 
       - name: 🚀 Publish NuGet Package
-        run: dotnet nuget push $NUGET_PACKAGE_OUTPUT/dependency-injection-${{ steps.calculate_version.outputs.new_version }}.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
+      - name: 📦 Pack Godot Addon
+        run: |
+          mkdir -p $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot/DependencyInjection
+          cp -r $GODOT_ADDON_PATH/* $RUNNER_TEMP/$PROJECT_NAME-godot-$PROJECT_VERSION/DependencyInjection/
+          sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$PROJECT_NAME-godot-$PROJECT_VERSION/DependencyInjection/plugin.cfg
+          cd $RUNNER_TEMP && zip -r $PROJECT_NAME-$PROJECT_VERSION-godot-addon.zip $PROJECT_NAME-godot-$PROJECT_VERSION -x '*.zip'
+        shell: bash
 
       - name: 🔖 Create Tag and Push
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag "${{ steps.calculate_version.outputs.new_version }}"
-          git push origin "${{ steps.calculate_version.outputs.new_version }}"
+          git tag "$PROJECT_VERSION"
+          git push origin "$PROJECT_VERSION"
 
-      - name: 📦 Pack Godot Addon
+      - name: 📝 Create GitHub Release
         run: |
-          mkdir -p $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }}/DependencyInjection
-          cp -r $GODOT_ADDON_PATH/* $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }}/DependencyInjection/
-          sed -i 's/version="[^"]*"/version="'${{ steps.calculate_version.outputs.new_version }}'"/' $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }}/DependencyInjection/plugin.cfg
-          cd $TEMP_FOLDER && zip -r ${{ env.GODOT_ADDON_NAME }}-${{ steps.calculate_version.outputs.new_version }}-godot-addon.zip ${{ env.GODOT_ADDON_NAME }}-godot-${{ steps.calculate_version.outputs.new_version }} -x '*.zip'
-        shell: bash
-
-      - name: 📝 Create GitHub Release with Auto-Generated Notes
-        run: |
-          gh release create ${{ steps.calculate_version.outputs.new_version }} $NUGET_PACKAGE_OUTPUT/dependency-injection-${{ steps.calculate_version.outputs.new_version }}.nupkg $TEMP_FOLDER/${{ env.GODOT_ADDON_NAME }}-${{ steps.calculate_version.outputs.new_version }}-godot-addon.zip \
-          --title "dependency-injection-${{ steps.calculate_version.outputs.new_version }}" \
+          gh release create $PROJECT_VERSION $RUNNER_TEMP/dependency-injection-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$env.PROJECT_NAME-$PROJECT_VERSION-godot-addon.zip \
+          --title "dependency-injection-$PROJECT_VERSION" \
           --generate-notes
