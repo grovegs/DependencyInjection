@@ -88,10 +88,10 @@ jobs:
 
       - name: 📦 Pack Godot Addon
         run: |
-          mkdir -p $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
-          cp -r $GODOT_ADDON_PATH/* $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
-          sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot/DependencyInjection/plugin.cfg
-          zip -r $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot-addon.zip $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
+          mkdir -p $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
+          cp -r $GODOT_ADDON_PATH/* $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
+          sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot/DependencyInjection/plugin.cfg
+          zip -r $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot-addon.zip $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
         shell: bash
 
       - name: 🔖 Create Tag and Push
@@ -103,6 +103,6 @@ jobs:
 
       - name: 📝 Create GitHub Release
         run: |
-          gh release create $PROJECT_VERSION $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot-addon.zip \
-          --title "$PROJECT_NAME-$PROJECT_VERSION" \
+          gh release create $PROJECT_VERSION $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot-addon.zip \
+          --title "$PROJECT_NAME $PROJECT_VERSION" \
           --generate-notes
