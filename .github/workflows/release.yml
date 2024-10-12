@@ -31,8 +31,8 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PROJECT_NAME: DependencyInjection
+      OUTPUT_NAME: dependency-injection
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
-      EXPORT_NAME: dependency-injection
       GODOT_ADDON_PATH: src/DependencyInjection.Godot/addons/DependencyInjection
 
     steps:
@@ -80,19 +80,20 @@ jobs:
       - name: 📦 Pack NuGet Package
         run: |
           dotnet pack --no-build --configuration Release /p:PackageVersion=$PROJECT_VERSION -o $RUNNER_TEMP $PROJECT_PATH
-          mv $RUNNER_TEMP/$PROJECT_NAME.$PROJECT_VERSION.nupkg $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg
+          mv $RUNNER_TEMP/$PROJECT_NAME.$PROJECT_VERSION.nupkg $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg
 
       - name: 📦 Pack Godot Addon
         run: |
-          mkdir -p $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
-          cp -r $GODOT_ADDON_PATH/* $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
-          sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot/DependencyInjection/plugin.cfg
-          zip -r $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot-addon.zip $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
+          OUTPUT_DIR = $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot
+          mkdir -p $OUTPUT_DIR
+          cp -r $GODOT_ADDON_PATH/* $OUTPUT_DIR
+          sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $OUTPUT_DIR/$PROJECT_NAME/plugin.cfg
+          zip -r $OUTPUT_DIR.zip $OUTPUT_DIR
         shell: bash
 
       - name: 🚀 Publish NuGet Package
         if: ${{ github.event.inputs.publish == 'true' }}
-        run: dotnet nuget push $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
       - name: 🔖 Create Tag and Push
         run: |
@@ -103,6 +104,6 @@ jobs:
 
       - name: 📝 Create GitHub Release
         run: |
-          gh release create $PROJECT_VERSION $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot-addon.zip \
+          gh release create $PROJECT_VERSION $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot.zip \
           --title "$PROJECT_NAME $PROJECT_VERSION" \
           --generate-notes
