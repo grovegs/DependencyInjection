@@ -89,9 +89,9 @@ jobs:
       - name: 📦 Pack Godot Addon
         run: |
           mkdir -p $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
-          cp -r $GODOT_ADDON_PATH $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
+          cp -r $GODOT_ADDON_PATH/* $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
           sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot/DependencyInjection/plugin.cfg
-          zip -r $PROJECT_NAME-$PROJECT_VERSION-godot-addon.zip $PROJECT_NAME-$PROJECT_VERSION-godot
+          zip -r $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot-addon.zip $RUNNER_TEMP/$PROJECT_NAME-$PROJECT_VERSION-godot
         shell: bash
 
       - name: 🔖 Create Tag and Push
