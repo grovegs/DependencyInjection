@@ -12,6 +12,14 @@ on:
           - major
           - minor
           - patch
+      publish:
+        description: "Publish NuGet Package?"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - true
+          - false
 
 jobs:
   release:
@@ -75,6 +83,7 @@ jobs:
           mv $RUNNER_TEMP/$PROJECT_NAME.$PROJECT_VERSION.nupkg $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg
 
       - name: 🚀 Publish NuGet Package
+        if: ${{ github.event.inputs.publish == 'true' }}
         run: dotnet nuget push $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
       - name: 📦 Pack Godot Addon
