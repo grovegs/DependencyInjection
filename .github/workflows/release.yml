@@ -82,10 +82,6 @@ jobs:
           dotnet pack --no-build --configuration Release /p:PackageVersion=$PROJECT_VERSION -o $RUNNER_TEMP $PROJECT_PATH
           mv $RUNNER_TEMP/$PROJECT_NAME.$PROJECT_VERSION.nupkg $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg
 
-      - name: 🚀 Publish NuGet Package
-        if: ${{ github.event.inputs.publish == 'true' }}
-        run: dotnet nuget push $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-
       - name: 📦 Pack Godot Addon
         run: |
           mkdir -p $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
@@ -93,6 +89,10 @@ jobs:
           sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot/DependencyInjection/plugin.cfg
           zip -r $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot-addon.zip $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION-godot
         shell: bash
+
+      - name: 🚀 Publish NuGet Package
+        if: ${{ github.event.inputs.publish == 'true' }}
+        run: dotnet nuget push $RUNNER_TEMP/$EXPORT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
 
       - name: 🔖 Create Tag and Push
         run: |
