@@ -85,10 +85,10 @@ jobs:
 
       - name: 📦 Pack Godot Addon
         run: |
-          mkdir -p $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot/$PROJECT_NAME
-          cp -r $GODOT_ADDON_PATH/* $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot/$PROJECT_NAME
+          mkdir -p $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot
+          cp -r $GODOT_ADDON_PATH $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot
           sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot/$PROJECT_NAME/plugin.cfg
-          zip -r $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot.zip $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot
+          zip -r $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot.zip -j $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot
         shell: bash
 
       - name: 🚀 Publish NuGet Package
