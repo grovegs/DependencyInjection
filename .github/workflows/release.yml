@@ -30,6 +30,7 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       PROJECT_NAME: DependencyInjection
       OUTPUT_NAME: dependency-injection
       PROJECT_PATH: src/DependencyInjection/DependencyInjection.csproj
@@ -93,7 +94,7 @@ jobs:
 
       - name: 🚀 Publish NuGet Package
         if: ${{ github.event.inputs.publish == 'true' }}
-        run: dotnet nuget push $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
 
       - name: 🔖 Create Tag and Push
         run: |
