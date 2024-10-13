@@ -88,7 +88,7 @@ jobs:
           cd $RUNNER_TEMP && zip -r $OUTPUT_NAME-$PROJECT_VERSION-godot.zip $OUTPUT_NAME-$PROJECT_VERSION-godot
 
       - name: 🚀 Publish NuGet Package
-        if: ${{ github.event.inputs.publish }}
+        if: ${{ github.event.inputs.publish == 'true' }}
         run: dotnet nuget push $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
 
       - name: 🔖 Create Tag and Push
