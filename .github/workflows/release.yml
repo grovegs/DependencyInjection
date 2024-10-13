@@ -31,7 +31,7 @@ jobs:
       PROJECT_ID: DependencyInjection
       PACKAGE_NAME: dependency-injection
       NUGET_PROJECT: src/DependencyInjection/DependencyInjection.csproj
-      GODOT_ADDON: src/DependencyInjection.Godot/addons/$PROJECT_ID
+      GODOT_ADDONS: src/DependencyInjection.Godot/addons
 
     steps:
       - name: 📥 Checkout Code
@@ -75,11 +75,12 @@ jobs:
 
       - name: 📦 Pack Godot Addon
         run: |
+          INPUT_DIR=$GODOT_ADDONS/$PROJECT_ID
           OUTPUT_DIR=$RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot
           mkdir -p $OUTPUT_DIR
-          cp -r $GODOT_ADDON $OUTPUT_DIR
-          cp README.md $GODOT_ADDON $OUTPUT_DIR/$PROJECT_ID/README.md
-          cp LICENSE $GODOT_ADDON $OUTPUT_DIR/$PROJECT_ID/LICENSE
+          cp -r $INPUT_DIR $OUTPUT_DIR
+          cp README.md $INPUT_DIR $OUTPUT_DIR/$PROJECT_ID/README.md
+          cp LICENSE $INPUT_DIR $OUTPUT_DIR/$PROJECT_ID/LICENSE
           sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $OUTPUT_DIR/$PROJECT_ID/plugin.cfg
           cd $RUNNER_TEMP && zip -r $PACKAGE_NAME-$PROJECT_VERSION-godot.zip $PACKAGE_NAME-$PROJECT_VERSION-godot
 
