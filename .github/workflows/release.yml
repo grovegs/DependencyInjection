@@ -54,20 +54,13 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags
-          latest_tag=$(git tag --sort=-v:refname | head -n 1)
-          if [ -z "$latest_tag" ]; then
-            latest_tag="0.0.0"
-            echo "No tags found. Using default version: $latest_tag"
-          else
-            echo "Latest Tag: $latest_tag"
-          fi
-          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          latest_tag=$(git tag --sort=-v:refname | head -n 1 || echo "0.0.0")
+          echo "latest_tag=${latest_tag:-0.0.0}" >> $GITHUB_OUTPUT
 
       - name: 🧮 Calculate Version
         id: calculate_version
         run: |
-          current_version="${{ steps.get_tag.outputs.latest_tag }}"
-          IFS='.' read -r major minor patch <<< "$current_version"
+          IFS='.' read -r major minor patch <<< "${{ steps.get_tag.outputs.latest_tag }}"
           case "${{ github.event.inputs.version_bump }}" in
             major) major=$((major + 1)); minor=0; patch=0 ;;
             minor) minor=$((minor + 1)); patch=0 ;;
@@ -104,5 +97,4 @@ jobs:
       - name: 📝 Create GitHub Release
         run: |
           gh release create $PROJECT_VERSION $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot.zip \
-          --title "$PROJECT_NAME $PROJECT_VERSION" \
-          --generate-notes
+          --title "$PROJECT_NAME $PROJECT_VERSION" --generate-notes
