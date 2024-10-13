@@ -88,6 +88,8 @@ jobs:
           OUTPUT_DIR=$RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION-godot
           mkdir -p $OUTPUT_DIR
           cp -r $GODOT_ADDON_PATH/* $OUTPUT_DIR
+          echo "Listing contents of $OUTPUT_DIR:"
+          ls -R $OUTPUT_DIR
           sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $OUTPUT_DIR/$PROJECT_NAME/plugin.cfg
           zip -r $OUTPUT_DIR.zip $OUTPUT_DIR
         shell: bash
