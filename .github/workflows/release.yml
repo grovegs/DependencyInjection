@@ -79,8 +79,8 @@ jobs:
           OUTPUT_DIR=$RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot
           mkdir -p $OUTPUT_DIR
           cp -r $INPUT_DIR $OUTPUT_DIR
-          cp README.md $INPUT_DIR $OUTPUT_DIR/$PROJECT_ID/README.md
-          cp LICENSE $INPUT_DIR $OUTPUT_DIR/$PROJECT_ID/LICENSE
+          cp README.md $OUTPUT_DIR/$PROJECT_ID/README.md
+          cp LICENSE $OUTPUT_DIR/$PROJECT_ID/LICENSE
           sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $OUTPUT_DIR/$PROJECT_ID/plugin.cfg
           cd $RUNNER_TEMP && zip -r $PACKAGE_NAME-$PROJECT_VERSION-godot.zip $PACKAGE_NAME-$PROJECT_VERSION-godot
 
