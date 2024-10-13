@@ -13,13 +13,10 @@ on:
           - minor
           - patch
       publish:
-        description: "Publish NuGet Package?"
+        description: "Would you like to publish the NuGet package?"
         required: true
-        default: "true"
-        type: choice
-        options:
-          - true
-          - false
+        default: true
+        type: boolean
 
 jobs:
   release:
@@ -91,7 +88,7 @@ jobs:
           cd $RUNNER_TEMP && zip -r $OUTPUT_NAME-$PROJECT_VERSION-godot.zip $OUTPUT_NAME-$PROJECT_VERSION-godot
 
       - name: 🚀 Publish NuGet Package
-        if: ${{ github.event.inputs.publish == 'true' }}
+        if: ${{ github.event.inputs.publish }}
         run: dotnet nuget push $RUNNER_TEMP/$OUTPUT_NAME-$PROJECT_VERSION.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
 
       - name: 🔖 Create Tag and Push
