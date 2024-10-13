@@ -13,7 +13,7 @@ on:
           - minor
           - patch
       publish:
-        description: "Would you like to publish the NuGet package?"
+        description: "Publish the NuGet package?"
         required: true
         default: true
         type: boolean
