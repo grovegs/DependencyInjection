@@ -1,11 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>1591;1573;8618</NoWarn>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="GodotSharp" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DependencyInjection\DependencyInjection.csproj" />
+    <ProjectReference Include="../DependencyInjection/DependencyInjection.csproj" />
   </ItemGroup>
 
   <ItemGroup>
