@@ -98,4 +98,4 @@ jobs:
       - name: 📝 Create GitHub Release
         run: |
           gh release create $PROJECT_VERSION $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot.zip \
-          --title "$PROJECT_ID $PROJECT_VERSION" --generate-notes
+          --title "$PROJECT_ID $PROJECT_VERSION" --generate-notes --notes-start-tag ${{ steps.get_tag.outputs.latest_tag }}
