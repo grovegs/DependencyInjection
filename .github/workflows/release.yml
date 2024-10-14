@@ -70,7 +70,7 @@ jobs:
 
       - name: 📦 Pack NuGet Package
         run: |
-          dotnet pack --no-build --configuration Release /p:PackageId=$PROJECT_ID /p:PackageVersion=$PROJECT_VERSION -o $RUNNER_TEMP $NUGET_PROJECT
+          dotnet pack --no-build --configuration Release /p:PackageId=$PROJECT_ID /p:PackageVersion=$PROJECT_VERSION --output $RUNNER_TEMP $NUGET_PROJECT
           mv $RUNNER_TEMP/$PROJECT_ID.$PROJECT_VERSION.nupkg $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION.nupkg
 
       - name: 📦 Pack Godot Addon
