@@ -28,23 +28,23 @@ jobs:
 
       - name: 📦 Set Dynamic Paths
         run: |
-          echo "CORE_PROJECT=src/$PROJECT_ID/$PROJECT_ID.csproj" >> $GITHUB_ENV
-          echo "GODOT_PROJECT=src/$PROJECT_ID.Godot/$PROJECT_ID.Godot.csproj" >> $GITHUB_ENV
+          echo "CORE_TEST_PROJECT=tests/$PROJECT_ID.Tests/$PROJECT_ID.Tests.csproj" >> $GITHUB_ENV
+          echo "GODOT_TEST_PROJECT=tests/$PROJECT_ID.Godot.Tests/$PROJECT_ID.Godot.Tests.csproj" >> $GITHUB_ENV
 
       - name: 📦 Restore Core Project
-        run: dotnet restore $CORE_PROJECT
+        run: dotnet restore $CORE_TEST_PROJECT
 
       - name: 📦 Restore Godot Project
-        run: dotnet restore $GODOT_PROJECT
+        run: dotnet restore $GODOT_TEST_PROJECT
 
       - name: 🏗️ Build Core Project
-        run: dotnet build --no-restore $CORE_PROJECT
+        run: dotnet build --no-restore $CORE_TEST_PROJECT
 
       - name: 🏗️ Build Godot Project
-        run: dotnet build --no-restore $GODOT_PROJECT
+        run: dotnet build --no-restore $GODOT_TEST_PROJECT
 
       - name: ✅ Run Core Tests
-        run: dotnet test --no-build --no-restore tests/$PROJECT_ID.Tests/$PROJECT_ID.Tests.csproj
+        run: dotnet test --no-build --no-restore $CORE_TEST_PROJECT
 
       - name: ✅ Run Godot Tests
-        run: dotnet test --no-build --no-restore tests/$PROJECT_ID.Godot.Tests/$PROJECT_ID.Godot.Tests.csproj
+        run: dotnet test --no-build --no-restore $CORE_TEST_PROJECT
