@@ -39,13 +39,13 @@ public class InitializeExample
     [Inject]
     public void Construct(INodeExample nodeExample, ISingleton singleton)
     {
-        var container = Container.Find("/root/main");
+        var container = Container.Find("/main");
         container.AddChild("world", (IContainerConfigurer c) =>
         {
             c.AddSingleton(typeof(ISingleton), typeof(Singleton));
         });
 
-        var world = Container.Find("/root/main/world");
+        var world = Container.Find("/main/world");
         world.Dispose();
     }
 }
