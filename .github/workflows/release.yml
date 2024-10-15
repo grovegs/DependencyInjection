@@ -93,7 +93,7 @@ jobs:
           mkdir -p $OUTPUT_DIR
           cp -r $GODOT_ADDON $OUTPUT_DIR
           cp README.md LICENSE $OUTPUT_DIR/$PROJECT_ID
-          sed -i 's/version="[^"]*"/version="$PROJECT_VERSION"/' $OUTPUT_DIR/$PROJECT_ID/plugin.cfg
+          sed -i 's/version="[^"]*"/version="'$PROJECT_VERSION'"/' $OUTPUT_DIR/$PROJECT_ID/plugin.cfg
           cd $RUNNER_TEMP && zip -r $OUTPUT_NAME.zip $OUTPUT_NAME
 
       - name: 🔖 Create Tag and Push
