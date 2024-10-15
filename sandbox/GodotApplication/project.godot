@@ -17,11 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-DependencyInjector="*res://addons/DependencyInjection/DependencyInjector.cs"
-
-[dependency_injection]
-
-root_installer="res://RootInstaller.tscn"
+DependencyInjector="*res://addons/GroveGames.DependencyInjection/DependencyInjector.cs"
 
 [dotnet]
 
@@ -29,7 +25,11 @@ project/assembly_name="GodotApplication"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/DependencyInjection/plugin.cfg")
+enabled=PackedStringArray("res://addons/GroveGames.DependencyInjection/plugin.cfg")
+
+[grove_games]
+
+dependency_injection/root_installer="res://RootInstaller.tscn"
 
 [rendering]
 

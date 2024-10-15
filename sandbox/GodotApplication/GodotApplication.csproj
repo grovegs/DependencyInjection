@@ -6,6 +6,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\DependencyInjection.Godot\DependencyInjection.Godot.csproj" />
+    <ProjectReference
+      Include="..\..\src\GroveGames.DependencyInjection.Godot\GroveGames.DependencyInjection.Godot.csproj" />
   </ItemGroup>
 </Project>

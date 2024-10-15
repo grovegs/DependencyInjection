@@ -1,6 +1,6 @@
-using DependencyInjection;
 using Godot;
-using Container = DependencyInjection.Container;
+using GroveGames.DependencyInjection;
+using Container = GroveGames.DependencyInjection.Container;
 
 public sealed partial class MainInstaller : InstallerBase
 {

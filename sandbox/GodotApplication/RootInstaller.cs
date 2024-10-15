@@ -1,4 +1,4 @@
-using DependencyInjection;
+using GroveGames.DependencyInjection;
 using Godot;
 
 public partial class RootInstaller : RootInstallerBase
