@@ -4,18 +4,18 @@ namespace GroveGames.DependencyInjection;
 
 public sealed class GodotProjectSettings : IProjectSettings
 {
-    public Variant GetSetting(string path)
+    public T GetSetting<[MustBeVariant] T>(string key)
     {
-        return ProjectSettings.GetSetting(path);
+        return ProjectSettings.GetSetting(key).As<T>();
     }
 
-    public bool HasSetting(string path)
+    public bool HasSetting(string key)
     {
-        return ProjectSettings.HasSetting(path);
+        return ProjectSettings.HasSetting(key);
     }
 
-    public void SetSetting(string path, string value)
+    public void SetSetting(string key, string value)
     {
-        ProjectSettings.SetSetting(path, value);
+        ProjectSettings.SetSetting(key, value);
     }
 }
