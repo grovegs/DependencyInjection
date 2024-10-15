@@ -6,7 +6,8 @@ public sealed partial class DependencyInjector : Node
 {
     public override void _Ready()
     {
-        var rootInstallerPath = Settings.GetRootInstallerSetting();
+        var settings = new Settings(new GodotProjectSettings());
+        var rootInstallerPath = settings.GetRootInstallerSetting();
         var rootInstallerScene = ResourceLoader.Load<PackedScene>(rootInstallerPath);
         var rootInstaller = rootInstallerScene.Instantiate<RootInstallerBase>();
         var rootContainer = RootContainer.Create(rootInstaller.Install);
