@@ -16,7 +16,7 @@
 
     <PackageId>$(AssemblyName)</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
-    <PackageTags>godot;dependencyinjection;di</PackageTags>
+    <PackageTags>godot;dependency-injection</PackageTags>
     <PackageProjectUrl>https://github.com/grovegs/DependencyInjection</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
