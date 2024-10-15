@@ -4,7 +4,7 @@ namespace GroveGames.DependencyInjection;
 
 public abstract partial class InstallerBase : Node, IInstaller
 {
-    [Export] private string _path = string.Empty;
+    [Export] private string _path;
 
     public string Path => _path;
 

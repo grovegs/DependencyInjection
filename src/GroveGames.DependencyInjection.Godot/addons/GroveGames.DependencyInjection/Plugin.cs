@@ -8,7 +8,8 @@ public partial class Plugin : EditorPlugin
 {
     public override void _EnterTree()
     {
-        Settings.CreateRootInstallerSetting();
+        var settings = new Settings(new GodotProjectSettings());
+        settings.CreateRootInstallerSetting();
         AddAutoloadSingleton(nameof(DependencyInjector), $"res://addons/GroveGames.DependencyInjection/{nameof(DependencyInjector)}.cs");
     }
 
