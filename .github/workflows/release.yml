@@ -26,6 +26,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       PROJECT_ID: GroveGames.DependencyInjection
+      PROJECT_NAME: Dependency Injection
       PACKAGE_NAME: dependency-injection
 
     steps:
@@ -105,7 +106,7 @@ jobs:
       - name: 📝 Create GitHub Release
         run: |
           gh release create $PROJECT_VERSION $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION.nupkg $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot.nupkg $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot-addon.zip \
-          --title "$PROJECT_ID $PROJECT_VERSION" --generate-notes --notes-start-tag ${{ steps.get_tag.outputs.latest_tag }}
+          --title "$PROJECT_NAME $PROJECT_VERSION" --generate-notes --notes-start-tag ${{ steps.get_tag.outputs.latest_tag }}
 
       - name: 🚀 Publish Core NuGet Package
         if: ${{ github.event.inputs.publish == 'true' }}
