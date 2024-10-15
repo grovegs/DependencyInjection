@@ -6,23 +6,24 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <RootNamespace>DependencyInjection</RootNamespace>
-    <Title>Dependency Injection</Title>
-    <Description>Dependency injection for Godot.</Description>
-    <Company>onurtnrkl</Company>
-    <Authors>onurtnrkl</Authors>
-    <Copyright>© onurtnrkl</Copyright>
+    <RootNamespace>GroveGames.DependencyInjection</RootNamespace>
+    <Title>GroveGames.DependencyInjection</Title>
+    <Description>A lightweight dependency injection framework developed by Grove Games for .NET and
+      Godot</Description>
+    <Company>Grove Games</Company>
+    <Authors>Grove Games</Authors>
+    <Copyright>© Grove Games</Copyright>
 
     <PackageId>$(AssemblyName)</PackageId>
     <PackageVersion>$(Version)</PackageVersion>
     <PackageTags>godot;dependencyinjection;di</PackageTags>
-    <PackageProjectUrl>https://github.com/onurtnrkl/godot-dependency-injection</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/grovegs/DependencyInjection</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageIcon>Icon.png</PackageIcon>
 
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/onurtnrkl/godot-dependency-injection</RepositoryUrl>
+    <RepositoryUrl>https://github.com/grovegs/DependencyInjection</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
