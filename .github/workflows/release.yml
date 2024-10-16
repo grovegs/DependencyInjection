@@ -12,11 +12,6 @@ on:
           - major
           - minor
           - patch
-      publish:
-        description: "Publish the NuGet package?"
-        required: true
-        default: true
-        type: boolean
 
 jobs:
   release:
@@ -114,11 +109,7 @@ jobs:
           fi
 
       - name: 🚀 Publish Core NuGet Package
-        if: ${{ github.event.inputs.publish == 'true' }}
-        run: |
-          dotnet nuget push $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION.nupkg --api-key $NUGET_API_KEY --skip-duplicate --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION.nupkg --api-key $NUGET_API_KEY --skip-duplicate --source https://api.nuget.org/v3/index.json
 
       - name: 🚀 Publish Godot NuGet Package
-        if: ${{ github.event.inputs.publish == 'true' }}
-        run: |
-          dotnet nuget push $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot.nupkg --api-key $NUGET_API_KEY --skip-duplicate --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push $RUNNER_TEMP/$PACKAGE_NAME-$PROJECT_VERSION-godot.nupkg --api-key $NUGET_API_KEY --skip-duplicate --source https://api.nuget.org/v3/index.json
