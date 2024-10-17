@@ -2,15 +2,18 @@
 
 internal sealed class InstanceResolver : IInstanceResolver
 {
-    private readonly object _implementationInstance;
+    private readonly IObjectResolver _objectResolver;
+    private object? _implementationInstance;
 
-    public InstanceResolver(object implementationInstance)
+    public InstanceResolver(IObjectResolver objectResolver)
     {
-        _implementationInstance = implementationInstance;
+        _objectResolver = objectResolver;
     }
 
     public object Resolve()
     {
+        _implementationInstance ??= _objectResolver.Resolve();
+
         return _implementationInstance;
     }
 }

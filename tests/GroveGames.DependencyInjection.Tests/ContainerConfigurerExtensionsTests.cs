@@ -8,20 +8,6 @@ public class ContainerConfigurerExtensionsTests
     }
 
     [Fact]
-    public void AddInstance_ShouldAddInstanceWithType()
-    {
-        // Arrange
-        var instance = new object();
-        var mockContainerConfigurer = new Mock<IContainerConfigurer>();
-
-        // Act
-        mockContainerConfigurer.Object.AddInstance(instance);
-
-        // Assert
-        mockContainerConfigurer.Verify(c => c.AddInstance(instance.GetType(), instance), Times.Once);
-    }
-
-    [Fact]
     public void AddSingleton_ShouldAddSingletonWithType()
     {
         // Arrange
@@ -47,20 +33,6 @@ public class ContainerConfigurerExtensionsTests
 
         // Assert
         mockContainerConfigurer.Verify(c => c.AddTransient(type, type), Times.Once);
-    }
-
-    [Fact]
-    public void AddInstance_Generic_ShouldAddInstanceWithType()
-    {
-        // Arrange
-        var instance = new MockInitializable();
-        var mockContainerConfigurer = new Mock<IContainerConfigurer>();
-
-        // Act
-        mockContainerConfigurer.Object.AddInstance<IInitializable, MockInitializable>(instance);
-
-        // Assert
-        mockContainerConfigurer.Verify(c => c.AddInstance(typeof(IInitializable), instance), Times.Once);
     }
 
     [Fact]
