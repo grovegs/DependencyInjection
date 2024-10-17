@@ -29,7 +29,7 @@ enabled=PackedStringArray("res://addons/GroveGames.DependencyInjection/plugin.cf
 
 [grove_games]
 
-dependency_injection/root_installer="res://RootInstaller.tscn"
+dependency_injection/root_installer="res://RootInstaller.tres"
 
 [rendering]
 

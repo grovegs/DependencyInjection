@@ -1,10 +1,11 @@
 using GroveGames.DependencyInjection;
 using Godot;
 
-public partial class RootInstaller : RootInstallerBase
+[GlobalClass]
+public partial class RootInstaller : RootInstallerResource
 {
-	public override void Install(IContainerConfigurer containerConfigurer)
-	{
-		GD.Print("Test");
-	}
+    public override void Install(IContainerConfigurer containerConfigurer)
+    {
+        GD.Print("Test");
+    }
 }

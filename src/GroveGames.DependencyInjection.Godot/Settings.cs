@@ -3,7 +3,7 @@ namespace GroveGames.DependencyInjection;
 public sealed class Settings
 {
     private const string RootInstallerPathKey = "grove_games/dependency_injection/root_installer";
-    private const string DefaultRootInstallerPath = "res://RootInstaller.tscn";
+    private const string DefaultRootInstallerPath = "res://RootInstaller.tres";
 
     private readonly IProjectSettings _projectSettings;
 

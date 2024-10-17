@@ -8,24 +8,28 @@ public sealed partial class DependencyInjector : Node
     {
         var settings = new Settings(new GodotProjectSettings());
         var rootInstallerPath = settings.GetRootInstallerSetting();
-        var rootInstallerScene = ResourceLoader.Load<PackedScene>(rootInstallerPath);
-        var rootInstaller = rootInstallerScene.Instantiate<RootInstallerBase>();
-        var rootContainer = RootContainer.Create(rootInstaller.Install);
-        rootInstaller.Free();
-        var root = GetTree().Root;
-        root.TreeExiting += rootContainer.Dispose;
-        root.ChildEnteredTree += OnInstallerAdded;
-    }
+        var rootInstallerResource = ResourceLoader.Load<Resource>(rootInstallerPath);
 
-    private void OnInstallerAdded(Node addedNode)
-    {
-        if (addedNode is not InstallerBase installer)
+        if (rootInstallerResource is not IRootInstaller rootInstaller)
         {
             return;
         }
 
-        var container = Container.Create(installer.Path, installer.Install);
-        installer.Free();
+        var rootContainer = RootContainer.Create(rootInstaller.Install);
+        var root = GetTree().Root;
+        root.TreeExiting += rootContainer.Dispose;
+        root.ChildEnteredTree += OnInstallerNodeAdded;
+    }
+
+    private void OnInstallerNodeAdded(Node addedNode)
+    {
+        if (addedNode is not IInstallerNode installerNode)
+        {
+            return;
+        }
+
+        var container = Container.Create(installerNode.Path, installerNode.Install);
+        installerNode.Free();
         addedNode.TreeExiting += container.Dispose;
     }
 }
