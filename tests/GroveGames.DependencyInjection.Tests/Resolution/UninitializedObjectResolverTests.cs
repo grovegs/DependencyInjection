@@ -3,7 +3,7 @@ using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection.Tests.Resolution;
 
-public class ObjectResolverTests
+public class UninitializedObjectResolverTests
 {
     [Fact]
     public void Resolve_ShouldReturnInstanceOfImplementationType()
@@ -13,7 +13,7 @@ public class ObjectResolverTests
         var implementationType = mockDisposable.Object.GetType();
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new ObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
+        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
 
         // Act
         var result = objectResolver.Resolve();
@@ -31,7 +31,7 @@ public class ObjectResolverTests
         var implementationType = mockDisposable.Object.GetType();
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new ObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
+        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
 
         // Act
         var result = objectResolver.Resolve();
@@ -48,7 +48,7 @@ public class ObjectResolverTests
         var implementationType = mockDisposable.Object.GetType();
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new ObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
+        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
 
         // Act
         var result = objectResolver.Resolve();

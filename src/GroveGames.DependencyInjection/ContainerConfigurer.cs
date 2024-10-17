@@ -24,7 +24,7 @@ internal sealed class ContainerConfigurer : IContainerConfigurer
 
     public void AddSingleton(Type registrationType, Type implementationType)
     {
-        var objectResolver = new ObjectResolver(implementationType, _containerResolver, _disposableCollection);
+        var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
         var instanceResolver = new SingletonResolver(objectResolver);
         _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
         _initializableCollection.TryAdd(registrationType, implementationType);
@@ -32,7 +32,7 @@ internal sealed class ContainerConfigurer : IContainerConfigurer
 
     public void AddTransient(Type registrationType, Type implementationType)
     {
-        var objectResolver = new ObjectResolver(implementationType, _containerResolver, _disposableCollection);
+        var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
         var instanceResolver = new TransientResolver(objectResolver);
         _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
         _initializableCollection.TryAdd(registrationType, implementationType);
