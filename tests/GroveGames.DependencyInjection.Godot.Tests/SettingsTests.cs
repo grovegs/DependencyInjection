@@ -3,7 +3,7 @@ namespace GroveGames.DependencyInjection.Godot.Tests;
 public class SettingsTests
 {
     private const string RootInstallerPathKey = "grove_games/dependency_injection/root_installer";
-    private const string DefaultRootInstallerPath = "res://RootInstaller.tscn";
+    private const string DefaultRootInstallerPath = "res://RootInstaller.tres";
 
     [Fact]
     public void CreateRootInstallerSetting_ShouldSetSetting_WhenSettingDoesNotExist()
