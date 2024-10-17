@@ -2,7 +2,7 @@ using Godot;
 using GroveGames.DependencyInjection;
 using Container = GroveGames.DependencyInjection.Container;
 
-public sealed partial class MainInstaller : InstallerBase
+public sealed partial class MainInstaller : InstallerNode
 {
     [Export] private NodeExample _instance;
 
