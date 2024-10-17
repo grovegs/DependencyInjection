@@ -16,11 +16,17 @@ internal sealed class ContainerConfigurer : IContainerConfigurer
         _disposableCollection = disposableCollection;
     }
 
-    public void AddSingleton(Type registrationType, Type implementationType, IObjectResolver objectResolver)
+    private void AddSingleton(Type registrationType, Type implementationType, IObjectResolver objectResolver)
     {
         var instanceResolver = new SingletonResolver(objectResolver);
         _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
         _initializableCollection.TryAdd(registrationType, implementationType);
+    }
+
+    public void AddSingleton(Type registrationType, object implementationInstance)
+    {
+        var objectResolver = new InitializedObjectResolver(implementationInstance, _containerResolver, _disposableCollection);
+        AddSingleton(registrationType, registrationType, objectResolver);
     }
 
     public void AddSingleton(Type registrationType, Type implementationType)
