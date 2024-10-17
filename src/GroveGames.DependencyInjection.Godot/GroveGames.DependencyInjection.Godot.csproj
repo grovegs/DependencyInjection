@@ -1,8 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Nullable>disable</Nullable>
-    <NoWarn>1591;1573;8618</NoWarn>
-  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="GodotSharp" Version="4.3.0" />
@@ -15,6 +11,7 @@
 
   <ItemGroup>
     <None Remove="addons/**" />
+    <Compile Remove="addons/**" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>1591;1573</NoWarn>
 
     <RootNamespace>GroveGames.DependencyInjection</RootNamespace>
     <Title>GroveGames.DependencyInjection</Title>
