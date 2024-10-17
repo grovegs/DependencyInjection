@@ -6,7 +6,7 @@ namespace GroveGames.DependencyInjection.Tests;
 public class ContainerConfigurerTests
 {
     [Fact]
-    public void AddInstance_ShouldAddInstanceResolver()
+    public void AddSingleton_WithInstance_ShouldAddSingletonResolverWithInitializedObjectResolver()
     {
         // Arrange
         var registrationType = typeof(object);
@@ -17,14 +17,15 @@ public class ContainerConfigurerTests
         var containerConfigurer = new ContainerConfigurer(mockContainerResolver.Object, mockInitializableCollection.Object, mockDisposableCollection.Object);
 
         // Act
-        containerConfigurer.AddInstance(registrationType, implementationInstance);
+        containerConfigurer.AddSingleton(registrationType, implementationInstance);
 
         // Assert
-        mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<InstanceResolver>()), Times.Once);
+        mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
+        mockInitializableCollection.Verify(i => i.TryAdd(registrationType, registrationType), Times.Once);
     }
 
     [Fact]
-    public void AddSingleton_ShouldAddSingletonResolverAndTryAddToInitializableCollection()
+    public void AddSingleton_WithoutInstance_ShouldCreateObjectResolverAndAddSingletonResolver()
     {
         // Arrange
         var registrationType = typeof(object);

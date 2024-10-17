@@ -16,23 +16,28 @@ internal sealed class ContainerConfigurer : IContainerConfigurer
         _disposableCollection = disposableCollection;
     }
 
-    public void AddInstance(Type registrationType, object implementationInstance)
+    private void AddSingleton(Type registrationType, Type implementationType, IObjectResolver objectResolver)
     {
-        var instanceResolver = new InstanceResolver(implementationInstance);
-        _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
-    }
-
-    public void AddSingleton(Type registrationType, Type implementationType)
-    {
-        var objectResolver = new ObjectResolver(implementationType, _containerResolver, _disposableCollection);
         var instanceResolver = new SingletonResolver(objectResolver);
         _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
         _initializableCollection.TryAdd(registrationType, implementationType);
     }
 
+    public void AddSingleton(Type registrationType, object implementationInstance)
+    {
+        var objectResolver = new InitializedObjectResolver(implementationInstance, _containerResolver, _disposableCollection);
+        AddSingleton(registrationType, registrationType, objectResolver);
+    }
+
+    public void AddSingleton(Type registrationType, Type implementationType)
+    {
+        var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
+        AddSingleton(registrationType, registrationType, objectResolver);
+    }
+
     public void AddTransient(Type registrationType, Type implementationType)
     {
-        var objectResolver = new ObjectResolver(implementationType, _containerResolver, _disposableCollection);
+        var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
         var instanceResolver = new TransientResolver(objectResolver);
         _containerResolver.AddInstanceResolver(registrationType, instanceResolver);
         _initializableCollection.TryAdd(registrationType, implementationType);

@@ -4,13 +4,13 @@ using GroveGames.DependencyInjection.Injectors;
 
 namespace GroveGames.DependencyInjection.Resolution;
 
-internal sealed class ObjectResolver : IObjectResolver
+internal sealed class UninitializedObjectResolver : IObjectResolver
 {
     private readonly Type _implementationType;
     private readonly IRegistrationResolver _registrationResolver;
     private readonly IDisposableCollection _disposableCollection;
 
-    public ObjectResolver(Type implementationType, IRegistrationResolver registrationResolver, IDisposableCollection disposableCollection)
+    public UninitializedObjectResolver(Type implementationType, IRegistrationResolver registrationResolver, IDisposableCollection disposableCollection)
     {
         _implementationType = implementationType;
         _registrationResolver = registrationResolver;
