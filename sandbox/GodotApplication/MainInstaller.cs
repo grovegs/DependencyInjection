@@ -9,8 +9,8 @@ public sealed partial class MainInstaller : InstallerNode
     public override void Install(IContainerConfigurer containerConfigurer)
     {
         containerConfigurer.AddSingleton(typeof(ISingleton), typeof(Singleton));
-        containerConfigurer.AddInstance<INodeExample>(_instance);
-        containerConfigurer.AddInstance(typeof(InitializeExample));
+        containerConfigurer.AddSingleton<INodeExample>(_instance);
+        containerConfigurer.AddSingleton(typeof(InitializeExample));
     }
 }
 
