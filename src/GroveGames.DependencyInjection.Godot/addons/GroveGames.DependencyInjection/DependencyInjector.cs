@@ -29,7 +29,8 @@ public sealed partial class DependencyInjector : Node
         }
 
         var container = Container.Create(installerNode.Path, installerNode.Install);
+        var parent = addedNode.GetParent();
         installerNode.Free();
-        addedNode.TreeExiting += container.Dispose;
+        parent.TreeExiting += container.Dispose;
     }
 }
