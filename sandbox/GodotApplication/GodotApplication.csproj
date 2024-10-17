@@ -1,14 +1,15 @@
 <Project Sdk="Godot.NET.Sdk/4.3.0">
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net7.0</TargetFramework>
-    <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'ios' ">net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <Nullable>disable</Nullable>
-    <NoWarn>0436;1591;1573</NoWarn>
+    <NoWarn>$(NoWarn);0436</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference
       Include="..\..\src\GroveGames.DependencyInjection.Godot\GroveGames.DependencyInjection.Godot.csproj" />
   </ItemGroup>
+
 </Project>
