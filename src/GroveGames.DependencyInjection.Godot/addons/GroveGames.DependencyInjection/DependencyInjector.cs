@@ -12,7 +12,7 @@ public sealed partial class DependencyInjector : Node
 
         if (rootInstallerResource is not IRootInstaller rootInstaller)
         {
-            return;
+            throw new RootInstallerNotFoundException(rootInstallerPath);
         }
 
         var rootContainer = RootContainer.Create(rootInstaller.Install);
