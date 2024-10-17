@@ -60,4 +60,32 @@ public class ContainerConfigurerExtensionsTests
         // Assert
         mockContainerConfigurer.Verify(c => c.AddTransient(typeof(IInitializable), typeof(MockInitializable)), Times.Once);
     }
+
+    [Fact]
+    public void AddSingleton_WithInstance_ShouldAddSingletonInstance()
+    {
+        // Arrange
+        var instance = new MockInitializable();
+        var mockContainerConfigurer = new Mock<IContainerConfigurer>();
+
+        // Act
+        mockContainerConfigurer.Object.AddSingleton(instance);
+
+        // Assert
+        mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(MockInitializable), instance), Times.Once);
+    }
+
+    [Fact]
+    public void AddSingleton_Generic_WithInstance_ShouldAddSingletonInstance()
+    {
+        // Arrange
+        var instance = new MockInitializable();
+        var mockContainerConfigurer = new Mock<IContainerConfigurer>();
+
+        // Act
+        mockContainerConfigurer.Object.AddSingleton<IInitializable>(instance);
+
+        // Assert
+        mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(IInitializable), instance), Times.Once);
+    }
 }

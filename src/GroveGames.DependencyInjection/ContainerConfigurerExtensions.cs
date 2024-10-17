@@ -2,6 +2,12 @@
 
 public static class ContainerConfigurerExtensions
 {
+    public static void AddSingleton(this IContainerConfigurer containerConfigurer, object implementationInstance)
+    {
+        var implementationType = implementationInstance.GetType();
+        containerConfigurer.AddSingleton(implementationType, implementationInstance);
+    }
+
     public static void AddSingleton(this IContainerConfigurer containerConfigurer, Type implementationType)
     {
         containerConfigurer.AddSingleton(implementationType, implementationType);
@@ -12,6 +18,14 @@ public static class ContainerConfigurerExtensions
         containerConfigurer.AddTransient(implementationType, implementationType);
     }
 
+    public static void AddSingleton<TRegistration, TImplementation>(this IContainerConfigurer containerConfigurer, TImplementation implementationInstance)
+        where TRegistration : class
+        where TImplementation : class, TRegistration
+    {
+        var registrationType = typeof(TRegistration);
+        containerConfigurer.AddSingleton(registrationType, implementationInstance);
+    }
+
     public static void AddSingleton<TRegistration, TImplementation>(this IContainerConfigurer containerConfigurer)
         where TRegistration : class
         where TImplementation : class, TRegistration
@@ -19,6 +33,13 @@ public static class ContainerConfigurerExtensions
         var registrationType = typeof(TRegistration);
         var implementationType = typeof(TImplementation);
         containerConfigurer.AddSingleton(registrationType, implementationType);
+    }
+
+    public static void AddSingleton<TImplementation>(this IContainerConfigurer containerConfigurer, TImplementation implementationInstance)
+        where TImplementation : class
+    {
+        var implementationType = typeof(TImplementation);
+        containerConfigurer.AddSingleton(implementationType, implementationInstance);
     }
 
     public static void AddSingleton<TImplementation>(this IContainerConfigurer containerConfigurer)
