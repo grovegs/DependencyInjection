@@ -9,8 +9,7 @@
 
     <RootNamespace>GroveGames.DependencyInjection</RootNamespace>
     <Title>GroveGames.DependencyInjection</Title>
-    <Description>A lightweight dependency injection framework developed by Grove Games for .NET and
-      Godot</Description>
+    <Description>A lightweight dependency injection framework developed by Grove Games for .NET and Godot</Description>
     <Company>Grove Games</Company>
     <Authors>Grove Games</Authors>
     <Copyright>© Grove Games</Copyright>
