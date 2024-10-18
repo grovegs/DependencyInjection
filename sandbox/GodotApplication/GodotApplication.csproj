@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ImplicitUsings>false</ImplicitUsings>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);0436</NoWarn>
   </PropertyGroup>
