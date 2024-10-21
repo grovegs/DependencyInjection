@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://bcl1832moxq22"]
+
+[ext_resource type="Script" path="res://Splash.cs" id="1_p6a6r"]
+[ext_resource type="Script" path="res://SplashInstaller.cs" id="2_mxwe0"]
+
+[node name="Splash" type="Node2D"]
+script = ExtResource("1_p6a6r")
+
+[node name="Installer" type="Node" parent="."]
+script = ExtResource("2_mxwe0")
+_path = "/splash"

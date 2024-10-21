@@ -8,6 +8,7 @@ public sealed partial class MainInstaller : InstallerNode
 
     public override void Install(IContainerConfigurer containerConfigurer)
     {
+        GD.Print("Main installed.");
         containerConfigurer.AddSingleton(typeof(ISingleton), typeof(Singleton));
         containerConfigurer.AddSingleton<INodeExample>(_instance);
         containerConfigurer.AddSingleton(typeof(InitializeExample));
@@ -18,11 +19,11 @@ public interface ISingleton
 {
 }
 
-public sealed class Singleton : ISingleton, IInitializable
+public sealed class Singleton : ISingleton
 {
-    public void Initialize()
+    public Singleton()
     {
-        GD.Print("Test");
+        GD.Print("Singleton injected.");
     }
 }
 

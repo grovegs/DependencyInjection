@@ -8,3 +8,4 @@ script = ExtResource("1_gb60r")
 
 [node name="Installer" type="Node" parent="."]
 script = ExtResource("2_oy75v")
+_path = "/main"

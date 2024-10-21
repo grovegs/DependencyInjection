@@ -6,6 +6,6 @@ public partial class RootInstaller : RootInstallerResource
 {
     public override void Install(IContainerConfigurer containerConfigurer)
     {
-        GD.Print("Test");
+        GD.Print("Root installed.");
     }
 }
