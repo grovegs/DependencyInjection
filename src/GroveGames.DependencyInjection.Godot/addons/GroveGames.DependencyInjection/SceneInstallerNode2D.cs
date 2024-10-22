@@ -3,11 +3,7 @@ using Godot;
 
 namespace GroveGames.DependencyInjection;
 
-public abstract partial class InstallerNode : Node, IInstallerNode
+public abstract partial class SceneInstallerNode2D : Node2D, ISceneInstaller
 {
-    [Export] private string _path;
-
-    public ReadOnlySpan<char> Path => _path;
-
     public abstract void Install(IContainerConfigurer containerConfigurer);
 }
