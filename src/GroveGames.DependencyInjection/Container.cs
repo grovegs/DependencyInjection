@@ -51,7 +51,7 @@ public sealed class Container : IContainer
     {
         var nameSeperatorIndex = path.LastIndexOf('/');
         var name = path[(nameSeperatorIndex + 1)..].ToString();
-        var parentPath = path[..nameSeperatorIndex];
+        var parentPath = nameSeperatorIndex == -1 ? string.Empty : path[..nameSeperatorIndex];
         var parent = cache.Find(parentPath)!;
         return Create(name, parent, cache, configure);
     }
