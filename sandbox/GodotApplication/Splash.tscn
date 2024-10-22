@@ -8,4 +8,3 @@ script = ExtResource("1_p6a6r")
 
 [node name="Installer" type="Node" parent="."]
 script = ExtResource("2_mxwe0")
-_path = "/splash"
