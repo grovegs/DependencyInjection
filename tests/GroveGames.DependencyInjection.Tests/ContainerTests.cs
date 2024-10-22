@@ -7,21 +7,6 @@ namespace GroveGames.DependencyInjection.Tests;
 
 public class ContainerTests
 {
-    private class MockContainerCache : IContainerCache
-    {
-        private readonly IContainer? _foundContainer;
-
-        public MockContainerCache(IContainer? foundContainer)
-        {
-            _foundContainer = foundContainer;
-        }
-
-        public IContainer? Find(in ReadOnlySpan<char> path) => _foundContainer;
-        public void Add(IContainer container) { }
-        public void Remove(IContainer container) { }
-        public void Clear() { }
-    }
-
     [Fact]
     public void Constructor_ShouldInitializeContainer()
     {
