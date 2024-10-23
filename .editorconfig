@@ -120,6 +120,9 @@ csharp_style_unused_value_expression_statement_preference = discard_variable:sil
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace:silent
 
+# Use primary constructors
+csharp_use_primary_constructs = true:suggestion
+
 #### C# Formatting Rules ####
 
 # New line preferences
