@@ -1,4 +1,5 @@
 using Godot;
+
 using GroveGames.DependencyInjection;
 
 public sealed partial class SplashInstaller : SceneInstallerNode
