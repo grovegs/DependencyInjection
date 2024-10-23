@@ -1,5 +1,6 @@
-using GroveGames.DependencyInjection;
 using Godot;
+
+using GroveGames.DependencyInjection;
 
 [GlobalClass]
 public partial class RootInstaller : RootInstallerResource

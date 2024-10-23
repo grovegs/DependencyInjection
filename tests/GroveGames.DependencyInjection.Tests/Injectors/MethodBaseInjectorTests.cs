@@ -1,6 +1,6 @@
 using GroveGames.DependencyInjection.Activators;
-using GroveGames.DependencyInjection.Resolution;
 using GroveGames.DependencyInjection.Injectors;
+using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection.Tests.Injectors;
 
