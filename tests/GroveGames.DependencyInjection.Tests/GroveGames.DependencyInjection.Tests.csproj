@@ -3,6 +3,8 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+
+    <RootNamespace>$(RootNamespace).Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
