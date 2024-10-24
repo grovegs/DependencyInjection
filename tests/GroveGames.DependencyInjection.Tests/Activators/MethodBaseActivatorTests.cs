@@ -1,6 +1,8 @@
 using System.Reflection;
 
-namespace GroveGames.DependencyInjection.Activators.Tests;
+using GroveGames.DependencyInjection.Activators;
+
+namespace GroveGames.DependencyInjection.Tests.Activators;
 
 public class MethodBaseActivatorTests
 {

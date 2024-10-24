@@ -1,4 +1,4 @@
-namespace GroveGames.DependencyInjection.Godot.Tests;
+namespace GroveGames.DependencyInjection.Tests;
 
 public class SettingsTests
 {
