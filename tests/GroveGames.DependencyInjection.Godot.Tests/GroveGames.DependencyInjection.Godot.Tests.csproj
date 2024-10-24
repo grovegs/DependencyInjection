@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
 
-    <RootNamespace>$(RootNamespace).Godot.Tests</RootNamespace>
+    <RootNamespace>$(RootNamespace).Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
