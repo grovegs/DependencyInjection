@@ -33,6 +33,12 @@ jobs:
           echo "GODOT_PROJECT=src/$PROJECT_ID.Godot/$PROJECT_ID.Godot.csproj" >> $GITHUB_ENV
           echo "GODOT_ADDON=src/$PROJECT_ID.Godot/addons/$PROJECT_ID" >> $GITHUB_ENV
 
+      - name: Print Paths
+        run: |
+          echo "CORE_PROJECT: $CORE_PROJECT"
+          echo "GODOT_PROJECT: $GODOT_PROJECT"
+          echo "GODOT_ADDON: $GODOT_ADDON"
+
       - name: 🔖 Get Latest Tag
         id: get_tag
         run: |
@@ -50,6 +56,7 @@ jobs:
             patch) patch=$((patch + 1)) ;;
           esac
           echo "PROJECT_VERSION=$major.$minor.$patch" >> $GITHUB_ENV
+          echo "Calculated Version: $PROJECT_VERSION"
 
   build_core:
     needs: release
