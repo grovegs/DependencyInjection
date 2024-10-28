@@ -14,30 +14,17 @@ on:
           - patch
 
 jobs:
-  release:
+  calculate_version:
     runs-on: ubuntu-latest
 
-    env:
-      PROJECT_ID: GroveGames.DependencyInjection
-      PROJECT_NAME: Dependency Injection
+    outputs:
+      PROJECT_VERSION: $PROJECT_VERSION
 
     steps:
       - name: 🔄 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: 🔗 Set Dynamic Paths
-        run: |
-          echo "CORE_PROJECT=src/$PROJECT_ID/$PROJECT_ID.csproj" >> $GITHUB_ENV
-          echo "GODOT_PROJECT=src/$PROJECT_ID.Godot/$PROJECT_ID.Godot.csproj" >> $GITHUB_ENV
-          echo "GODOT_ADDON=src/$PROJECT_ID.Godot/addons/$PROJECT_ID" >> $GITHUB_ENV
-
-      - name: Print Paths
-        run: |
-          echo "CORE_PROJECT: $CORE_PROJECT"
-          echo "GODOT_PROJECT: $GODOT_PROJECT"
-          echo "GODOT_ADDON: $GODOT_ADDON"
 
       - name: 🔖 Get Latest Tag
         id: get_tag
@@ -47,7 +34,6 @@ jobs:
           echo "latest_tag=${latest_tag:-0.0.0}" >> $GITHUB_OUTPUT
 
       - name: 🧮 Calculate Version
-        id: calculate_version
         run: |
           IFS='.' read -r major minor patch <<< "${{ steps.get_tag.outputs.latest_tag }}"
           case "${{ github.event.inputs.version_bump }}" in
@@ -55,54 +41,56 @@ jobs:
             minor) minor=$((minor + 1)); patch=0 ;;
             patch) patch=$((patch + 1)) ;;
           esac
-          echo "PROJECT_VERSION=$major.$minor.$patch" >> $GITHUB_ENV
+          PROJECT_VERSION="$major.$minor.$patch"
+          echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
           echo "Calculated Version: $PROJECT_VERSION"
 
   build_core:
-    needs: release
+    needs: calculate_version
     uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
     with:
-      path: $CORE_PROJECT
-      version: $PROJECT_VERSION
+      path: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
+      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
   build_godot:
-    needs: release
+    needs: calculate_version
     uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
     with:
-      path: $GODOT_PROJECT
-      version: $PROJECT_VERSION
+      path: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
+      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
       platform: godot
 
   pack_core_nuget:
-    needs: build_core
+    needs: [calculate_version, build_core]
     uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
     with:
-      id: $PROJECT_ID
-      version: $PROJECT_VERSION
+      name: dependency-injection
+      id: GroveGames.DependencyInjection
+      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
   pack_godot_nuget:
-    needs: build_godot
+    needs: [calculate_version, build_godot]
     uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
     with:
-      id: $PROJECT_ID.Godot
-      version: $PROJECT_VERSION
+      name: dependency-injection
+      id: GroveGames.DependencyInjection.Godot
+      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
       platform: godot
 
   pack_godot_addon:
-    needs: release
+    needs: calculate_version
     uses: grovegs/actions/.github/workflows/godot-pack.yml@main
     with:
-      path: $GODOT_ADDON
-      id: $PROJECT_ID
-      version: $PROJECT_VERSION
+      path: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
+      name: dependency-injection
+      id: GroveGames.DependencyInjection
+      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
   create_release:
     needs:
-      - pack_core_nuget
-      - pack_godot_nuget
-      - pack_godot_addon
+      [calculate_version, pack_core_nuget, pack_godot_nuget, pack_godot_addon]
     uses: grovegs/actions/.github/workflows/github-release.yml@main
     with:
-      title: $PROJECT_NAME $PROJECT_VERSION
-      version: $PROJECT_VERSION
+      title: "Dependency Injection ${{ needs.calculate_version.outputs.PROJECT_VERSION }}"
+      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
       artifacts: godot-addon,nuget-package,nuget-package-godot
