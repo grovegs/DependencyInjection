@@ -51,12 +51,20 @@ jobs:
           esac
           echo "PROJECT_VERSION=$major.$minor.$patch" >> $GITHUB_ENV
 
+  build_core:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
       - name: 🏗️ Build Core Project
         uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
         with:
           path: $CORE_PROJECT
           version: $PROJECT_VERSION
 
+  build_godot:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
       - name: 🏗️ Build Godot Project
         uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
         with:
@@ -64,12 +72,20 @@ jobs:
           version: $PROJECT_VERSION
           platform: godot
 
+  pack_core_nuget:
+    needs: build_core
+    runs-on: ubuntu-latest
+    steps:
       - name: 📦 Pack Core NuGet Package
         uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
         with:
           id: $PROJECT_ID
           version: $PROJECT_VERSION
 
+  pack_godot_nuget:
+    needs: build_godot
+    runs-on: ubuntu-latest
+    steps:
       - name: 📦 Pack Godot NuGet Package
         uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
         with:
@@ -77,6 +93,10 @@ jobs:
           version: $PROJECT_VERSION
           platform: godot
 
+  pack_godot_addon:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
       - name: 📦 Pack Godot Addon
         uses: grovegs/actions/.github/workflows/godot-pack.yml@main
         with:
@@ -84,6 +104,13 @@ jobs:
           id: $PROJECT_ID
           version: $PROJECT_VERSION
 
+  create_release:
+    needs:
+      - pack_core_nuget
+      - pack_godot_nuget
+      - pack_godot_addon
+    runs-on: ubuntu-latest
+    steps:
       - name: 📝 Create GitHub Release
         uses: grovegs/actions/.github/workflows/github-release.yml@main
         with:
