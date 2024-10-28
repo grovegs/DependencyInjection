@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      PROJECT_VERSION: $PROJECT_VERSION
+      PROJECT_VERSION: ${{ steps.calculate_version.outputs.version }}
 
     steps:
       - name: 🔄 Checkout Code
@@ -34,6 +34,7 @@ jobs:
           echo "latest_tag=${latest_tag:-0.0.0}" >> $GITHUB_OUTPUT
 
       - name: 🧮 Calculate Version
+        id: calculate_version
         run: |
           IFS='.' read -r major minor patch <<< "${{ steps.get_tag.outputs.latest_tag }}"
           case "${{ github.event.inputs.version_bump }}" in
