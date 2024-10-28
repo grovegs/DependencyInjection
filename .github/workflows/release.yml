@@ -50,14 +50,16 @@ jobs:
     needs: calculate_version
     uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
     with:
-      path: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
+      source: src/GroveGames.DependencyInjection
+      id: GroveGames.DependencyInjection
       version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
   build_godot:
     needs: calculate_version
     uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
     with:
-      path: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
+      source: src/GroveGames.DependencyInjection.Godot
+      id: GroveGames.DependencyInjection.Godot
       version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
       platform: godot
 
@@ -66,6 +68,7 @@ jobs:
     uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
     with:
       name: dependency-injection
+      source: src/GroveGames.DependencyInjection
       id: GroveGames.DependencyInjection
       version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
@@ -74,6 +77,7 @@ jobs:
     uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
     with:
       name: dependency-injection
+      source: src/GroveGames.DependencyInjection.Godot
       id: GroveGames.DependencyInjection.Godot
       version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
       platform: godot
@@ -82,8 +86,8 @@ jobs:
     needs: calculate_version
     uses: grovegs/actions/.github/workflows/godot-pack.yml@main
     with:
-      path: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
       name: dependency-injection
+      source: src/GroveGames.DependencyInjection.Godot/addons
       id: GroveGames.DependencyInjection
       version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
