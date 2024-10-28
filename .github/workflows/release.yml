@@ -42,9 +42,9 @@ jobs:
             minor) minor=$((minor + 1)); patch=0 ;;
             patch) patch=$((patch + 1)) ;;
           esac
-          PROJECT_VERSION="$major.$minor.$patch"
-          echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
-          echo "Calculated Version: $PROJECT_VERSION"
+          VERSION="$major.$minor.$patch"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Calculated Version: $VERSION"
 
   build_core:
     needs: calculate_version
