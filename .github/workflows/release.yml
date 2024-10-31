@@ -123,6 +123,6 @@ jobs:
       - name: 🛠️ Release Github
         uses: grovegs/actions/.github/actions/github-release@main
         with:
-          title: Dependency Injection
+          title: Dependency Injection ${{ needs.calculate_version.outputs.VERSION }}
           version: ${{ needs.calculate_version.outputs.VERSION }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
