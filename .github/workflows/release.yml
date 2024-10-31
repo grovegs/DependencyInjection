@@ -48,6 +48,13 @@ jobs:
           echo VERSION=$version >> $GITHUB_ENV
           echo ARTIFACT=$artifact >> $GITHUB_ENV
           echo TITLE=$title >> $GITHUB_ENV
+
+  log:
+    needs: set_variables
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Vars
+        run: |
           echo Version: $VERSION
           echo Artifact: $ARTIFACT
           echo Title: $TITLE
