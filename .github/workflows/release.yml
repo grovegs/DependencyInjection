@@ -18,21 +18,17 @@ env:
   AUTHORS: GroveGames
 
 jobs:
-  checkout:
+  calculate_version:
     runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.bump_version.outputs.NEXT_VERSION }}
+
     steps:
       - name: 🔄 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-  calculate_version:
-    needs: checkout
-    runs-on: ubuntu-latest
-    outputs:
-      VERSION: ${{ steps.bump_version.outputs.NEXT_VERSION }}
-
-    steps:
       - name: 🔧 Bump Version
         id: bump_version
         uses: grovegs/actions/.github/actions/bump-version@main
@@ -57,6 +53,9 @@ jobs:
     needs: set_variables
     runs-on: ubuntu-latest
     steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
@@ -76,6 +75,9 @@ jobs:
     needs: set_variables
     runs-on: ubuntu-latest
     steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
@@ -122,6 +124,9 @@ jobs:
     needs: [build_core, build_godot]
     runs-on: ubuntu-latest
     steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
       - name: 🛠️ Release Github
         uses: grovegs/actions/.github/actions/release-github@main
         with:
