@@ -32,7 +32,7 @@ jobs:
 
       - name: 🔧 Version Bumper
         id: version_bumper
-        uses: grovegs/actions/.github/actions/version-bumper@main
+        uses: grovegs/actions/.github/actions/bump-version@main
         with:
           version-type: ${{ inputs.version_type }}
 
@@ -46,14 +46,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🏗️ Dotnet Build
-        uses: grovegs/actions/.github/actions/dotnet-build@main
+        uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
 
       - name: 📦 Pack Nuget
-        uses: grovegs/actions/.github/actions/nuget-pack@main
+        uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
@@ -70,14 +70,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🏗️ Dotnet Build
-        uses: grovegs/actions/.github/actions/dotnet-build@main
+        uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
 
       - name: 📦 Pack Nuget
-        uses: grovegs/actions/.github/actions/nuget-pack@main
+        uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
@@ -85,7 +85,7 @@ jobs:
           artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot
 
       - name: 🎮 Pack Godot
-        uses: grovegs/actions/.github/actions/godot-pack@main
+        uses: grovegs/actions/.github/actions/pack-godot@main
         with:
           addon: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/addons/$PROJECT_OWNER.$PROJECT_NAME
           version: ${{ needs.calculate_version.outputs.VERSION }}
@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: 📦 Release Nuget
-        uses: grovegs/actions/.github/actions/nuget-release@main
+        uses: grovegs/actions/.github/actions/release-nuget@main
         with:
           artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}
           api-key: ${{ secrets.NUGET_API_KEY }}
@@ -110,7 +110,7 @@ jobs:
 
     steps:
       - name: 📦 Release Nuget
-        uses: grovegs/actions/.github/actions/nuget-release@main
+        uses: grovegs/actions/.github/actions/release-nuget@main
         with:
           artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot
           api-key: ${{ secrets.NUGET_API_KEY }}
@@ -125,7 +125,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🛠️ Release Github
-        uses: grovegs/actions/.github/actions/github-release@main
+        uses: grovegs/actions/.github/actions/release-github@main
         with:
           title: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.VERSION }}
           version: ${{ needs.calculate_version.outputs.VERSION }}
