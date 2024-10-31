@@ -14,21 +14,25 @@ on:
           - patch
 
 env:
-  PROJECT_OWNER: GroveGames
-  PROJECT_NAME: DependencyInjection
+  NAME: DependencyInjection
+  AUTHORS: GroveGames
 
 jobs:
-  calculate_version:
+  checkout:
     runs-on: ubuntu-latest
-    outputs:
-      VERSION: ${{ steps.bump_version.outputs.NEXT_VERSION }}
-
     steps:
       - name: 🔄 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+  calculate_version:
+    needs: checkout
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.bump_version.outputs.NEXT_VERSION }}
+
+    steps:
       - name: 🔧 Bump Version
         id: bump_version
         uses: grovegs/actions/.github/actions/bump-version@main
@@ -41,17 +45,12 @@ jobs:
     steps:
       - name: 🔄 Set Variables
         run: |
-          to_snake_case() {
-            echo $1 | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]'
-          }
-
           version=${{ needs.calculate_version.outputs.VERSION }}
-
-          artifact_name=$(to_snake_case "$PROJECT_NAME")-$version
-          title=$(echo "$PROJECT_NAME" | sed -E 's/([a-z])([A-Z])/\1 \2/g') $version
+          artifact=$(echo $name | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-$version
+          title="$(echo $name | sed -E 's/([a-z])([A-Z])/\1 \2/g') $version"
 
           echo VERSION=$version >> $GITHUB_ENV
-          echo ARTIFACT_NAME=$artifact_name >> $GITHUB_ENV
+          echo ARTIFACT=$artifact >> $GITHUB_ENV
           echo TITLE=$title >> $GITHUB_ENV
 
   build_core:
@@ -61,17 +60,17 @@ jobs:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
-          project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
+          project: src/$AUTHORS.$NAME/$AUTHORS.$NAME.csproj
           version: $VERSION
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
-          project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
+          project: src/$AUTHORS.$NAME/$AUTHORS.$NAME.csproj
           version: $VERSION
           configuration: Release
-          artifact: $ARTIFACT_NAME
+          artifact: $ARTIFACT
 
   build_godot:
     needs: set_variables
@@ -80,24 +79,24 @@ jobs:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
-          project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
+          project: src/$AUTHORS.$NAME.Godot/$AUTHORS.$NAME.Godot.csproj
           version: $VERSION
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
-          project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
+          project: src/$AUTHORS.$NAME.Godot/$AUTHORS.$NAME.Godot.csproj
           version: $VERSION
           configuration: Release
-          artifact: $ARTIFACT_NAME-godot
+          artifact: $ARTIFACT-godot
 
       - name: 🎮 Pack Godot
         uses: grovegs/actions/.github/actions/pack-godot@main
         with:
-          addon: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/addons/$PROJECT_OWNER.$PROJECT_NAME
+          addon: src/$AUTHORS.$NAME.Godot/addons/$AUTHORS.$NAME
           version: $VERSION
-          artifact: $ARTIFACT_NAME-godot-addon
+          artifact: $ARTIFACT-godot-addon
 
   release_core:
     needs: build_core
@@ -106,7 +105,7 @@ jobs:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/release-nuget@main
         with:
-          artifact: $ARTIFACT_NAME
+          artifact: $ARTIFACT
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_godot:
@@ -116,7 +115,7 @@ jobs:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/release-nuget@main
         with:
-          artifact: $ARTIFACT_NAME-godot
+          artifact: $ARTIFACT-godot
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_github:
