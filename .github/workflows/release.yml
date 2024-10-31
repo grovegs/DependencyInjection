@@ -48,6 +48,9 @@ jobs:
           echo VERSION=$version >> $GITHUB_ENV
           echo ARTIFACT=$artifact >> $GITHUB_ENV
           echo TITLE=$title >> $GITHUB_ENV
+          echo Version: $VERSION
+          echo Artifact: $ARTIFACT
+          echo Title: $TITLE
 
   build_core:
     needs: set_variables
