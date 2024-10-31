@@ -36,8 +36,8 @@ jobs:
           version-type: ${{ inputs.version_type }}
 
   set_variables:
-    runs-on: ubuntu-latest
     needs: calculate_version
+    runs-on: ubuntu-latest
     steps:
       - name: 🔄 Set Variables
         run: |
@@ -46,12 +46,13 @@ jobs:
           }
 
           version=${{ needs.calculate_version.outputs.VERSION }}
-          artifact_name=$(to_snake_case $PROJECT_NAME)-${version}
-          title=$(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${version}
 
-          echo VERSION=${version} >> $GITHUB_ENV
-          echo ARTIFACT_NAME=${artifact_name} >> $GITHUB_ENV
-          echo TITLE=${title} >> $GITHUB_ENV
+          artifact_name=$(to_snake_case $PROJECT_NAME)-$version
+          title=$(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') $version
+
+          echo VERSION=$version >> $GITHUB_ENV
+          echo ARTIFACT_NAME=$artifact_name >> $GITHUB_ENV
+          echo TITLE=$title >> $GITHUB_ENV
 
   build_core:
     needs: set_variables
