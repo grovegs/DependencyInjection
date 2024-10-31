@@ -28,7 +28,7 @@ jobs:
 
       - name: 🔧 Version Bumper
         id: version_bumper
-        uses: grovegs/actions/.github/actions/version-bumper
+        uses: grovegs/actions/.github/actions/version-bumper@main
         with:
           version-type: ${{ inputs.version_type }}
 
@@ -42,14 +42,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🏗️ Dotnet Build
-        uses: grovegs/actions/.github/actions/dotnet-build
+        uses: grovegs/actions/.github/actions/dotnet-build@main
         with:
           project: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
 
       - name: 📦 Pack Nuget
-        uses: grovegs/actions/.github/actions/nuget-pack
+        uses: grovegs/actions/.github/actions/nuget-pack@main
         with:
           project: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
@@ -66,14 +66,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🏗️ Dotnet Build
-        uses: grovegs/actions/.github/actions/dotnet-build
+        uses: grovegs/actions/.github/actions/dotnet-build@main
         with:
           project: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
 
       - name: 📦 Pack Nuget
-        uses: grovegs/actions/.github/actions/nuget-pack
+        uses: grovegs/actions/.github/actions/nuget-pack@main
         with:
           project: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
@@ -81,7 +81,7 @@ jobs:
           artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
 
       - name: 🎮 Pack Godot
-        uses: grovegs/actions/.github/actions/godot-pack
+        uses: grovegs/actions/.github/actions/godot-pack@main
         with:
           addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
           version: ${{ needs.calculate_version.outputs.VERSION }}
@@ -94,7 +94,7 @@ jobs:
 
     steps:
       - name: 📦 Release Nuget
-        uses: grovegs/actions/.github/actions/nuget-release
+        uses: grovegs/actions/.github/actions/nuget-release@main
         with:
           artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
           api-key: ${{ secrets.NUGET_API_KEY }}
@@ -106,7 +106,7 @@ jobs:
 
     steps:
       - name: 📦 Release Nuget
-        uses: grovegs/actions/.github/actions/nuget-release
+        uses: grovegs/actions/.github/actions/nuget-release@main
         with:
           artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
           api-key: ${{ secrets.NUGET_API_KEY }}
@@ -118,7 +118,7 @@ jobs:
 
     steps:
       - name: 🛠️ Release Github
-        uses: grovegs/actions/.github/actions/github-release
+        uses: grovegs/actions/.github/actions/github-release@main
         with:
           title: Dependency Injection
           version: ${{ needs.calculate_version.outputs.VERSION }}
