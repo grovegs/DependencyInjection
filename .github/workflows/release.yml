@@ -6,7 +6,7 @@ on:
       version_type:
         description: "Select the version to increment (major, minor, patch)"
         required: true
-        default: "patch"
+        default: patch
         type: choice
         options:
           - major
@@ -20,9 +20,8 @@ env:
 jobs:
   calculate_version:
     runs-on: ubuntu-latest
-
     outputs:
-      VERSION: ${{ steps.version_bumper.outputs.NEXT_VERSION }}
+      VERSION: ${{ steps.bump_version.outputs.NEXT_VERSION }}
 
     steps:
       - name: 🔄 Checkout Code
@@ -30,103 +29,102 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🔧 Version Bumper
-        id: version_bumper
+      - name: 🔧 Bump Version
+        id: bump_version
         uses: grovegs/actions/.github/actions/bump-version@main
         with:
           version-type: ${{ inputs.version_type }}
 
-  build_core:
-    needs: calculate_version
-
+  set_variables:
     runs-on: ubuntu-latest
-
+    needs: calculate_version
     steps:
-      - name: 🔄 Checkout Code
-        uses: actions/checkout@v4
+      - name: 🔄 Set Variables
+        run: |
+          to_snake_case() {
+            echo $1 | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]'
+          }
 
+          version=${{ needs.calculate_version.outputs.VERSION }}
+          artifact_name=$(to_snake_case $PROJECT_NAME)-${version}
+          title=$(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${version}
+
+          echo VERSION=${version} >> $GITHUB_ENV
+          echo ARTIFACT_NAME=${artifact_name} >> $GITHUB_ENV
+          echo TITLE=${title} >> $GITHUB_ENV
+
+  build_core:
+    needs: set_variables
+    runs-on: ubuntu-latest
+    steps:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
-          version: ${{ needs.calculate_version.outputs.VERSION }}
+          version: $VERSION
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
-          version: ${{ needs.calculate_version.outputs.VERSION }}
+          version: $VERSION
           configuration: Release
-          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}
+          artifact: $ARTIFACT_NAME
 
   build_godot:
-    needs: calculate_version
-
+    needs: set_variables
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🔄 Checkout Code
-        uses: actions/checkout@v4
-
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
-          version: ${{ needs.calculate_version.outputs.VERSION }}
+          version: $VERSION
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
           project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
-          version: ${{ needs.calculate_version.outputs.VERSION }}
+          version: $VERSION
           configuration: Release
-          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot
+          artifact: $ARTIFACT_NAME-godot
 
       - name: 🎮 Pack Godot
         uses: grovegs/actions/.github/actions/pack-godot@main
         with:
           addon: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/addons/$PROJECT_OWNER.$PROJECT_NAME
-          version: ${{ needs.calculate_version.outputs.VERSION }}
-          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot-addon
+          version: $VERSION
+          artifact: $ARTIFACT_NAME-godot-addon
 
   release_core:
-    needs: [calculate_version, build_core]
-
+    needs: build_core
     runs-on: ubuntu-latest
-
     steps:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/release-nuget@main
         with:
-          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}
+          artifact: $ARTIFACT_NAME
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_godot:
-    needs: [calculate_version, build_godot]
-
+    needs: build_godot
     runs-on: ubuntu-latest
-
     steps:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/release-nuget@main
         with:
-          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot
+          artifact: $ARTIFACT_NAME-godot
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_github:
-    needs: [calculate_version, build_core, build_godot]
-
+    needs: [build_core, build_godot]
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🔄 Checkout Code
-        uses: actions/checkout@v4
-
       - name: 🛠️ Release Github
         uses: grovegs/actions/.github/actions/release-github@main
         with:
-          title: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.VERSION }}
-          version: ${{ needs.calculate_version.outputs.VERSION }}
+          title: $TITLE
+          version: $VERSION
           github-token: ${{ secrets.GITHUB_TOKEN }}
