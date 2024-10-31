@@ -3,7 +3,7 @@ name: 🚀 Release
 on:
   workflow_dispatch:
     inputs:
-      version_bump:
+      version_type:
         description: "Select the version to increment (major, minor, patch)"
         required: true
         default: "patch"
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      PROJECT_VERSION: ${{ steps.calculate_version.outputs.version }}
+      VERSION: ${{ steps.version_bumper.outputs.NEXT_VERSION }}
 
     steps:
       - name: 🔄 Checkout Code
@@ -26,76 +26,103 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🔖 Get Latest Tag
-        id: get_tag
-        run: |
-          git fetch --tags
-          latest_tag=$(git tag --sort=-v:refname | head -n 1 || echo "0.0.0")
-          echo "latest_tag=${latest_tag:-0.0.0}" >> $GITHUB_OUTPUT
-
-      - name: 🧮 Calculate Version
-        id: calculate_version
-        run: |
-          IFS='.' read -r major minor patch <<< "${{ steps.get_tag.outputs.latest_tag }}"
-          case "${{ github.event.inputs.version_bump }}" in
-            major) major=$((major + 1)); minor=0; patch=0 ;;
-            minor) minor=$((minor + 1)); patch=0 ;;
-            patch) patch=$((patch + 1)) ;;
-          esac
-          VERSION="$major.$minor.$patch"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Calculated Version: $VERSION"
+      - name: 🔧 Version Bumper
+        id: version_bumper
+        uses: grovegs/actions/.github/actions/version-bumper
+        with:
+          version-type: ${{ inputs.version_type }}
 
   build_core:
     needs: calculate_version
-    uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
-    with:
-      source: src/GroveGames.DependencyInjection
-      id: GroveGames.DependencyInjection
-      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Dotnet Build
+        uses: grovegs/actions/.github/actions/dotnet-build
+        with:
+          project: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
+          version: ${{ needs.calculate_version.outputs.VERSION }}
+          configuration: Release
+
+      - name: 📦 Pack Nuget
+        uses: grovegs/actions/.github/actions/nuget-pack
+        with:
+          project: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
+          version: ${{ needs.calculate_version.outputs.VERSION }}
+          configuration: Release
+          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
 
   build_godot:
     needs: calculate_version
-    uses: grovegs/actions/.github/workflows/dotnet-build.yml@main
-    with:
-      source: src/GroveGames.DependencyInjection.Godot
-      id: GroveGames.DependencyInjection.Godot
-      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
-      platform: godot
 
-  pack_core_nuget:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Dotnet Build
+        uses: grovegs/actions/.github/actions/dotnet-build
+        with:
+          project: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
+          version: ${{ needs.calculate_version.outputs.VERSION }}
+          configuration: Release
+
+      - name: 📦 Pack Nuget
+        uses: grovegs/actions/.github/actions/nuget-pack
+        with:
+          project: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
+          version: ${{ needs.calculate_version.outputs.VERSION }}
+          configuration: Release
+          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
+
+      - name: 🎮 Pack Godot
+        uses: grovegs/actions/.github/actions/godot-pack
+        with:
+          addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
+          version: ${{ needs.calculate_version.outputs.VERSION }}
+          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot-addon
+
+  release_core:
     needs: [calculate_version, build_core]
-    uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
-    with:
-      name: dependency-injection
-      source: src/GroveGames.DependencyInjection
-      id: GroveGames.DependencyInjection
-      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
 
-  pack_godot_nuget:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Release Nuget
+        uses: grovegs/actions/.github/actions/nuget-release
+        with:
+          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
+          api-key: ${{ secrets.NUGET_API_KEY }}
+
+  release_godot:
     needs: [calculate_version, build_godot]
-    uses: grovegs/actions/.github/workflows/nuget-pack.yml@main
-    with:
-      name: dependency-injection
-      source: src/GroveGames.DependencyInjection.Godot
-      id: GroveGames.DependencyInjection.Godot
-      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
-      platform: godot
 
-  pack_godot_addon:
-    needs: calculate_version
-    uses: grovegs/actions/.github/workflows/godot-pack.yml@main
-    with:
-      name: dependency-injection
-      source: src/GroveGames.DependencyInjection.Godot/addons
-      id: GroveGames.DependencyInjection
-      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
+    runs-on: ubuntu-latest
 
-  create_release:
-    needs:
-      [calculate_version, pack_core_nuget, pack_godot_nuget, pack_godot_addon]
-    uses: grovegs/actions/.github/workflows/github-release.yml@main
-    with:
-      title: "Dependency Injection ${{ needs.calculate_version.outputs.PROJECT_VERSION }}"
-      version: ${{ needs.calculate_version.outputs.PROJECT_VERSION }}
-      artifacts: godot-addon,nuget-package,nuget-package-godot
+    steps:
+      - name: 📦 Release Nuget
+        uses: grovegs/actions/.github/actions/nuget-release
+        with:
+          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
+          api-key: ${{ secrets.NUGET_API_KEY }}
+
+  release_github:
+    needs: [calculate_version, build_core, build_godot]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🛠️ Release Github
+        uses: grovegs/actions/.github/actions/github-release
+        with:
+          title: Dependency Injection
+          version: ${{ needs.calculate_version.outputs.VERSION }}
+          artifacts: |
+            dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
+            dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
+            dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot-addon
