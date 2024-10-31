@@ -125,3 +125,4 @@ jobs:
         with:
           title: Dependency Injection
           version: ${{ needs.calculate_version.outputs.VERSION }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
