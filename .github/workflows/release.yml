@@ -122,7 +122,8 @@ jobs:
         with:
           title: Dependency Injection
           version: ${{ needs.calculate_version.outputs.VERSION }}
-          artifacts: |
-            dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
-            dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
+          artifacts: "[
+            dependency-injection-${{ needs.calculate_version.outputs.VERSION }},
+            dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot,
             dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot-addon
+            ]"
