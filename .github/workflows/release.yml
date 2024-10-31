@@ -13,6 +13,10 @@ on:
           - minor
           - patch
 
+env:
+  PROJECT_OWNER: GroveGames
+  PROJECT_NAME: DependencyInjection
+
 jobs:
   calculate_version:
     runs-on: ubuntu-latest
@@ -44,17 +48,17 @@ jobs:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/dotnet-build@main
         with:
-          project: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
+          project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/nuget-pack@main
         with:
-          project: src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj
+          project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
-          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
+          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}
 
   build_godot:
     needs: calculate_version
@@ -68,24 +72,24 @@ jobs:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/dotnet-build@main
         with:
-          project: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
+          project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/nuget-pack@main
         with:
-          project: src/GroveGames.DependencyInjection.Godot/GroveGames.DependencyInjection.Godot.csproj
+          project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
           version: ${{ needs.calculate_version.outputs.VERSION }}
           configuration: Release
-          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
+          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot
 
       - name: 🎮 Pack Godot
         uses: grovegs/actions/.github/actions/godot-pack@main
         with:
-          addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
+          addon: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/addons/$PROJECT_OWNER.$PROJECT_NAME
           version: ${{ needs.calculate_version.outputs.VERSION }}
-          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot-addon
+          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot-addon
 
   release_core:
     needs: [calculate_version, build_core]
@@ -96,7 +100,7 @@ jobs:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/nuget-release@main
         with:
-          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}
+          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_godot:
@@ -108,7 +112,7 @@ jobs:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/nuget-release@main
         with:
-          artifact: dependency-injection-${{ needs.calculate_version.outputs.VERSION }}-godot
+          artifact: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1_\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.VERSION }}-godot
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_github:
@@ -123,6 +127,6 @@ jobs:
       - name: 🛠️ Release Github
         uses: grovegs/actions/.github/actions/github-release@main
         with:
-          title: Dependency Injection ${{ needs.calculate_version.outputs.VERSION }}
+          title: $(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.VERSION }}
           version: ${{ needs.calculate_version.outputs.VERSION }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
