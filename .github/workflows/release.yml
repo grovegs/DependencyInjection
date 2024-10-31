@@ -55,9 +55,9 @@ jobs:
     steps:
       - name: Print Vars
         run: |
-          echo Version: $VERSION
-          echo Artifact: $ARTIFACT
-          echo Title: $TITLE
+          echo Version: ${{ env.VERSION }}
+          echo Artifact: ${{ env.ARTIFACT }}
+          echo Title: ${{ env.TITLE }}
 
   build_core:
     needs: set_variables
