@@ -9,30 +9,32 @@ on:
       - main
 
 env:
-  PROJECT_OWNER: GroveGames
-  PROJECT_NAME: DependencyInjection
+  NAME: DependencyInjection
+  AUTHORS: GroveGames
 
 jobs:
+  checkout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
   core_tests:
+    needs: checkout
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-
       - name: ✅ Test Dotnet
         uses: grovegs/actions/.github/actions/test-dotnet@main
         with:
-          project: tests/$PROJECT_OWNER.$PROJECT_NAME.Tests/$PROJECT_OWNER.$PROJECT_NAME.Tests.csproj
+          project: tests/$AUTHORS.$NAME.Tests/$AUTHORS.$NAME.Tests.csproj
 
   godot_tests:
+    needs: checkout
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-
       - name: ✅ Test Dotnet
         uses: grovegs/actions/.github/actions/test-dotnet@main
         with:
-          project: tests/$PROJECT_OWNER.$PROJECT_NAME.Godot.Tests/$PROJECT_OWNER.$PROJECT_NAME.Godot.Tests.csproj
+          project: tests/$AUTHORS.$NAME.Godot.Tests/$AUTHORS.$NAME.Godot.Tests.csproj
