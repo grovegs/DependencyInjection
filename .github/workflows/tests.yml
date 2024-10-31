@@ -13,27 +13,25 @@ env:
   AUTHORS: GroveGames
 
 jobs:
-  checkout:
+  core_tests:
     runs-on: ubuntu-latest
+
     steps:
       - name: 🔄 Checkout Code
         uses: actions/checkout@v4
 
-  core_tests:
-    needs: checkout
-    runs-on: ubuntu-latest
-
-    steps:
       - name: ✅ Test Dotnet
         uses: grovegs/actions/.github/actions/test-dotnet@main
         with:
           project: tests/$AUTHORS.$NAME.Tests/$AUTHORS.$NAME.Tests.csproj
 
   godot_tests:
-    needs: checkout
     runs-on: ubuntu-latest
 
     steps:
+      - name: 🔄 Checkout Code
+        uses: actions/checkout@v4
+
       - name: ✅ Test Dotnet
         uses: grovegs/actions/.github/actions/test-dotnet@main
         with:
