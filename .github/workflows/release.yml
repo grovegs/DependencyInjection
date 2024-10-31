@@ -47,8 +47,8 @@ jobs:
 
           version=${{ needs.calculate_version.outputs.VERSION }}
 
-          artifact_name=$(to_snake_case $PROJECT_NAME)-$version
-          title=$(echo $PROJECT_NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') $version
+          artifact_name=$(to_snake_case "$PROJECT_NAME")-$version
+          title=$(echo "$PROJECT_NAME" | sed -E 's/([a-z])([A-Z])/\1 \2/g') $version
 
           echo VERSION=$version >> $GITHUB_ENV
           echo ARTIFACT_NAME=$artifact_name >> $GITHUB_ENV
