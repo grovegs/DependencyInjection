@@ -8,22 +8,55 @@ on:
     branches:
       - main
 
-jobs:
-  format:
-    runs-on: ubuntu-latest
+env:
+  PROJECT_OWNER: GroveGames
+  PROJECT_NAME: DependencyInjection
 
-    env:
-      DOTNET_CLI_TELEMETRY_OPTOUT: true
-      DOTNET_NOLOGO: true
+jobs:
+  format_core:
+    runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🛠️ Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+      - name: 🔍 Format Dotnet
+        uses: grovegs/actions/.github/actions/format-dotnet@main
         with:
-          global-json-file: global.json
+          project: src/$PROJECT_OWNER.$PROJECT_NAME/$PROJECT_OWNER.$PROJECT_NAME.csproj
 
-      - name: 🔍 Run Format
-        run: dotnet format --verify-no-changes
+  format_godot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Format Dotnet
+        uses: grovegs/actions/.github/actions/format-dotnet@main
+        with:
+          project: src/$PROJECT_OWNER.$PROJECT_NAME.Godot/$PROJECT_OWNER.$PROJECT_NAME.Godot.csproj
+
+  format_core_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Format Dotnet
+        uses: grovegs/actions/.github/actions/format-dotnet@main
+        with:
+          project: tests/$PROJECT_OWNER.$PROJECT_NAME.Tests/$PROJECT_OWNER.$PROJECT_NAME.Tests.csproj
+
+  format_godot_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Format Dotnet
+        uses: grovegs/actions/.github/actions/format-dotnet@main
+        with:
+          project: tests/$PROJECT_OWNER.$PROJECT_NAME.Godot.Tests/$PROJECT_OWNER.$PROJECT_NAME.Godot.Tests.csproj
