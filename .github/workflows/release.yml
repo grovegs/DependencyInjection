@@ -18,10 +18,12 @@ env:
   AUTHOR: GroveGames
 
 jobs:
-  calculate_version:
+  set_metadata:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.bump_version.outputs.next_version }}
+      artifact: ${{ steps.generate_artifact.outputs.artifact }}
+      title: ${{ steps.generate_title.outputs.title }}
 
     steps:
       - name: 🔄 Checkout Code
@@ -35,26 +37,17 @@ jobs:
         with:
           version-type: ${{ inputs.version_type }}
 
-  set_metadata:
-    needs: calculate_version
-    runs-on: ubuntu-latest
-    outputs:
-      title: ${{ steps.generate_title.outputs.artifact }}
-      artifact: ${{ steps.generate_artifact.outputs.artifact }}
-      version: ${{ needs.calculate_version.outputs.version }}
-
-    steps:
-      - name: 📝 Generate Title
-        id: generate_title
-        run: |
-          title="$(echo $NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.version }}"
-          echo title=$title >> $GITHUB_OUTPUT
-
       - name: 📦 Generate Artifact
         id: generate_artifact
         run: |
-          artifact=$(echo $NAME | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.version }}
+          artifact=$(echo $NAME | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-${{ steps.bump_version.outputs.next_version }}
           echo artifact=$artifact >> $GITHUB_OUTPUT
+
+      - name: 📝 Generate Title
+        id: generate_title
+        run: |
+          title="$(echo $NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ steps.bump_version.outputs.next_version }}"
+          echo title=$title >> $GITHUB_OUTPUT
 
   build_core:
     needs: set_metadata
