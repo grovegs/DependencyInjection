@@ -15,13 +15,13 @@ on:
 
 env:
   NAME: DependencyInjection
-  AUTHORS: GroveGames
+  AUTHOR: GroveGames
 
 jobs:
   calculate_version:
     runs-on: ubuntu-latest
     outputs:
-      VERSION: ${{ steps.bump_version.outputs.NEXT_VERSION }}
+      version: ${{ steps.bump_version.outputs.next_version }}
 
     steps:
       - name: 🔄 Checkout Code
@@ -35,32 +35,29 @@ jobs:
         with:
           version-type: ${{ inputs.version_type }}
 
-  set_variables:
+  set_metadata:
     needs: calculate_version
     runs-on: ubuntu-latest
-    steps:
-      - name: 🔄 Set Variables
-        run: |
-          version=${{ needs.calculate_version.outputs.VERSION }}
-          artifact=$(echo $name | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-$version
-          title="$(echo $name | sed -E 's/([a-z])([A-Z])/\1 \2/g') $version"
+    outputs:
+      title: ${{ steps.generate_title.outputs.artifact }}
+      artifact: ${{ steps.generate_artifact.outputs.artifact }}
+      version: ${{ needs.calculate_version.outputs.version }}
 
-          echo VERSION=$version >> $GITHUB_ENV
-          echo ARTIFACT=$artifact >> $GITHUB_ENV
-          echo TITLE=$title >> $GITHUB_ENV
-
-  log:
-    needs: set_variables
-    runs-on: ubuntu-latest
     steps:
-      - name: Print Vars
+      - name: 📝 Generate Title
+        id: generate_title
         run: |
-          echo Version: ${{ env.VERSION }}
-          echo Artifact: ${{ env.ARTIFACT }}
-          echo Title: ${{ env.TITLE }}
+          title="$(echo $name | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.version }}"
+          echo title=$title >> $GITHUB_OUTPUT
+
+      - name: 📦 Generate Artifact
+        id: generate_artifact
+        run: |
+          artifact=$(echo $name | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.version }}
+          echo artifact=$artifact >> $GITHUB_OUTPUT
 
   build_core:
-    needs: set_variables
+    needs: set_metadata
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout Code
@@ -69,20 +66,20 @@ jobs:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
-          project: src/$AUTHORS.$NAME/$AUTHORS.$NAME.csproj
-          version: $VERSION
+          project: src/$AUTHOR.$NAME/$AUTHOR.$NAME.csproj
+          version: ${{ needs.set_metadata.outputs.version }}
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
-          project: src/$AUTHORS.$NAME/$AUTHORS.$NAME.csproj
-          version: $VERSION
+          project: src/$AUTHOR.$NAME/$AUTHOR.$NAME.csproj
+          version: ${{ needs.set_metadata.outputs.version }}
           configuration: Release
-          artifact: $ARTIFACT
+          artifact: ${{ needs.set_metadata.outputs.artifact }}
 
   build_godot:
-    needs: set_variables
+    needs: set_metadata
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout Code
@@ -91,47 +88,47 @@ jobs:
       - name: 🏗️ Dotnet Build
         uses: grovegs/actions/.github/actions/build-dotnet@main
         with:
-          project: src/$AUTHORS.$NAME.Godot/$AUTHORS.$NAME.Godot.csproj
-          version: $VERSION
+          project: src/$AUTHOR.$NAME.Godot/$AUTHOR.$NAME.Godot.csproj
+          version: ${{ needs.set_metadata.outputs.version }}
           configuration: Release
 
       - name: 📦 Pack Nuget
         uses: grovegs/actions/.github/actions/pack-nuget@main
         with:
-          project: src/$AUTHORS.$NAME.Godot/$AUTHORS.$NAME.Godot.csproj
-          version: $VERSION
+          project: src/$AUTHOR.$NAME.Godot/$AUTHOR.$NAME.Godot.csproj
+          version: ${{ needs.set_metadata.outputs.version }}
           configuration: Release
-          artifact: $ARTIFACT-godot
+          artifact: ${{ needs.set_metadata.outputs.artifact }}-godot
 
       - name: 🎮 Pack Godot
         uses: grovegs/actions/.github/actions/pack-godot@main
         with:
-          addon: src/$AUTHORS.$NAME.Godot/addons/$AUTHORS.$NAME
-          version: $VERSION
-          artifact: $ARTIFACT-godot-addon
+          addon: src/$AUTHOR.$NAME.Godot/addons/$AUTHOR.$NAME
+          version: ${{ needs.set_metadata.outputs.version }}
+          artifact: ${{ needs.set_metadata.outputs.artifact }}-godot-addon
 
   release_core:
-    needs: build_core
+    needs: [set_metadata, build_core]
     runs-on: ubuntu-latest
     steps:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/release-nuget@main
         with:
-          artifact: $ARTIFACT
+          artifact: ${{ needs.set_metadata.outputs.artifact }}
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_godot:
-    needs: build_godot
+    needs: [set_metadata, build_godot]
     runs-on: ubuntu-latest
     steps:
       - name: 📦 Release Nuget
         uses: grovegs/actions/.github/actions/release-nuget@main
         with:
-          artifact: $ARTIFACT-godot
+          artifact: ${{ needs.set_metadata.outputs.artifact }}-godot
           api-key: ${{ secrets.NUGET_API_KEY }}
 
   release_github:
-    needs: [build_core, build_godot]
+    needs: [set_metadata, build_core, build_godot]
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout Code
@@ -141,5 +138,5 @@ jobs:
         uses: grovegs/actions/.github/actions/release-github@main
         with:
           title: $TITLE
-          version: $VERSION
+          version: ${{ needs.set_metadata.outputs.version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
