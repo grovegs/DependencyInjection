@@ -130,6 +130,6 @@ jobs:
       - name: 🛠️ Release Github
         uses: grovegs/actions/.github/actions/release-github@main
         with:
-          title: $TITLE
+          title: ${{ needs.set_metadata.outputs.title }}
           version: ${{ needs.set_metadata.outputs.version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
