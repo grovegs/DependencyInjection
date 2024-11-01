@@ -47,13 +47,13 @@ jobs:
       - name: 📝 Generate Title
         id: generate_title
         run: |
-          title="$(echo $name | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.version }}"
+          title="$(echo $NAME | sed -E 's/([a-z])([A-Z])/\1 \2/g') ${{ needs.calculate_version.outputs.version }}"
           echo title=$title >> $GITHUB_OUTPUT
 
       - name: 📦 Generate Artifact
         id: generate_artifact
         run: |
-          artifact=$(echo $name | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.version }}
+          artifact=$(echo $NAME | sed -E 's/([a-z])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')-${{ needs.calculate_version.outputs.version }}
           echo artifact=$artifact >> $GITHUB_OUTPUT
 
   build_core:
