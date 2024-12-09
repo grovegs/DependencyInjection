@@ -3,7 +3,7 @@ name: 🚀 Release
 on:
   workflow_dispatch:
     inputs:
-      version_type:
+      version-type:
         description: "Select the version to increment (major, minor, patch)"
         required: true
         default: patch
@@ -25,7 +25,7 @@ jobs:
       godot-project: src/GroveGames.DependencyInjection.Godot
       godot-addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
       global-json-file: global.json
-      version-type: ${{ inputs.version_type }}
+      version-type: ${{ inputs.version-type }}
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       nuget-api-key: ${{ secrets.NUGET_API_KEY }}
