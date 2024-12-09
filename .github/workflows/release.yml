@@ -13,9 +13,6 @@ on:
           - minor
           - patch
 
-env:
-  PROJECT_ID: GroveGames.DependencyInjection
-
 jobs:
   release:
     uses: grovegs/workflows/.github/workflows/godot-package-release.yml@feature/new-workflows
