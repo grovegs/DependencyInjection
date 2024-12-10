@@ -4,35 +4,16 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request:
     branches:
       - main
-
-env:
-  NAME: ${{ vars.PROJECT_NAME }}
-  AUTHOR: ${{ vars.PROJECT_AUTHOR }}
+      - develop
 
 jobs:
-  core_tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 🔄 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: ✅ Test Dotnet
-        uses: grovegs/actions/.github/actions/test-dotnet@main
-        with:
-          project: tests/$AUTHOR.$NAME.Tests/$AUTHOR.$NAME.Tests.csproj
-
-  godot_tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 🔄 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: ✅ Test Dotnet
-        uses: grovegs/actions/.github/actions/test-dotnet@main
-        with:
-          project: tests/$AUTHOR.$NAME.Godot.Tests/$AUTHOR.$NAME.Godot.Tests.csproj
+  tests:
+    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@feature/new-workflows
+    with:
+      core-project: src/GroveGames.DependencyInjection
+      godot-project: src/GroveGames.DependencyInjection.Godot
+      global-json-file: global.json
