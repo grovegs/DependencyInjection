@@ -12,7 +12,7 @@ on:
 
 jobs:
   tests:
-    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@feature/new-workflows
+    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@main
     with:
       core-project: tests/GroveGames.DependencyInjection.Tests
       godot-project: tests/GroveGames.DependencyInjection.Godot.Tests

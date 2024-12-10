@@ -15,7 +15,7 @@ on:
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/godot-package-release.yml@feature/new-workflows
+    uses: grovegs/workflows/.github/workflows/godot-package-release.yml@main
     with:
       name: Dependency Injection
       core-project: src/GroveGames.DependencyInjection
