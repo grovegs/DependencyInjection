@@ -14,6 +14,6 @@ jobs:
   tests:
     uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@feature/new-workflows
     with:
-      core-project: src/GroveGames.DependencyInjection
-      godot-project: src/GroveGames.DependencyInjection.Godot
+      core-project: tests/GroveGames.DependencyInjection
+      godot-project: tests/GroveGames.DependencyInjection.Godot
       global-json-file: global.json
