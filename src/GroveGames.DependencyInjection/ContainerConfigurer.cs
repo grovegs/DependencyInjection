@@ -1,4 +1,6 @@
-﻿using GroveGames.DependencyInjection.Collections;
+﻿using System.Diagnostics.CodeAnalysis;
+
+using GroveGames.DependencyInjection.Collections;
 using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
@@ -29,13 +31,13 @@ internal sealed class ContainerConfigurer : IContainerConfigurer
         AddSingleton(registrationType, registrationType, objectResolver);
     }
 
-    public void AddSingleton(Type registrationType, Type implementationType)
+    public void AddSingleton([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
         var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
         AddSingleton(registrationType, registrationType, objectResolver);
     }
 
-    public void AddTransient(Type registrationType, Type implementationType)
+    public void AddTransient([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
         var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
         var instanceResolver = new TransientResolver(objectResolver);

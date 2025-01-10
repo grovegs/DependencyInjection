@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using GroveGames.DependencyInjection.Activators;
 using GroveGames.DependencyInjection.Resolution;
@@ -21,19 +22,19 @@ internal static class MethodInjector
         MethodBaseInjector.Inject(uninitializedObject, objectActivator!, registrationResolver);
     }
 
-    private static bool TryCreateObjectActivator(Type implementationType, out IObjectActivator? objectActivator)
+    private static bool TryCreateObjectActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type implementationType, out IObjectActivator? objectActivator)
     {
         objectActivator = null;
 
-        if (TryFindMethodInfo(implementationType, out var constructorInfo))
+        if (TryFindMethodInfo(implementationType, out var methodInfo))
         {
-            objectActivator = new MethodBaseActivator(constructorInfo!);
+            objectActivator = new MethodBaseActivator(methodInfo!);
         }
 
         return objectActivator != null;
     }
 
-    private static bool TryFindMethodInfo(Type implementationType, out MethodInfo? foundMethodInfo)
+    private static bool TryFindMethodInfo([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type implementationType, out MethodInfo? foundMethodInfo)
     {
         foundMethodInfo = null;
         var methodInfos = implementationType.GetMethods(MethodBindingFlags);

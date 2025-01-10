@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 using GroveGames.DependencyInjection.Activators;
 using GroveGames.DependencyInjection.Resolution;
@@ -21,7 +22,7 @@ internal static class ConstructorInjector
         MethodBaseInjector.Inject(uninitializedObject, objectActivator!, registrationResolver);
     }
 
-    private static bool TryCreateObjectActivator(Type implementationType, out IObjectActivator? objectActivator)
+    private static bool TryCreateObjectActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType, out IObjectActivator? objectActivator)
     {
         if (TryFindConstructorInfo(implementationType, out var constructorInfo))
         {
@@ -33,7 +34,7 @@ internal static class ConstructorInjector
         return false;
     }
 
-    private static bool TryFindConstructorInfo(Type implementationType, out ConstructorInfo? foundConstructorInfo)
+    private static bool TryFindConstructorInfo([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType, out ConstructorInfo? foundConstructorInfo)
     {
         var constructorInfos = implementationType.GetConstructors(ConstructorBindingFlags);
         var foundParametersCount = int.MinValue;
