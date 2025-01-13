@@ -1,4 +1,6 @@
-﻿namespace GroveGames.DependencyInjection;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace GroveGames.DependencyInjection;
 
 public static class ContainerConfigurerExtensions
 {
@@ -8,12 +10,12 @@ public static class ContainerConfigurerExtensions
         containerConfigurer.AddSingleton(implementationType, implementationInstance);
     }
 
-    public static void AddSingleton(this IContainerConfigurer containerConfigurer, Type implementationType)
+    public static void AddSingleton(this IContainerConfigurer containerConfigurer, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
         containerConfigurer.AddSingleton(implementationType, implementationType);
     }
 
-    public static void AddTransient(this IContainerConfigurer containerConfigurer, Type implementationType)
+    public static void AddTransient(this IContainerConfigurer containerConfigurer, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
         containerConfigurer.AddTransient(implementationType, implementationType);
     }
@@ -26,7 +28,7 @@ public static class ContainerConfigurerExtensions
         containerConfigurer.AddSingleton(registrationType, implementationInstance);
     }
 
-    public static void AddSingleton<TRegistration, TImplementation>(this IContainerConfigurer containerConfigurer)
+    public static void AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TRegistration, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerConfigurer containerConfigurer)
         where TRegistration : class
         where TImplementation : class, TRegistration
     {
@@ -42,14 +44,14 @@ public static class ContainerConfigurerExtensions
         containerConfigurer.AddSingleton(implementationType, implementationInstance);
     }
 
-    public static void AddSingleton<TImplementation>(this IContainerConfigurer containerConfigurer)
+    public static void AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerConfigurer containerConfigurer)
         where TImplementation : class
     {
         var implementationType = typeof(TImplementation);
         containerConfigurer.AddSingleton(implementationType, implementationType);
     }
 
-    public static void AddTransient<TRegistration, TImplementation>(this IContainerConfigurer containerConfigurer)
+    public static void AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TRegistration, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerConfigurer containerConfigurer)
         where TRegistration : class
         where TImplementation : class, TRegistration
     {
@@ -58,7 +60,7 @@ public static class ContainerConfigurerExtensions
         containerConfigurer.AddTransient(registrationType, implementationType);
     }
 
-    public static void AddTransient<TImplementation>(this IContainerConfigurer containerConfigurer)
+    public static void AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerConfigurer containerConfigurer)
         where TImplementation : class
     {
         var implementationType = typeof(TImplementation);

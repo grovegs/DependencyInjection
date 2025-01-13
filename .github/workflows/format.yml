@@ -16,4 +16,6 @@ jobs:
     with:
       core-project: src/GroveGames.DependencyInjection
       godot-project: src/GroveGames.DependencyInjection.Godot
+      core-test-project: tests/GroveGames.DependencyInjection.Tests
+      godot-test-project: tests/GroveGames.DependencyInjection.Godot.Tests
       global-json-file: global.json
