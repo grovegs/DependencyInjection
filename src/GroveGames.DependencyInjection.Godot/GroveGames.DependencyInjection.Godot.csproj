@@ -2,6 +2,9 @@
   <PropertyGroup>
     <PublishAot>true</PublishAot>
   </PropertyGroup>
+  <PropertyGroup>
+    <PackageTags>$(PackageTags);godot</PackageTags>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="GodotSharp" Version="4.3.0" />
   </ItemGroup>
