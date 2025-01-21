@@ -1,15 +1,15 @@
 namespace GroveGames.DependencyInjection.Tests;
 
-public class NullContainerTests
+public class EmptyContainerTests
 {
     [Fact]
     public void Name_ShouldReturnEmptyString()
     {
         // Arrange
-        var nullContainer = new NullContainer();
+        var emptyContainer = new EmptyContainer();
 
         // Act
-        var name = nullContainer.Name;
+        var name = emptyContainer.Name;
 
         // Assert
         Assert.Equal(string.Empty, name);
@@ -19,10 +19,10 @@ public class NullContainerTests
     public void Parent_ShouldReturnNull()
     {
         // Arrange
-        var nullContainer = new NullContainer();
+        var emptyContainer = new EmptyContainer();
 
         // Act
-        var parent = nullContainer.Parent;
+        var parent = emptyContainer.Parent;
 
         // Assert
         Assert.Null(parent);
@@ -32,11 +32,11 @@ public class NullContainerTests
     public void AddChild_ShouldDoNothing()
     {
         // Arrange
-        var nullContainer = new NullContainer();
+        var emptyContainer = new EmptyContainer();
         var mockChild = new Mock<IContainer>();
 
         // Act
-        nullContainer.AddChild(mockChild.Object);
+        emptyContainer.AddChild(mockChild.Object);
 
         // Assert
     }
@@ -45,11 +45,11 @@ public class NullContainerTests
     public void RemoveChild_ShouldDoNothing()
     {
         // Arrange
-        var nullContainer = new NullContainer();
+        var emptyContainer = new EmptyContainer();
         var mockChild = new Mock<IContainer>();
 
         // Act
-        nullContainer.RemoveChild(mockChild.Object);
+        emptyContainer.RemoveChild(mockChild.Object);
 
         // Assert
     }
@@ -58,10 +58,10 @@ public class NullContainerTests
     public void Dispose_ShouldDoNothing()
     {
         // Arrange
-        var nullContainer = new NullContainer();
+        var emptyContainer = new EmptyContainer();
 
         // Act
-        nullContainer.Dispose();
+        emptyContainer.Dispose();
 
         // Assert
     }
@@ -70,11 +70,11 @@ public class NullContainerTests
     public void Resolve_ShouldReturnNull()
     {
         // Arrange
-        var nullContainer = new NullContainer();
+        var emptyContainer = new EmptyContainer();
         var registrationType = typeof(object);
 
         // Act
-        var result = nullContainer.Resolve(registrationType);
+        var result = emptyContainer.Resolve(registrationType);
 
         // Assert
         Assert.Null(result);

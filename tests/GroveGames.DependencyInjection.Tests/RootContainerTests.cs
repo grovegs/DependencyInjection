@@ -20,7 +20,7 @@ public class RootContainerTests
         // Assert
         Assert.NotNull(rootContainer);
         Assert.Equal(string.Empty, rootContainer.Name);
-        Assert.IsType<NullContainer>(rootContainer.Parent);
+        Assert.IsType<EmptyContainer>(rootContainer.Parent);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class RootContainerTests
         // Assert
         Assert.NotNull(rootContainer);
         Assert.Equal(string.Empty, rootContainer.Name);
-        Assert.IsType<NullContainer>(rootContainer.Parent);
+        Assert.IsType<EmptyContainer>(rootContainer.Parent);
     }
 
     [Fact]
