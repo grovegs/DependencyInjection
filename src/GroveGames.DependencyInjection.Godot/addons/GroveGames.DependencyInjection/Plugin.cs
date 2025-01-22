@@ -8,14 +8,17 @@ public partial class Plugin : EditorPlugin
 {
     public override void _EnterTree()
     {
-        var settings = new Settings(new GodotProjectSettings());
-        settings.CreateRootInstallerSetting();
-        AddAutoloadSingleton(nameof(DependencyInjector), $"res://addons/GroveGames.DependencyInjection/{nameof(DependencyInjector)}.cs");
+        var settings = GodotProjectSettingsBuilder.Build();
+
+        if (settings.GetSetting<bool>(GodotProjectSettingsKey.AutoLoad))
+        {
+            AddAutoloadSingleton(nameof(GodotRootNode), $"res://addons/GroveGames.DependencyInjection/{nameof(GodotRootNode)}.cs");
+        }
     }
 
     public override void _ExitTree()
     {
-        RemoveAutoloadSingleton(nameof(DependencyInjector));
+        RemoveAutoloadSingleton(nameof(GodotRootNode));
     }
 }
 #endif
