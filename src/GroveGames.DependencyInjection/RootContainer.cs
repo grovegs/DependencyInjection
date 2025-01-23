@@ -14,7 +14,7 @@ public sealed class RootContainer : IContainer
     internal RootContainer(IContainerCache cache, Action<IContainerConfigurer> configure)
     {
         var name = string.Empty;
-        var parent = new NullContainer();
+        var parent = new EmptyContainer();
         var resolver = new RootContainerResolver();
         var disposables = new DisposableCollection();
         _container = new Container(name, parent, resolver, cache, disposables, configure);

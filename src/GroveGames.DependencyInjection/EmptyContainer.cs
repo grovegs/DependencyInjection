@@ -1,6 +1,6 @@
 namespace GroveGames.DependencyInjection;
 
-public sealed class NullContainer : IContainer
+public sealed class EmptyContainer : IContainer
 {
     public string Name => string.Empty;
 

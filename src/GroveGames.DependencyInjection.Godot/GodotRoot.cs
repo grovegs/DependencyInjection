@@ -1,13 +1,20 @@
-﻿using Godot;
+using Godot;
 
 namespace GroveGames.DependencyInjection;
 
-public sealed partial class DependencyInjector : Node
+public sealed class GodotRoot
 {
-    public override void _Ready()
+    private readonly Window _window;
+
+    public GodotRoot(Window window)
     {
-        var settings = new Settings(new GodotProjectSettings());
-        var rootInstallerPath = settings.GetRootInstallerSetting();
+        _window = window;
+    }
+
+    public void Run()
+    {
+        var settings = new GodotProjectSettings();
+        var rootInstallerPath = settings.GetSetting<string>(GodotProjectSettingsKey.RootInstaller);
         var rootInstallerResource = ResourceLoader.Load<Resource>(rootInstallerPath);
 
         if (rootInstallerResource is not IRootInstaller rootInstaller)
@@ -16,11 +23,9 @@ public sealed partial class DependencyInjector : Node
         }
 
         var rootContainer = RootContainer.Create(rootInstaller.Install);
-        var tree = GetTree();
-        var root = tree.Root;
-        root.TreeExiting += rootContainer.Dispose;
-        root.ChildEnteredTree += InstallScene;
-        InstallMainScene(root);
+        _window.TreeExiting += rootContainer.Dispose;
+        _window.ChildEnteredTree += InstallScene;
+        InstallMainScene(_window);
     }
 
     private void InstallMainScene(Node root)

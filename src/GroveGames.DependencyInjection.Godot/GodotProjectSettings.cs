@@ -14,8 +14,8 @@ public sealed class GodotProjectSettings : IProjectSettings
         return ProjectSettings.HasSetting(key);
     }
 
-    public void SetSetting(string key, string value)
+    public void SetSetting<[MustBeVariant] T>(string key, T value)
     {
-        ProjectSettings.SetSetting(key, value);
+        ProjectSettings.SetSetting(key, Variant.From(value));
     }
 }

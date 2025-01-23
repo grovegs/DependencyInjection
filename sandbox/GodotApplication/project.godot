@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-DependencyInjector="*res://addons/GroveGames.DependencyInjection/DependencyInjector.cs"
+GodotRootNode="*res://addons/GroveGames.DependencyInjection/GodotRootNode.cs"
 
 [dotnet]
 
@@ -30,6 +30,7 @@ enabled=PackedStringArray("res://addons/GroveGames.DependencyInjection/plugin.cf
 [grove_games]
 
 dependency_injection/root_installer="res://RootInstaller.tres"
+dependency_injection/auto_load=true
 
 [rendering]
 
