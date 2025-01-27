@@ -1,10 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://5k3oln57k63y"]
+[gd_scene load_steps=4 format=3 uid="uid://5k3oln57k63y"]
 
 [ext_resource type="Script" path="res://Main.cs" id="1_gb60r"]
 [ext_resource type="Script" path="res://MainInstaller.cs" id="2_oy75v"]
+[ext_resource type="Script" path="res://NodeExample.cs" id="3_r0du0"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_gb60r")
 
-[node name="Installer" type="Node" parent="."]
+[node name="MainInstaller" type="Node" parent="." node_paths=PackedStringArray("_instance")]
 script = ExtResource("2_oy75v")
+_instance = NodePath("../NodeExample")
+
+[node name="NodeExample" type="Node" parent="."]
+script = ExtResource("3_r0du0")
