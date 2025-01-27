@@ -1,5 +1,7 @@
 using Godot;
 
+using GroveGames.DependencyInjection;
+
 public partial class Splash : Node2D
 {
     public override void _Ready()
@@ -9,6 +11,6 @@ public partial class Splash : Node2D
 
     private void ChangeScene()
     {
-        GetTree().ChangeSceneToFile("res://Main.tscn");
+        GetTree().ChangeScene("res://Main.tscn", 2);
     }
 }
