@@ -24,32 +24,6 @@ public sealed class GodotRoot
 
         var rootContainer = RootContainer.Create(rootInstaller.Install);
         _window.TreeExiting += rootContainer.Dispose;
-        _window.ChildEnteredTree += InstallScene;
-        InstallMainScene(_window);
-    }
-
-    private void InstallMainScene(Node root)
-    {
-        foreach (var scene in root.GetChildren())
-        {
-            InstallScene(scene);
-        }
-    }
-
-    private void InstallScene(Node scene)
-    {
-        foreach (var sceneNode in scene.GetChildren())
-        {
-            if (sceneNode is not ISceneInstaller sceneInstaller)
-            {
-                continue;
-            }
-
-            var name = scene.Name.ToString();
-            var container = Container.Create(name, sceneInstaller.Install);
-            sceneInstaller.QueueFree();
-            scene.TreeExiting += container.Dispose;
-            return;
-        }
+        SceneInstaller.Install(_window);
     }
 }
