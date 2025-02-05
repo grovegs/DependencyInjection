@@ -28,6 +28,13 @@ public static class ContainerConfigurerExtensions
         containerConfigurer.AddSingleton(registrationType, implementationInstance);
     }
 
+    public static void AddSingleton<TRegistration>(this IContainerConfigurer containerConfigurer, Func<TRegistration> factory)
+    where TRegistration : class
+    {
+        var registrationType = typeof(TRegistration);
+        containerConfigurer.AddSingleton(registrationType, factory);
+    }
+
     public static void AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TRegistration, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerConfigurer containerConfigurer)
         where TRegistration : class
         where TImplementation : class, TRegistration

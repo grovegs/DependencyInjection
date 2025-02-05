@@ -88,4 +88,18 @@ public class ContainerConfigurerExtensionsTests
         // Assert
         mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(IInitializable), instance), Times.Once);
     }
+
+    [Fact]
+    public void AddSingleton_Generic_WithFactory_ShouldAddSingletonUsingFactory()
+    {
+        // Arrange
+        var mockContainerConfigurer = new Mock<IContainerConfigurer>();
+        Func<MockInitializable> factory = () => new MockInitializable();
+
+        // Act
+        mockContainerConfigurer.Object.AddSingleton(factory);
+
+        // Assert
+        mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(MockInitializable), factory), Times.Once);
+    }
 }

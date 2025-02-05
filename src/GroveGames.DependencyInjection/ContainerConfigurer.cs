@@ -31,6 +31,12 @@ internal sealed class ContainerConfigurer : IContainerConfigurer
         AddSingleton(registrationType, registrationType, objectResolver);
     }
 
+    public void AddSingleton(Type registrationType, Func<object> factory)
+    {
+        var objectResolver = new FactoryObjectResolver(factory, _containerResolver, _disposableCollection);
+        AddSingleton(registrationType, registrationType, objectResolver);
+    }
+
     public void AddSingleton([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
         var objectResolver = new UninitializedObjectResolver(implementationType, _containerResolver, _disposableCollection);
