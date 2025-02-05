@@ -102,4 +102,18 @@ public class ContainerConfigurerExtensionsTests
         // Assert
         mockContainerConfigurer.Verify(c => c.AddSingleton(typeof(MockInitializable), factory), Times.Once);
     }
+
+    [Fact]
+    public void AddTransient_Generic_WithFactory_ShouldAddTransientUsingFactory()
+    {
+        // Arrange
+        var mockContainerConfigurer = new Mock<IContainerConfigurer>();
+        Func<MockInitializable> factory = () => new MockInitializable();
+
+        // Act
+        mockContainerConfigurer.Object.AddTransient(factory);
+
+        // Assert
+        mockContainerConfigurer.Verify(c => c.AddTransient(typeof(MockInitializable), factory), Times.Once);
+    }
 }
