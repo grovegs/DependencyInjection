@@ -11,12 +11,9 @@ internal sealed class RootContainerResolver : IContainerResolver
 
     public object Resolve(Type registrationType)
     {
-        if (_instanceResolversByRegistrationTypes.TryGetValue(registrationType, out var instanceResolver))
-        {
-            return instanceResolver.Resolve();
-        }
-
-        throw new InvalidOperationException($"No registration found for type {registrationType}.");
+        return _instanceResolversByRegistrationTypes.TryGetValue(registrationType, out var instanceResolver)
+            ? instanceResolver.Resolve()
+            : throw new RegistrationNotFoundException(registrationType);
     }
 
     public void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver)
