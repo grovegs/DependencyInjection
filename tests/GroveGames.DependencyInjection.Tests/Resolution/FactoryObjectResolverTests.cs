@@ -3,7 +3,7 @@ using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection.Tests.Resolution;
 
-public class InitializedObjectResolverTests
+public class FactoryObjectResolverTests
 {
     private class TestClassWithInjectMethod : IDisposable
     {
@@ -25,14 +25,15 @@ public class InitializedObjectResolverTests
     }
 
     [Fact]
-    public void Resolve_ShouldReturnImplementationInstance()
+    public void Resolve_ShouldInvokeFactory()
     {
         // Arrange
         var mockImplementation = new TestClassWithInjectMethod();
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new InitializedObjectResolver(
-            mockImplementation,
+        var factory = new Func<object>(() => mockImplementation);
+        var objectResolver = new FactoryObjectResolver(
+            factory,
             mockRegistrationResolver.Object,
             mockDisposableCollection.Object
         );
@@ -53,8 +54,9 @@ public class InitializedObjectResolverTests
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         mockRegistrationResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns("InjectedString");
         var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new InitializedObjectResolver(
-            mockImplementation,
+        var factory = new Func<object>(() => mockImplementation);
+        var objectResolver = new FactoryObjectResolver(
+            factory,
             mockRegistrationResolver.Object,
             mockDisposableCollection.Object
         );
@@ -74,8 +76,9 @@ public class InitializedObjectResolverTests
         var mockImplementation = new TestClassWithInjectMethod();
         var mockRegistrationResolver = new Mock<IRegistrationResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new InitializedObjectResolver(
-            mockImplementation,
+        var factory = new Func<object>(() => mockImplementation);
+        var objectResolver = new FactoryObjectResolver(
+            factory,
             mockRegistrationResolver.Object,
             mockDisposableCollection.Object
         );

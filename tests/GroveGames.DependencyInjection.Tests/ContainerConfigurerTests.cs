@@ -25,6 +25,25 @@ public class ContainerConfigurerTests
     }
 
     [Fact]
+    public void AddSingleton_WithFactory_ShouldAddSingletonResolverWithFactoryObjectResolver()
+    {
+        // Arrange
+        var registrationType = typeof(object);
+        var mockContainerResolver = new Mock<IContainerResolver>();
+        var mockInitializableCollection = new Mock<IInitializableCollection>();
+        var mockDisposableCollection = new Mock<IDisposableCollection>();
+        var factory = new Func<object>(() => new object());
+        var containerConfigurer = new ContainerConfigurer(mockContainerResolver.Object, mockInitializableCollection.Object, mockDisposableCollection.Object);
+
+        // Act
+        containerConfigurer.AddSingleton(registrationType, factory);
+
+        // Assert
+        mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
+        mockInitializableCollection.Verify(i => i.TryAdd(registrationType, registrationType), Times.Once);
+    }
+
+    [Fact]
     public void AddSingleton_WithoutInstance_ShouldCreateObjectResolverAndAddSingletonResolver()
     {
         // Arrange
@@ -60,5 +79,78 @@ public class ContainerConfigurerTests
         // Assert
         mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
         mockInitializableCollection.Verify(i => i.TryAdd(registrationType, implementationType), Times.Once);
+    }
+
+    [Fact]
+    public void AddSingleton_WithFactory_ShouldCreateInstanceWhenResolved()
+    {
+        // Arrange
+        var registrationType = typeof(object);
+        var mockContainerResolver = new Mock<IContainerResolver>();
+        var mockInitializableCollection = new Mock<IInitializableCollection>();
+        var mockDisposableCollection = new Mock<IDisposableCollection>();
+        var factoryInvoked = false;
+        var factory = new Func<object>(() =>
+        {
+            factoryInvoked = true;
+            return new object();
+        });
+
+        var containerConfigurer = new ContainerConfigurer(mockContainerResolver.Object, mockInitializableCollection.Object, mockDisposableCollection.Object);
+
+        // Act
+        containerConfigurer.AddSingleton(registrationType, factory);
+
+        // Assert
+        Assert.False(factoryInvoked, "Factory should not be invoked during registration");
+        mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
+    }
+
+    [Fact]
+    public void AddTransient_WithFactory_ShouldAddTransientResolverUsingFactory()
+    {
+        // Arrange
+        var registrationType = typeof(object);
+        var mockContainerResolver = new Mock<IContainerResolver>();
+        var mockInitializableCollection = new Mock<IInitializableCollection>();
+        var mockDisposableCollection = new Mock<IDisposableCollection>();
+        var factory = new Func<object>(() => new object());
+        var containerConfigurer = new ContainerConfigurer(mockContainerResolver.Object, mockInitializableCollection.Object, mockDisposableCollection.Object);
+
+        // Act
+        containerConfigurer.AddTransient(registrationType, factory);
+
+        // Assert
+        mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
+        mockInitializableCollection.Verify(i => i.TryAdd(registrationType, registrationType), Times.Once);
+    }
+
+    [Fact]
+    public void AddTransient_WithFactory_ShouldCreateNewInstanceEachTime()
+    {
+        // Arrange
+        var registrationType = typeof(object);
+        var mockContainerResolver = new Mock<IContainerResolver>();
+        var mockInitializableCollection = new Mock<IInitializableCollection>();
+        var mockDisposableCollection = new Mock<IDisposableCollection>();
+        var instanceCount = 0;
+        var factory = new Func<object>(() =>
+        {
+            instanceCount++;
+            return new object();
+        });
+
+        var containerConfigurer = new ContainerConfigurer(mockContainerResolver.Object, mockInitializableCollection.Object, mockDisposableCollection.Object);
+
+        // Act
+        containerConfigurer.AddTransient(registrationType, factory);
+
+        // Simulate multiple resolutions
+        factory();
+        factory();
+
+        // Assert
+        Assert.Equal(2, instanceCount);
+        mockContainerResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
     }
 }
