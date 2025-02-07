@@ -47,7 +47,7 @@ public class MethodInjectorTests
     public void Inject_ShouldCallMethodBaseInjector_WhenInjectMethodIsFound()
     {
         // Arrange
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var testObject = new TestClassWithInjectMethod();
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("ResolvedValue");
 
@@ -64,7 +64,7 @@ public class MethodInjectorTests
     public void Inject_ShouldNotCallMethodBaseInjector_WhenNoInjectMethodIsFound()
     {
         // Arrange
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var testObject = new TestClassWithoutInjectMethod();
 
         // Act
@@ -79,7 +79,7 @@ public class MethodInjectorTests
     {
         // Arrange
         var testObject = new TestClassWithMultipleInjectMethods();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("StringValue");
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(int))).Returns(42);
 

@@ -12,7 +12,7 @@ public class ContainerResolverTests
         var expectedInstance = new object();
         var mockInstanceResolver = new Mock<IInstanceResolver>();
         mockInstanceResolver.Setup(r => r.Resolve()).Returns(expectedInstance);
-        var mockParentResolver = new Mock<IRegistrationResolver>();
+        var mockParentResolver = new Mock<IObjectResolver>();
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
         containerResolver.AddInstanceResolver(registrationType, mockInstanceResolver.Object);
 
@@ -29,7 +29,7 @@ public class ContainerResolverTests
         // Arrange
         var registrationType = typeof(object);
         var expectedInstance = new object();
-        var mockParentResolver = new Mock<IRegistrationResolver>();
+        var mockParentResolver = new Mock<IObjectResolver>();
         mockParentResolver.Setup(r => r.Resolve(registrationType)).Returns(expectedInstance);
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
 
@@ -46,7 +46,7 @@ public class ContainerResolverTests
         // Arrange
         var registrationType = typeof(object);
         var mockInstanceResolver = new Mock<IInstanceResolver>();
-        var mockParentResolver = new Mock<IRegistrationResolver>();
+        var mockParentResolver = new Mock<IObjectResolver>();
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
 
         // Act
@@ -66,7 +66,7 @@ public class ContainerResolverTests
         // Arrange
         var registrationType = typeof(object);
         var mockInstanceResolver = new Mock<IInstanceResolver>();
-        var mockParentResolver = new Mock<IRegistrationResolver>();
+        var mockParentResolver = new Mock<IObjectResolver>();
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
         containerResolver.AddInstanceResolver(registrationType, mockInstanceResolver.Object);
 

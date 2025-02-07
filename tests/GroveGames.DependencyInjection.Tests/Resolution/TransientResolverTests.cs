@@ -8,7 +8,7 @@ public class TransientResolverTests
     public void Resolve_ShouldCallObjectResolverResolve()
     {
         // Arrange
-        var mockObjectResolver = new Mock<IObjectResolver>();
+        var mockObjectResolver = new Mock<IInstanceResolver>();
         var transientResolver = new TransientResolver(mockObjectResolver.Object);
         var expectedObject = new object();
         mockObjectResolver.Setup(r => r.Resolve()).Returns(expectedObject);

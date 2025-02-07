@@ -26,14 +26,14 @@ internal sealed class ContainerBuilder : IContainerBuilder
     public Container Build()
     {
         var container = new Container(_name, _parent, _resolver, _cache, _disposables);
-        AddSingleton(typeof(IRegistrationResolver), container);
+        AddSingleton(typeof(IObjectResolver), container);
         return container;
     }
 
-    private void AddSingleton(Type registrationType, Type implementationType, IObjectResolver objectResolver)
+    private void AddSingleton(Type registrationType, Type implementationType, IInstanceResolver resolver)
     {
-        var instanceResolver = new SingletonResolver(objectResolver);
-        _resolver.AddInstanceResolver(registrationType, instanceResolver);
+        var singletonResolver = new SingletonResolver(resolver);
+        _resolver.AddInstanceResolver(registrationType, singletonResolver);
     }
 
     public IContainerBuilder AddSingleton(Type registrationType, object implementationInstance)
@@ -57,9 +57,9 @@ internal sealed class ContainerBuilder : IContainerBuilder
         return this;
     }
 
-    private void AddTransient(Type registrationType, Type implementationType, IObjectResolver objectResolver)
+    private void AddTransient(Type registrationType, Type implementationType, IInstanceResolver resolver)
     {
-        var instanceResolver = new TransientResolver(objectResolver);
+        var instanceResolver = new TransientResolver(resolver);
         _resolver.AddInstanceResolver(registrationType, instanceResolver);
     }
 

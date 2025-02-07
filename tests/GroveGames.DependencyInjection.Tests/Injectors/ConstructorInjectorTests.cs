@@ -26,7 +26,7 @@ public class ConstructorInjectorTests
     public void Inject_ShouldCallRegistrationResolver_WhenConstructorIsFound()
     {
         // Arrange
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithConstructor));
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("Test");
 
@@ -41,7 +41,7 @@ public class ConstructorInjectorTests
     public void Inject_ShouldNotCallRegistrationResolver_WhenNoPublicConstructorIsFound()
     {
         // Arrange
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithoutPublicConstructor));
 
         // Act
@@ -55,7 +55,7 @@ public class ConstructorInjectorTests
     public void Inject_ShouldUseConstructorWithMostParameters()
     {
         // Arrange
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var uninitializedObject = RuntimeHelpers.GetUninitializedObject(typeof(TestClassWithConstructor));
         mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("Resolved Value");
 

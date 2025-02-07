@@ -3,7 +3,7 @@ using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
 
-public interface IContainer : IRegistrationResolver, IDisposable
+public interface IContainer : IObjectResolver, IDisposable
 {
     string Name { get; }
     IContainer Parent { get; }

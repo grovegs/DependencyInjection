@@ -2,17 +2,17 @@
 
 internal sealed class SingletonResolver : IInstanceResolver
 {
-    private readonly IObjectResolver _objectResolver;
+    private readonly IInstanceResolver _resolver;
     private object? _implementationInstance;
 
-    public SingletonResolver(IObjectResolver objectResolver)
+    public SingletonResolver(IInstanceResolver resolver)
     {
-        _objectResolver = objectResolver;
+        _resolver = resolver;
     }
 
     public object Resolve()
     {
-        _implementationInstance ??= _objectResolver.Resolve();
+        _implementationInstance ??= _resolver.Resolve();
 
         return _implementationInstance;
     }

@@ -1,7 +1,7 @@
 ﻿namespace GroveGames.DependencyInjection.Resolution;
 
-public interface IContainerResolver : IRegistrationResolver
+public interface IContainerResolver : IObjectResolver
 {
-    void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver);
+    void AddInstanceResolver(Type registrationType, IInstanceResolver resolver);
     void Clear();
 }

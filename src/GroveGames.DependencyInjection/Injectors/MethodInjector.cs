@@ -10,7 +10,7 @@ internal static class MethodInjector
 {
     private const BindingFlags MethodBindingFlags = BindingFlags.Public | BindingFlags.Instance;
 
-    public static void Inject(object uninitializedObject, IRegistrationResolver registrationResolver)
+    public static void Inject(object uninitializedObject, IObjectResolver resolver)
     {
         var implementationType = uninitializedObject.GetType();
 
@@ -19,19 +19,19 @@ internal static class MethodInjector
             return;
         }
 
-        MethodBaseInjector.Inject(uninitializedObject, objectActivator!, registrationResolver);
+        MethodBaseInjector.Inject(uninitializedObject, objectActivator!, resolver);
     }
 
-    private static bool TryCreateObjectActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type implementationType, out IObjectActivator? objectActivator)
+    private static bool TryCreateObjectActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type implementationType, out IObjectActivator? activator)
     {
-        objectActivator = null;
+        activator = null;
 
         if (TryFindMethodInfo(implementationType, out var methodInfo))
         {
-            objectActivator = new MethodBaseActivator(methodInfo!);
+            activator = new MethodBaseActivator(methodInfo!);
         }
 
-        return objectActivator != null;
+        return activator != null;
     }
 
     private static bool TryFindMethodInfo([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type implementationType, out MethodInfo? foundMethodInfo)
@@ -42,11 +42,17 @@ internal static class MethodInjector
 
         foreach (var methodInfo in methodInfos)
         {
-            if (!methodInfo.IsDefined(typeof(InjectAttribute))) continue;
+            if (!methodInfo.IsDefined(typeof(InjectAttribute)))
+            {
+                continue;
+            }
 
             var parametersCount = methodInfo.GetParameters().Length;
 
-            if (foundParametersCount > parametersCount) continue;
+            if (foundParametersCount > parametersCount)
+            {
+                continue;
+            }
 
             foundMethodInfo = methodInfo;
             foundParametersCount = parametersCount;
