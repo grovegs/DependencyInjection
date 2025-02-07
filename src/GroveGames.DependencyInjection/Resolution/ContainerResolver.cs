@@ -13,12 +13,9 @@ internal sealed class ContainerResolver : IContainerResolver
 
     public object Resolve(Type registrationType)
     {
-        if (_instanceResolversByRegistrationTypes.TryGetValue(registrationType, out var instanceResolver))
-        {
-            return instanceResolver.Resolve();
-        }
-
-        return _parent.Resolve(registrationType);
+        return _instanceResolversByRegistrationTypes.TryGetValue(registrationType, out var instanceResolver)
+            ? instanceResolver.Resolve()
+            : _parent.Resolve(registrationType);
     }
 
     public void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver)

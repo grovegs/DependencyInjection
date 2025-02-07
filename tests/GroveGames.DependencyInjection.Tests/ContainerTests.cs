@@ -8,25 +8,38 @@ namespace GroveGames.DependencyInjection.Tests;
 
 public class ContainerTests
 {
+    private Container CreateContainer(
+        string name = "TestContainer",
+        Mock<IContainerResolver>? resolverMock = null,
+        Mock<IContainerCache>? cacheMock = null,
+        Mock<IDisposableCollection>? disposablesMock = null,
+        Mock<IContainer>? parentMock = null
+    )
+    {
+        resolverMock ??= new Mock<IContainerResolver>();
+        cacheMock ??= new Mock<IContainerCache>();
+        disposablesMock ??= new Mock<IDisposableCollection>();
+        parentMock ??= new Mock<IContainer>();
+        parentMock.Setup(p => p.AddChild(It.IsAny<IContainer>()));
+
+        return new Container(
+            name,
+            parentMock.Object,
+            resolverMock.Object,
+            cacheMock.Object,
+            disposablesMock.Object
+        );
+    }
+
     [Fact]
     public void Constructor_ShouldInitializeContainer()
     {
         // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockDisposables = new Mock<IDisposableCollection>();
         var mockParentContainer = new Mock<IContainer>();
-        mockParentContainer.Setup(p => p.AddChild(It.IsAny<IContainer>()));
+        var mockCache = new Mock<IContainerCache>();
 
         // Act
-        var container = new Container(
-            "TestContainer",
-            mockParentContainer.Object,
-            mockResolver.Object,
-            mockCache.Object,
-            mockDisposables.Object,
-            _ => { }
-        );
+        var container = CreateContainer(parentMock: mockParentContainer, cacheMock: mockCache);
 
         // Assert
         Assert.Equal("TestContainer", container.Name);
@@ -39,19 +52,7 @@ public class ContainerTests
     public void AddChild_ShouldAddChildContainer()
     {
         // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var mockParentContainer = new Mock<IContainer>();
-        var container = new Container(
-            "TestContainer",
-            mockParentContainer.Object,
-            mockResolver.Object,
-            mockCache.Object,
-            mockDisposables.Object,
-            _ => { }
-        );
-
+        var container = CreateContainer();
         var childMock = new Mock<IContainer>();
         childMock.Setup(c => c.Name).Returns("ChildContainer");
 
@@ -68,19 +69,7 @@ public class ContainerTests
     public void AddChild_ShouldThrowArgumentException_WhenDuplicateChildIsAdded()
     {
         // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var mockParentContainer = new Mock<IContainer>();
-        var container = new Container(
-            "TestContainer",
-            mockParentContainer.Object,
-            mockResolver.Object,
-            mockCache.Object,
-            mockDisposables.Object,
-            _ => { }
-        );
-
+        var container = CreateContainer();
         var childMock = new Mock<IContainer>();
         childMock.Setup(c => c.Name).Returns("ChildContainer");
         container.AddChild(childMock.Object);
@@ -94,19 +83,7 @@ public class ContainerTests
     public void RemoveChild_ShouldRemoveChildContainer()
     {
         // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var mockParentContainer = new Mock<IContainer>();
-        var container = new Container(
-            "TestContainer",
-            mockParentContainer.Object,
-            mockResolver.Object,
-            mockCache.Object,
-            mockDisposables.Object,
-            _ => { }
-        );
-
+        var container = CreateContainer();
         var childMock = new Mock<IContainer>();
         childMock.Setup(c => c.Name).Returns("ChildContainer");
         container.AddChild(childMock.Object);
@@ -124,18 +101,11 @@ public class ContainerTests
     public void Dispose_ShouldDisposeAllResources()
     {
         // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
-        var mockCache = new Mock<IContainerCache>();
         var mockDisposables = new Mock<IDisposableCollection>();
+        var mockCache = new Mock<IContainerCache>();
         var mockParentContainer = new Mock<IContainer>();
-        var container = new Container(
-            "TestContainer",
-            mockParentContainer.Object,
-            mockResolver.Object,
-            mockCache.Object,
-            mockDisposables.Object,
-            _ => { }
-        );
+
+        var container = CreateContainer(disposablesMock: mockDisposables, cacheMock: mockCache, parentMock: mockParentContainer);
 
         // Act
         container.Dispose();
@@ -151,17 +121,7 @@ public class ContainerTests
     {
         // Arrange
         var mockResolver = new Mock<IContainerResolver>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var mockParentContainer = new Mock<IContainer>();
-        var container = new Container(
-            "TestContainer",
-            mockParentContainer.Object,
-            mockResolver.Object,
-            mockCache.Object,
-            mockDisposables.Object,
-            _ => { }
-        );
+        var container = CreateContainer(resolverMock: mockResolver);
 
         var mockObject = new object();
         mockResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns(mockObject);
@@ -171,35 +131,5 @@ public class ContainerTests
 
         // Assert
         Assert.Equal(mockObject, result);
-    }
-
-    [Fact]
-    public void Create_WithNameAndParent_UsingDefaultCache_ShouldCreateContainer()
-    {
-        // Arrange
-        var mockParent = new Mock<IContainer>();
-
-        static void MockConfigurer(IContainerConfigurer _) { }
-
-        // Act
-        var result = Container.Create("TestContainer", mockParent.Object, MockConfigurer);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("TestContainer", result.Name);
-        Assert.Equal(mockParent.Object, result.Parent);
-    }
-
-    [Fact]
-    public void Dispose_WithPath_ShouldDoNothingIfContainerNotFound()
-    {
-        // Arrange
-        var path = "/parent/container".AsSpan();
-
-        // Act
-        Container.Dispose(path);
-
-        // Assert
-        // Nothing to verify since the container was not found, but we can ensure no exception is thrown.
     }
 }

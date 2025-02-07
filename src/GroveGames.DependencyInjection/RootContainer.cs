@@ -1,6 +1,4 @@
 using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Collections;
-using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
 
@@ -10,20 +8,11 @@ public sealed class RootContainer : IContainer
 
     public string Name => _container.Name;
     public IContainer Parent => _container.Parent;
+    public IContainerCache Cache => _container.Cache;
 
-    internal RootContainer(IContainerCache cache, Action<IContainerConfigurer> configure)
+    internal RootContainer(Container container)
     {
-        var name = string.Empty;
-        var parent = new EmptyContainer();
-        var resolver = new RootContainerResolver();
-        var disposables = new DisposableCollection();
-        _container = new Container(name, parent, resolver, cache, disposables, configure);
-    }
-
-    public static RootContainer Create(Action<IContainerConfigurer> configure)
-    {
-        var cache = ContainerCache.Shared;
-        return new RootContainer(cache, configure);
+        _container = container;
     }
 
     public void AddChild(IContainer child)

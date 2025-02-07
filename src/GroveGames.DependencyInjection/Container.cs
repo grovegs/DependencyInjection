@@ -7,17 +7,18 @@ namespace GroveGames.DependencyInjection;
 public sealed class Container : IContainer
 {
     private readonly string _name;
+    private readonly IContainer _parent;
     private readonly IContainerResolver _resolver;
     private readonly IContainerCache _cache;
     private readonly IDisposableCollection _disposables;
     private readonly List<IContainer> _children;
-    private readonly IContainer _parent;
     private bool _isDisposed;
 
     public string Name => _name;
     public IContainer Parent => _parent;
+    public IContainerCache Cache => _cache;
 
-    internal Container(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache, IDisposableCollection disposables, Action<IContainerConfigurer> configure)
+    internal Container(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache, IDisposableCollection disposables)
     {
         _name = name;
         _parent = parent;
@@ -28,68 +29,6 @@ public sealed class Container : IContainer
         _isDisposed = false;
         _parent.AddChild(this);
         _cache.Add(this);
-        var initializables = new InitializableCollection(resolver);
-        var configurer = new ContainerConfigurer(resolver, initializables, disposables);
-        configure.Invoke(configurer);
-        initializables.Initialize();
-    }
-
-    internal static Container Create(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache, Action<IContainerConfigurer> configure)
-    {
-        var disposables = new DisposableCollection();
-        var container = new Container(name, parent, resolver, cache, disposables, configure);
-        return container;
-    }
-
-    internal static Container Create(string name, IContainer parent, IContainerCache cache, Action<IContainerConfigurer> configure)
-    {
-        var resolver = new ContainerResolver(parent);
-        return Create(name, parent, resolver, cache, configure);
-    }
-
-    internal static Container Create(in ReadOnlySpan<char> path, IContainerCache cache, Action<IContainerConfigurer> configure)
-    {
-        var nameSeperatorIndex = path.LastIndexOf('/');
-        var name = path[(nameSeperatorIndex + 1)..].ToString();
-        var parentPath = nameSeperatorIndex == -1 ? string.Empty : path[..nameSeperatorIndex];
-        var parent = cache.Find(parentPath)!;
-        return Create(name, parent, cache, configure);
-    }
-
-    public static Container Create(string name, IContainer parent, Action<IContainerConfigurer> configure)
-    {
-        var cache = ContainerCache.Shared;
-        return Create(name, parent, cache, configure);
-    }
-
-    public static Container Create(in ReadOnlySpan<char> path, Action<IContainerConfigurer> configure)
-    {
-        var cache = ContainerCache.Shared;
-        return Create(path, cache, configure);
-    }
-
-    internal static void Dispose(in ReadOnlySpan<char> path, IContainerCache cache)
-    {
-        var container = cache.Find(path);
-        container?.Dispose();
-    }
-
-    public static void Dispose(in ReadOnlySpan<char> path)
-    {
-        var container = Find(path);
-        container?.Dispose();
-    }
-
-    internal static IContainer? Find(in ReadOnlySpan<char> path, IContainerCache cache)
-    {
-        var container = cache.Find(path);
-        return container;
-    }
-
-    public static IContainer? Find(in ReadOnlySpan<char> path)
-    {
-        var cache = ContainerCache.Shared;
-        return Find(path, cache);
     }
 
     public void Dispose()
