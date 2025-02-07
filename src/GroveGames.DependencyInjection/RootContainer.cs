@@ -34,4 +34,9 @@ public sealed class RootContainer : IRootContainer
     {
         return _container.Resolve(registrationType);
     }
+
+    public IContainer? FindChild(ReadOnlySpan<char> path)
+    {
+        return Cache.Find(path);
+    }
 }

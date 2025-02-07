@@ -14,19 +14,11 @@ public static class SceneInstaller
             }
 
             var name = scene.Name.ToString();
-            var parent = window.GetContainer("/");
+            var parent = window.GetContainer();
             var container = ContainerFactory.CreateContainer(name, parent, sceneInstaller.Install);
             sceneInstaller.QueueFree();
             scene.TreeExiting += container.Dispose;
             return;
-        }
-    }
-
-    public static void Install(Window window)
-    {
-        foreach (var scene in window.GetChildren())
-        {
-            Install(scene, window);
         }
     }
 }

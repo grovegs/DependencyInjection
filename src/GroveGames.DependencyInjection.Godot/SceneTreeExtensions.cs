@@ -9,4 +9,16 @@ public static class SceneTreeExtensions
         var sceneLoader = new SceneLoader(sceneTree, scenePath, minDuration, onLoaded);
         sceneLoader.LoadRequest();
     }
+
+    public static IContainer GetCurrentSceneContainer(this SceneTree sceneTree)
+    {
+        var rootContainer = sceneTree.Root.GetContainer();
+        var scene = sceneTree.CurrentScene
+            ?? throw new InvalidOperationException("No current scene found in SceneTree.");
+
+        var container = rootContainer.FindChild(scene.Name.ToString())
+            ?? throw new InvalidOperationException($"Container not found for scene: {scene.Name}");
+
+        return container;
+    }
 }

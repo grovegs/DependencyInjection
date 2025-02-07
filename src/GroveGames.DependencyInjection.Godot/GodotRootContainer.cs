@@ -34,4 +34,9 @@ public sealed partial class GodotRootContainer : Node, IRootContainer
     {
         _container.RemoveChild(child);
     }
+
+    public IContainer? FindChild(ReadOnlySpan<char> path)
+    {
+        return _container.FindChild(path);
+    }
 }
