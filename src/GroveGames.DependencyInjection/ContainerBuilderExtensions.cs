@@ -15,11 +15,6 @@ public static class ContainerBuilderExtensions
         return builder.AddSingleton(implementationType, implementationType);
     }
 
-    public static IContainerBuilder AddTransient(this IContainerBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
-    {
-        return builder.AddTransient(implementationType, implementationType);
-    }
-
     public static IContainerBuilder AddSingleton<TRegistration, TImplementation>(this IContainerBuilder builder, TImplementation implementationInstance)
         where TRegistration : class
         where TImplementation : class, TRegistration
@@ -56,6 +51,11 @@ public static class ContainerBuilderExtensions
     {
         var registrationType = typeof(TRegistration);
         return builder.AddSingleton(registrationType, factory);
+    }
+
+    public static IContainerBuilder AddTransient(this IContainerBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
+    {
+        return builder.AddTransient(implementationType, implementationType);
     }
 
     public static IContainerBuilder AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TRegistration, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerBuilder builder)
