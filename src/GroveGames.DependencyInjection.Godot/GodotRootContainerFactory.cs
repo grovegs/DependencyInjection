@@ -6,8 +6,7 @@ public static class GodotRootContainerFactory
 {
     public static GodotRootContainer CreateGodotRootContainer()
     {
-        var settings = new GodotProjectSettings();
-        var rootInstallerPath = settings.GetSetting<string>(GodotProjectSettingsKey.RootInstaller);
+        var rootInstallerPath = GodotSettings.RootInstaller.Value;
         var rootInstallerResource = ResourceLoader.Load<Resource>(rootInstallerPath);
 
         if (rootInstallerResource is not IRootInstaller rootInstaller)

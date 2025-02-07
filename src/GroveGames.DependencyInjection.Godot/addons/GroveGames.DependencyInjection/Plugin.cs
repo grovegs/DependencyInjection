@@ -8,9 +8,9 @@ public partial class Plugin : EditorPlugin
 {
     public override void _EnterTree()
     {
-        var settings = GodotProjectSettingsBuilder.Build();
+        GodotSettings.CreateIfNotExist();
 
-        if (settings.GetSetting<bool>(GodotProjectSettingsKey.AutoLoad))
+        if (GodotSettings.AutoLoad.Value)
         {
             AddAutoloadSingleton(nameof(RootContainerBootstrapper), $"res://addons/GroveGames.DependencyInjection/{nameof(RootContainerBootstrapper)}.cs");
         }
