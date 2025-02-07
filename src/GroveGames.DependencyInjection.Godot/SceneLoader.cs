@@ -35,12 +35,12 @@ public sealed class SceneLoader
 
     private void Load(PackedScene packedScene)
     {
-        _sceneTree.UnloadCurrentScene();
         var scene = packedScene.Instantiate();
-        SceneInstaller.Install(scene);
+        SceneInstaller.Install(scene, _sceneTree.Root);
 
         scene.Ready += () =>
         {
+            _sceneTree.UnloadCurrentScene();
             _sceneTree.CurrentScene = scene;
             _onLoaded?.Invoke();
         };

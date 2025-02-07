@@ -12,13 +12,13 @@ public partial class Plugin : EditorPlugin
 
         if (settings.GetSetting<bool>(GodotProjectSettingsKey.AutoLoad))
         {
-            AddAutoloadSingleton(nameof(GodotRootNode), $"res://addons/GroveGames.DependencyInjection/{nameof(GodotRootNode)}.cs");
+            AddAutoloadSingleton(nameof(RootContainerBootstrapper), $"res://addons/GroveGames.DependencyInjection/{nameof(RootContainerBootstrapper)}.cs");
         }
     }
 
     public override void _ExitTree()
     {
-        RemoveAutoloadSingleton(nameof(GodotRootNode));
+        RemoveAutoloadSingleton(nameof(RootContainerBootstrapper));
     }
 }
 #endif
