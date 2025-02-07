@@ -2,15 +2,15 @@ using GroveGames.DependencyInjection.Caching;
 
 namespace GroveGames.DependencyInjection;
 
-public sealed class RootContainer : IContainer
+public sealed class RootContainer : IRootContainer
 {
-    private readonly Container _container;
+    private readonly IContainer _container;
 
     public string Name => _container.Name;
-    public IContainer Parent => _container.Parent;
-    public IContainerCache Cache => _container.Cache;
+    public IContainer? Parent => _container.Parent;
+    public IContainerCache? Cache => _container.Cache;
 
-    internal RootContainer(Container container)
+    internal RootContainer(IContainer container)
     {
         _container = container;
     }

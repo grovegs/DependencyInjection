@@ -1,6 +1,6 @@
 ﻿namespace GroveGames.DependencyInjection.Resolution;
 
-internal sealed class ContainerResolver : IContainerResolver
+public sealed class ContainerResolver : IContainerResolver
 {
     private readonly Dictionary<Type, IInstanceResolver> _instanceResolversByRegistrationTypes;
     private readonly IRegistrationResolver _parent;
