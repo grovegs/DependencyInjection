@@ -18,7 +18,7 @@ public sealed class ContainerResolver : IContainerResolver
             : _parent.Resolve(registrationType);
     }
 
-    public void AddInstanceResolver(Type registrationType, IInstanceResolver resolver)
+    public void AddResolver(Type registrationType, IInstanceResolver resolver)
     {
         _resolversByRegistrationTypes.Add(registrationType, resolver);
     }

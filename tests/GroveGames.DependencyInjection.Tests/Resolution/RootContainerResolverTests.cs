@@ -26,7 +26,7 @@ public class RootContainerResolverTests
         var mockInstanceResolver = new Mock<IInstanceResolver>();
 
         // Act
-        resolver.AddInstanceResolver(typeof(string), mockInstanceResolver.Object);
+        resolver.AddResolver(typeof(string), mockInstanceResolver.Object);
 
         // Assert
         var fieldInfo = typeof(RootContainerResolver)
@@ -45,7 +45,7 @@ public class RootContainerResolverTests
         var expectedInstance = new object();
         mockInstanceResolver.Setup(r => r.Resolve()).Returns(expectedInstance);
 
-        resolver.AddInstanceResolver(typeof(object), mockInstanceResolver.Object);
+        resolver.AddResolver(typeof(object), mockInstanceResolver.Object);
 
         // Act
         var result = resolver.Resolve(typeof(object));
@@ -71,7 +71,7 @@ public class RootContainerResolverTests
         // Arrange
         var resolver = new RootContainerResolver();
         var mockInstanceResolver = new Mock<IInstanceResolver>();
-        resolver.AddInstanceResolver(typeof(object), mockInstanceResolver.Object);
+        resolver.AddResolver(typeof(object), mockInstanceResolver.Object);
 
         // Act
         resolver.Clear();

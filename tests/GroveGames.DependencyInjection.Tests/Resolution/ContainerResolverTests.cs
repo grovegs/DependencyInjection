@@ -14,7 +14,7 @@ public class ContainerResolverTests
         mockInstanceResolver.Setup(r => r.Resolve()).Returns(expectedInstance);
         var mockParentResolver = new Mock<IObjectResolver>();
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
-        containerResolver.AddInstanceResolver(registrationType, mockInstanceResolver.Object);
+        containerResolver.AddResolver(registrationType, mockInstanceResolver.Object);
 
         // Act
         var resolvedInstance = containerResolver.Resolve(registrationType);
@@ -50,7 +50,7 @@ public class ContainerResolverTests
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
 
         // Act
-        containerResolver.AddInstanceResolver(registrationType, mockInstanceResolver.Object);
+        containerResolver.AddResolver(registrationType, mockInstanceResolver.Object);
 
         // Assert
         var field = typeof(ContainerResolver).GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -68,7 +68,7 @@ public class ContainerResolverTests
         var mockInstanceResolver = new Mock<IInstanceResolver>();
         var mockParentResolver = new Mock<IObjectResolver>();
         var containerResolver = new ContainerResolver(mockParentResolver.Object);
-        containerResolver.AddInstanceResolver(registrationType, mockInstanceResolver.Object);
+        containerResolver.AddResolver(registrationType, mockInstanceResolver.Object);
 
         // Act
         containerResolver.Clear();

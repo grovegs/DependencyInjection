@@ -2,6 +2,6 @@
 
 public interface IContainerResolver : IObjectResolver
 {
-    void AddInstanceResolver(Type registrationType, IInstanceResolver resolver);
+    void AddResolver(Type registrationType, IInstanceResolver resolver);
     void Clear();
 }

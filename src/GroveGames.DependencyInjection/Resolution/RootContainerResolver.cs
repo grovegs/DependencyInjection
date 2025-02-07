@@ -16,7 +16,7 @@ internal sealed class RootContainerResolver : IContainerResolver
             : throw new RegistrationNotFoundException(registrationType);
     }
 
-    public void AddInstanceResolver(Type registrationType, IInstanceResolver resolver)
+    public void AddResolver(Type registrationType, IInstanceResolver resolver)
     {
         _resolversByRegistrationTypes.Add(registrationType, resolver);
     }

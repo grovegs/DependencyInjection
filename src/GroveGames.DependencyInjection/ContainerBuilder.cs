@@ -33,7 +33,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
     private void AddSingleton(Type registrationType, Type implementationType, IInstanceResolver resolver)
     {
         var singletonResolver = new SingletonResolver(resolver);
-        _resolver.AddInstanceResolver(registrationType, singletonResolver);
+        _resolver.AddResolver(registrationType, singletonResolver);
     }
 
     public IContainerBuilder AddSingleton(Type registrationType, object implementationInstance)
@@ -60,7 +60,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
     private void AddTransient(Type registrationType, Type implementationType, IInstanceResolver resolver)
     {
         var instanceResolver = new TransientResolver(resolver);
-        _resolver.AddInstanceResolver(registrationType, instanceResolver);
+        _resolver.AddResolver(registrationType, instanceResolver);
     }
 
     public IContainerBuilder AddTransient([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)

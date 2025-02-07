@@ -19,7 +19,7 @@ public class ContainerBuilderTests
         containerBuilder.AddSingleton(registrationType, implementationInstance);
 
         // Assert
-        mockResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
+        mockResolver.Verify(r => r.AddResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class ContainerBuilderTests
         containerBuilder.AddSingleton(registrationType, factory);
 
         // Assert
-        mockResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
+        mockResolver.Verify(r => r.AddResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class ContainerBuilderTests
         containerBuilder.AddSingleton(registrationType, implementationType);
 
         // Assert
-        mockResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
+        mockResolver.Verify(r => r.AddResolver(registrationType, It.IsAny<SingletonResolver>()), Times.Once);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class ContainerBuilderTests
         containerBuilder.AddTransient(registrationType, implementationType);
 
         // Assert
-        mockResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
+        mockResolver.Verify(r => r.AddResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class ContainerBuilderTests
         containerBuilder.AddTransient(registrationType, factory);
 
         // Assert
-        mockResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
+        mockResolver.Verify(r => r.AddResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
     }
 
     [Fact]
@@ -114,6 +114,6 @@ public class ContainerBuilderTests
 
         // Assert
         Assert.Equal(2, instanceCount);
-        mockResolver.Verify(r => r.AddInstanceResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
+        mockResolver.Verify(r => r.AddResolver(registrationType, It.IsAny<TransientResolver>()), Times.Once);
     }
 }
