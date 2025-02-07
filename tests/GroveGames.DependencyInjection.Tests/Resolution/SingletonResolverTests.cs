@@ -8,7 +8,7 @@ public class SingletonResolverTests
     public void Resolve_ShouldReturnSameInstance()
     {
         // Arrange
-        var mockObjectResolver = new Mock<IObjectResolver>();
+        var mockObjectResolver = new Mock<IInstanceResolver>();
         var expectedInstance = new object();
         mockObjectResolver.Setup(r => r.Resolve()).Returns(expectedInstance);
         var singletonResolver = new SingletonResolver(mockObjectResolver.Object);
@@ -26,7 +26,7 @@ public class SingletonResolverTests
     public void Resolve_ShouldCallObjectResolverOnlyOnce()
     {
         // Arrange
-        var mockObjectResolver = new Mock<IObjectResolver>();
+        var mockObjectResolver = new Mock<IInstanceResolver>();
         mockObjectResolver.Setup(r => r.Resolve()).Returns(new object());
         var singletonResolver = new SingletonResolver(mockObjectResolver.Object);
 

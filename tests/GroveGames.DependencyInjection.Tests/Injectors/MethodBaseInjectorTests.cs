@@ -11,7 +11,7 @@ public class MethodBaseInjectorTests
     {
         // Arrange
         var mockObjectActivator = new Mock<IObjectActivator>();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
 
         var uninitializedObject = new object();
         var parameterTypes = new[] { typeof(string), typeof(int) };

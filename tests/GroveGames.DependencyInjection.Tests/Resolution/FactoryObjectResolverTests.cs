@@ -29,7 +29,7 @@ public class FactoryObjectResolverTests
     {
         // Arrange
         var mockImplementation = new TestClassWithInjectMethod();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
         var factory = new Func<object>(() => mockImplementation);
         var objectResolver = new FactoryObjectResolver(
@@ -51,7 +51,7 @@ public class FactoryObjectResolverTests
     {
         // Arrange
         var mockImplementation = new TestClassWithInjectMethod();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         mockRegistrationResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns("InjectedString");
         var mockDisposableCollection = new Mock<IDisposableCollection>();
         var factory = new Func<object>(() => mockImplementation);
@@ -74,7 +74,7 @@ public class FactoryObjectResolverTests
     {
         // Arrange
         var mockImplementation = new TestClassWithInjectMethod();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
         var factory = new Func<object>(() => mockImplementation);
         var objectResolver = new FactoryObjectResolver(

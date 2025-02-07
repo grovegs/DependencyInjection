@@ -1,6 +1,6 @@
 ﻿namespace GroveGames.DependencyInjection.Resolution;
 
-internal interface IInstanceResolver
+public interface IInstanceResolver
 {
     object Resolve();
 }

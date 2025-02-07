@@ -1,7 +1,3 @@
-using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Collections;
-using GroveGames.DependencyInjection.Resolution;
-
 namespace GroveGames.DependencyInjection.Tests;
 
 public class RootContainerTests
@@ -10,118 +6,76 @@ public class RootContainerTests
     public void Constructor_ShouldInitializeRootContainer()
     {
         // Arrange
-        var mockCache = new Mock<IContainerCache>();
-
-        static void MockConfigurer(IContainerConfigurer _) { }
+        var mockContainer = new Mock<IContainer>();
 
         // Act
-        var rootContainer = new RootContainer(mockCache.Object, MockConfigurer);
+        var rootContainer = new RootContainer(mockContainer.Object);
 
         // Assert
         Assert.NotNull(rootContainer);
-        Assert.Equal(string.Empty, rootContainer.Name);
-        Assert.IsType<EmptyContainer>(rootContainer.Parent);
-    }
-
-    [Fact]
-    public void Create_ShouldReturnNewRootContainerWithSharedCache()
-    {
-        // Arrange
-        static void MockConfigurer(IContainerConfigurer _) { }
-
-        // Act
-        var rootContainer = RootContainer.Create(MockConfigurer);
-
-        // Assert
-        Assert.NotNull(rootContainer);
-        Assert.Equal(string.Empty, rootContainer.Name);
-        Assert.IsType<EmptyContainer>(rootContainer.Parent);
+        Assert.Equal(mockContainer.Object.Name, rootContainer.Name);
+        Assert.Equal(mockContainer.Object.Parent, rootContainer.Parent);
+        Assert.Equal(mockContainer.Object.Cache, rootContainer.Cache);
     }
 
     [Fact]
     public void AddChild_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockCache = new Mock<IContainerCache>();
+        var mockContainer = new Mock<IContainer>();
         var mockChild = new Mock<IContainer>();
-        static void MockConfigurer(IContainerConfigurer _) { }
-        var rootContainer = new RootContainer(mockCache.Object, MockConfigurer);
+        var rootContainer = new RootContainer(mockContainer.Object);
 
         // Act
         rootContainer.AddChild(mockChild.Object);
 
         // Assert
-        var containerField = typeof(RootContainer).GetField("_container", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var internalContainer = (Container)containerField?.GetValue(rootContainer)!;
-        var childrenField = typeof(Container).GetField("_children", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var children = (List<IContainer>)childrenField?.GetValue(internalContainer)!;
-        Assert.Contains(mockChild.Object, children);
+        mockContainer.Verify(c => c.AddChild(mockChild.Object), Times.Once);
     }
 
     [Fact]
     public void RemoveChild_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockCache = new Mock<IContainerCache>();
+        var mockContainer = new Mock<IContainer>();
         var mockChild = new Mock<IContainer>();
-        static void MockConfigurer(IContainerConfigurer _) { }
-        var rootContainer = new RootContainer(mockCache.Object, MockConfigurer);
-
-        rootContainer.AddChild(mockChild.Object);
+        var rootContainer = new RootContainer(mockContainer.Object);
 
         // Act
         rootContainer.RemoveChild(mockChild.Object);
 
         // Assert
-        var containerField = typeof(RootContainer).GetField("_container", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var internalContainer = (Container)containerField?.GetValue(rootContainer)!;
-        var childrenField = typeof(Container).GetField("_children", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var children = (List<IContainer>)childrenField?.GetValue(internalContainer)!;
-        Assert.DoesNotContain(mockChild.Object, children);
+        mockContainer.Verify(c => c.RemoveChild(mockChild.Object), Times.Once);
     }
 
     [Fact]
     public void Resolve_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockCache = new Mock<IContainerCache>();
-        static void MockConfigurer(IContainerConfigurer _) { }
-        var rootContainer = new RootContainer(mockCache.Object, MockConfigurer);
-
+        var mockContainer = new Mock<IContainer>();
         var mockObject = new object();
-        var mockResolver = new Mock<IContainerResolver>();
-        mockResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns(mockObject);
-
-        var containerField = typeof(RootContainer).GetField("_container", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var internalContainer = (Container)containerField?.GetValue(rootContainer)!;
-        var resolverField = typeof(Container).GetField("_resolver", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        resolverField?.SetValue(internalContainer, mockResolver.Object);
+        mockContainer.Setup(c => c.Resolve(typeof(object))).Returns(mockObject);
+        var rootContainer = new RootContainer(mockContainer.Object);
 
         // Act
         var result = rootContainer.Resolve(typeof(object));
 
         // Assert
         Assert.Equal(mockObject, result);
+        mockContainer.Verify(c => c.Resolve(typeof(object)), Times.Once);
     }
 
     [Fact]
     public void Dispose_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockCache = new Mock<IContainerCache>();
-        static void MockConfigurer(IContainerConfigurer _) { }
-        var rootContainer = new RootContainer(mockCache.Object, MockConfigurer);
-
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var containerField = typeof(RootContainer).GetField("_container", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var internalContainer = (Container)containerField?.GetValue(rootContainer)!;
-        var disposablesField = typeof(Container).GetField("_disposables", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        disposablesField?.SetValue(internalContainer, mockDisposables.Object);
+        var mockContainer = new Mock<IContainer>();
+        var rootContainer = new RootContainer(mockContainer.Object);
 
         // Act
         rootContainer.Dispose();
 
         // Assert
-        mockDisposables.Verify(d => d.Dispose(), Times.Once);
+        mockContainer.Verify(c => c.Dispose(), Times.Once);
     }
 }

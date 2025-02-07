@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GodotRootNode="*res://addons/GroveGames.DependencyInjection/GodotRootNode.cs"
+RootContainerBootstrapper="*res://addons/GroveGames.DependencyInjection/RootContainerBootstrapper.cs"
 
 [dotnet]
 

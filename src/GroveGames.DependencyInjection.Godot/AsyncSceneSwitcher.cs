@@ -2,30 +2,30 @@ using Godot;
 
 namespace GroveGames.DependencyInjection;
 
-public sealed class SceneLoader
+public sealed class AsyncSceneSwitcher
 {
     private readonly SceneTree _sceneTree;
     private readonly string _scenePath;
     private readonly double _minimumDuration;
-    private readonly Action? _onLoaded;
+    private readonly Action? _onSceneReady;
     private double _elapsedTime;
     private ulong _lastFrameTime;
 
-    public SceneLoader(SceneTree sceneTree, string scenePath, double minDuration, Action? onLoaded = null)
+    public AsyncSceneSwitcher(SceneTree sceneTree, string scenePath, double minDuration, Action? onSceneReady = null)
     {
         _sceneTree = sceneTree;
         _scenePath = scenePath;
         _minimumDuration = minDuration;
-        _onLoaded = onLoaded;
+        _onSceneReady = onSceneReady;
     }
 
-    public void LoadRequest()
+    public void RequestSceneSwitch()
     {
         var error = ResourceLoader.LoadThreadedRequest(_scenePath);
 
         if (error != Error.Ok)
         {
-            throw new SceneLoaderException($"Failed to load scene: {_scenePath}");
+            throw new SceneRequestException($"Failed to request scene switch for: {_scenePath}", error);
         }
 
         _elapsedTime = 0;
@@ -33,16 +33,16 @@ public sealed class SceneLoader
         _sceneTree.ProcessFrame += OnProcessFrame;
     }
 
-    private void Load(PackedScene packedScene)
+    private void SwitchScene(PackedScene packedScene)
     {
-        _sceneTree.UnloadCurrentScene();
         var scene = packedScene.Instantiate();
-        SceneInstaller.Install(scene);
+        SceneInstaller.Install(scene, _sceneTree.Root);
 
         scene.Ready += () =>
         {
+            _sceneTree.UnloadCurrentScene();
             _sceneTree.CurrentScene = scene;
-            _onLoaded?.Invoke();
+            _onSceneReady?.Invoke();
         };
 
         _sceneTree.Root.AddChild(scene);
@@ -60,7 +60,7 @@ public sealed class SceneLoader
         if (status == ResourceLoader.ThreadLoadStatus.Failed)
         {
             Cleanup();
-            throw new SceneLoaderException($"Failed to load scene: {_scenePath}");
+            throw new SceneLoadException($"Failed to load scene: {_scenePath}");
         }
 
         if (_elapsedTime < _minimumDuration || status != ResourceLoader.ThreadLoadStatus.Loaded)
@@ -71,11 +71,11 @@ public sealed class SceneLoader
         if (ResourceLoader.LoadThreadedGet(_scenePath) is not PackedScene packedScene)
         {
             Cleanup();
-            throw new SceneLoaderException($"Failed to instantiate loaded scene: {_scenePath}");
+            throw new SceneInstantiationException($"Failed to instantiate scene: {_scenePath}");
         }
 
         Cleanup();
-        Load(packedScene);
+        SwitchScene(packedScene);
     }
 
     private void Cleanup()

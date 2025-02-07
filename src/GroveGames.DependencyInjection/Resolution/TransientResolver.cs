@@ -2,15 +2,15 @@
 
 internal sealed class TransientResolver : IInstanceResolver
 {
-    private readonly IObjectResolver _objectResolver;
+    private readonly IInstanceResolver _resolver;
 
-    public TransientResolver(IObjectResolver objectResolver)
+    public TransientResolver(IInstanceResolver resolver)
     {
-        _objectResolver = objectResolver;
+        _resolver = resolver;
     }
 
     public object Resolve()
     {
-        return _objectResolver.Resolve();
+        return _resolver.Resolve();
     }
 }

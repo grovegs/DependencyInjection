@@ -2,27 +2,27 @@ namespace GroveGames.DependencyInjection.Resolution;
 
 internal sealed class RootContainerResolver : IContainerResolver
 {
-    private readonly Dictionary<Type, IInstanceResolver> _instanceResolversByRegistrationTypes;
+    private readonly Dictionary<Type, IInstanceResolver> _resolversByRegistrationTypes;
 
     public RootContainerResolver()
     {
-        _instanceResolversByRegistrationTypes = [];
+        _resolversByRegistrationTypes = [];
     }
 
     public object Resolve(Type registrationType)
     {
-        return _instanceResolversByRegistrationTypes.TryGetValue(registrationType, out var instanceResolver)
-            ? instanceResolver.Resolve()
+        return _resolversByRegistrationTypes.TryGetValue(registrationType, out var resolver)
+            ? resolver.Resolve()
             : throw new RegistrationNotFoundException(registrationType);
     }
 
-    public void AddInstanceResolver(Type registrationType, IInstanceResolver instanceResolver)
+    public void AddResolver(Type registrationType, IInstanceResolver resolver)
     {
-        _instanceResolversByRegistrationTypes.Add(registrationType, instanceResolver);
+        _resolversByRegistrationTypes.Add(registrationType, resolver);
     }
 
     public void Clear()
     {
-        _instanceResolversByRegistrationTypes.Clear();
+        _resolversByRegistrationTypes.Clear();
     }
 }

@@ -4,7 +4,7 @@ namespace GroveGames.DependencyInjection;
 
 public static class SceneInstaller
 {
-    public static void Install(Node scene)
+    public static void Install(Node scene, IContainer parent)
     {
         foreach (var sceneChild in scene.GetChildren())
         {
@@ -14,18 +14,16 @@ public static class SceneInstaller
             }
 
             var name = scene.Name.ToString();
-            var container = Container.Create(name, sceneInstaller.Install);
+            var container = ContainerFactory.CreateContainer(name, parent, sceneInstaller.Install);
             sceneInstaller.QueueFree();
             scene.TreeExiting += container.Dispose;
             return;
         }
     }
 
-    public static void Install(Window window)
+    public static void Install(Node scene, Window window)
     {
-        foreach (var scene in window.GetChildren())
-        {
-            Install(scene);
-        }
+        var parent = window.GetContainer();
+        Install(scene, parent);
     }
 }
