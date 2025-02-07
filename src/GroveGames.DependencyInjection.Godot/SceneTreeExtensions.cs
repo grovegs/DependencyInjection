@@ -4,9 +4,9 @@ namespace GroveGames.DependencyInjection;
 
 public static class SceneTreeExtensions
 {
-    public static void ChangeScene(this SceneTree sceneTree, string scenePath, double minDuration, Action? onLoaded = null)
+    public static void ChangeScene(this SceneTree sceneTree, string scenePath, double minDuration, Action? onSceneReady = null)
     {
-        var sceneLoader = new AsyncSceneSwitcher(sceneTree, scenePath, minDuration, onLoaded);
+        var sceneLoader = new AsyncSceneSwitcher(sceneTree, scenePath, minDuration, onSceneReady);
         sceneLoader.RequestSceneSwitch();
     }
 
