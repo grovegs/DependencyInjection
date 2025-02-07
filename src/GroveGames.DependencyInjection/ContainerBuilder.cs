@@ -13,6 +13,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
     private readonly IContainerResolver _resolver;
     private readonly IContainerCache _cache;
     private readonly IDisposableCollection _disposables;
+    private readonly List<Type> _entryPoints;
 
     public ContainerBuilder(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache)
     {
@@ -21,12 +22,19 @@ internal sealed class ContainerBuilder : IContainerBuilder
         _resolver = resolver;
         _cache = cache;
         _disposables = new DisposableCollection();
+        _entryPoints = [];
     }
 
     public Container Build()
     {
         var container = new Container(_name, _parent, _resolver, _cache, _disposables);
         AddSingleton(typeof(IObjectResolver), container);
+
+        foreach (var entryPoint in _entryPoints)
+        {
+            _resolver.Resolve(entryPoint);
+        }
+
         return container;
     }
 
@@ -40,6 +48,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
     {
         var objectResolver = new InitializedObjectResolver(implementationInstance, _resolver, _disposables);
         AddSingleton(registrationType, registrationType, objectResolver);
+        _entryPoints.Add(registrationType);
         return this;
     }
 
