@@ -53,7 +53,7 @@ public class ContainerResolverTests
         containerResolver.AddInstanceResolver(registrationType, mockInstanceResolver.Object);
 
         // Assert
-        var field = typeof(ContainerResolver).GetField("_instanceResolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var field = typeof(ContainerResolver).GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         Assert.NotNull(field);
         var instanceResolvers = field.GetValue(containerResolver) as Dictionary<Type, IInstanceResolver>;
         Assert.NotNull(instanceResolvers);
@@ -74,7 +74,7 @@ public class ContainerResolverTests
         containerResolver.Clear();
 
         // Assert
-        var field = typeof(ContainerResolver).GetField("_instanceResolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var field = typeof(ContainerResolver).GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         Assert.NotNull(field);
         var instanceResolvers = field.GetValue(containerResolver) as Dictionary<Type, IInstanceResolver>;
         Assert.NotNull(instanceResolvers);

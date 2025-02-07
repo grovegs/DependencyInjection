@@ -6,7 +6,7 @@ public class RootContainerTests
     public void Constructor_ShouldInitializeRootContainer()
     {
         // Arrange
-        var mockContainer = new Mock<Container>();
+        var mockContainer = new Mock<IContainer>();
 
         // Act
         var rootContainer = new RootContainer(mockContainer.Object);
@@ -22,7 +22,7 @@ public class RootContainerTests
     public void AddChild_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockContainer = new Mock<Container>();
+        var mockContainer = new Mock<IContainer>();
         var mockChild = new Mock<IContainer>();
         var rootContainer = new RootContainer(mockContainer.Object);
 
@@ -37,7 +37,7 @@ public class RootContainerTests
     public void RemoveChild_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockContainer = new Mock<Container>();
+        var mockContainer = new Mock<IContainer>();
         var mockChild = new Mock<IContainer>();
         var rootContainer = new RootContainer(mockContainer.Object);
 
@@ -52,7 +52,7 @@ public class RootContainerTests
     public void Resolve_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockContainer = new Mock<Container>();
+        var mockContainer = new Mock<IContainer>();
         var mockObject = new object();
         mockContainer.Setup(c => c.Resolve(typeof(object))).Returns(mockObject);
         var rootContainer = new RootContainer(mockContainer.Object);
@@ -69,7 +69,7 @@ public class RootContainerTests
     public void Dispose_ShouldDelegateToInternalContainer()
     {
         // Arrange
-        var mockContainer = new Mock<Container>();
+        var mockContainer = new Mock<IContainer>();
         var rootContainer = new RootContainer(mockContainer.Object);
 
         // Act

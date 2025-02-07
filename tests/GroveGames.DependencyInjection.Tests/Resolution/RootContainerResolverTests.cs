@@ -12,7 +12,7 @@ public class RootContainerResolverTests
 
         // Assert
         var fieldInfo = typeof(RootContainerResolver)
-            .GetField("_instanceResolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            .GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var dictionary = (Dictionary<Type, IInstanceResolver>)fieldInfo?.GetValue(resolver)!;
         Assert.NotNull(dictionary);
         Assert.Empty(dictionary);
@@ -30,7 +30,7 @@ public class RootContainerResolverTests
 
         // Assert
         var fieldInfo = typeof(RootContainerResolver)
-            .GetField("_instanceResolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            .GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var dictionary = (Dictionary<Type, IInstanceResolver>)fieldInfo?.GetValue(resolver)!;
         Assert.True(dictionary.ContainsKey(typeof(string)));
         Assert.Equal(mockInstanceResolver.Object, dictionary[typeof(string)]);
@@ -61,7 +61,7 @@ public class RootContainerResolverTests
         var resolver = new RootContainerResolver();
 
         // Act & Assert
-        var exception = Assert.Throws<InvalidOperationException>(() => resolver.Resolve(typeof(object)));
+        var exception = Assert.Throws<RegistrationNotFoundException>(() => resolver.Resolve(typeof(object)));
         Assert.Equal("No registration found for type System.Object.", exception.Message);
     }
 
@@ -78,7 +78,7 @@ public class RootContainerResolverTests
 
         // Assert
         var fieldInfo = typeof(RootContainerResolver)
-            .GetField("_instanceResolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            .GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var dictionary = (Dictionary<Type, IInstanceResolver>)fieldInfo?.GetValue(resolver)!;
         Assert.Empty(dictionary);
     }
