@@ -8,7 +8,7 @@ public static class RootContainerFactory
     public static RootContainer CreateRootContainer(Action<IRootContainerBuilder> configure)
     {
         var name = string.Empty;
-        var parent = new EmptyContainer();
+        var parent = new NullContainer();
         var resolver = new RootContainerResolver();
         var cache = new ContainerCache();
         var builder = new RootContainerBuilder(name, parent, resolver, cache);

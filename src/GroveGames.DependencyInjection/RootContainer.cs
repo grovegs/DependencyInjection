@@ -7,8 +7,8 @@ public sealed class RootContainer : IRootContainer
     private readonly IContainer _container;
 
     public string Name => _container.Name;
-    public IContainer? Parent => _container.Parent;
-    public IContainerCache? Cache => _container.Cache;
+    public IContainer Parent => _container.Parent;
+    public IContainerCache Cache => _container.Cache;
 
     internal RootContainer(IContainer container)
     {

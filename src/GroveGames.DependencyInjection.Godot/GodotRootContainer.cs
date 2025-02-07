@@ -8,9 +8,9 @@ public sealed partial class GodotRootContainer : Node, IRootContainer
 {
     private readonly IRootContainer _container;
 
-    public IContainer? Parent => _container.Parent;
+    public IContainer Parent => _container.Parent;
 
-    public IContainerCache? Cache => _container.Cache;
+    public IContainerCache Cache => _container.Cache;
 
     public new string Name => _container.Name;
 
