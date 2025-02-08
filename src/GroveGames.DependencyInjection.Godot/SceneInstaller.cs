@@ -20,10 +20,4 @@ public static class SceneInstaller
             return;
         }
     }
-
-    public static void Install(Node scene, Window window)
-    {
-        var parent = window.GetContainer();
-        Install(scene, parent);
-    }
 }

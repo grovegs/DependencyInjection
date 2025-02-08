@@ -36,7 +36,8 @@ public sealed class AsyncSceneSwitcher
     private void SwitchScene(PackedScene packedScene)
     {
         var scene = packedScene.Instantiate();
-        SceneInstaller.Install(scene, _sceneTree.Root);
+        var parent = _sceneTree.GetRootContainer();
+        SceneInstaller.Install(scene, parent);
 
         scene.Ready += () =>
         {
