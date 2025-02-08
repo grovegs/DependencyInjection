@@ -13,7 +13,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
     private readonly IContainerResolver _resolver;
     private readonly IContainerCache _cache;
     private readonly IDisposableCollection _disposables;
-    private readonly List<Type> _entryPoints;
+    private readonly List<Type> _immediateResolutionTypes;
 
     public ContainerBuilder(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache)
     {
@@ -22,7 +22,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
         _resolver = resolver;
         _cache = cache;
         _disposables = new DisposableCollection();
-        _entryPoints = [];
+        _immediateResolutionTypes = [];
     }
 
     public Container Build()
@@ -30,9 +30,9 @@ internal sealed class ContainerBuilder : IContainerBuilder
         var container = new Container(_name, _parent, _resolver, _cache, _disposables);
         AddSingleton(typeof(IObjectResolver), container);
 
-        foreach (var entryPoint in _entryPoints)
+        foreach (var immediateResolutionType in _immediateResolutionTypes)
         {
-            _resolver.Resolve(entryPoint);
+            _resolver.Resolve(immediateResolutionType);
         }
 
         return container;
@@ -48,7 +48,7 @@ internal sealed class ContainerBuilder : IContainerBuilder
     {
         var objectResolver = new InitializedObjectResolver(implementationInstance, _resolver, _disposables);
         AddSingleton(registrationType, registrationType, objectResolver);
-        _entryPoints.Add(registrationType);
+        _immediateResolutionTypes.Add(registrationType);
         return this;
     }
 
