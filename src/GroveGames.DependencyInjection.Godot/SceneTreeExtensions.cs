@@ -10,9 +10,16 @@ public static class SceneTreeExtensions
         sceneLoader.RequestSceneSwitch();
     }
 
+    public static IRootContainer GetRootContainer(this SceneTree sceneTree)
+    {
+        var window = sceneTree.Root;
+        var container = window.GetNode<GodotRootContainer>("RootContainer");
+        return container;
+    }
+
     public static IContainer GetCurrentSceneContainer(this SceneTree sceneTree)
     {
-        var rootContainer = sceneTree.Root.GetContainer();
+        var rootContainer = sceneTree.GetRootContainer();
         var scene = sceneTree.CurrentScene
             ?? throw new InvalidOperationException("No current scene found in SceneTree.");
 
