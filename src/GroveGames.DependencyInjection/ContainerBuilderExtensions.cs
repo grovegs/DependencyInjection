@@ -46,11 +46,11 @@ public static class ContainerBuilderExtensions
         return builder.AddSingleton(implementationType, implementationType);
     }
 
-    public static IContainerBuilder AddSingleton<TRegistration>(this IContainerBuilder builder, Func<TRegistration> factory)
+    public static IContainerBuilder AddSingleton<TRegistration>(this IContainerBuilder builder, Func<TRegistration> instanceFactory)
         where TRegistration : class
     {
         var registrationType = typeof(TRegistration);
-        return builder.AddSingleton(registrationType, factory);
+        return builder.AddSingleton(registrationType, instanceFactory);
     }
 
     public static IContainerBuilder AddTransient(this IContainerBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
@@ -74,10 +74,10 @@ public static class ContainerBuilderExtensions
         return builder.AddTransient(implementationType, implementationType);
     }
 
-    public static IContainerBuilder AddTransient<TRegistration>(this IContainerBuilder builder, Func<TRegistration> factory)
+    public static IContainerBuilder AddTransient<TRegistration>(this IContainerBuilder builder, Func<TRegistration> instanceFactory)
     where TRegistration : class
     {
         var registrationType = typeof(TRegistration);
-        return builder.AddTransient(registrationType, factory);
+        return builder.AddTransient(registrationType, instanceFactory);
     }
 }
