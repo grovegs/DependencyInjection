@@ -4,16 +4,29 @@ namespace GroveGames.DependencyInjection;
 
 public static class SceneTreeExtensions
 {
-    public static void ChangeScene(this SceneTree sceneTree, string scenePath, double minDuration, Action? onSceneReady = null)
+    public static void ChangeScene(this SceneTree sceneTree, string scenePath, double minDuration, Action<Node>? onSceneCreate = null, Action<Node>? onSceneReady = null)
     {
-        var sceneLoader = new AsyncSceneSwitcher(sceneTree, scenePath, minDuration, onSceneReady);
-        sceneLoader.RequestSceneSwitch();
+        var sceneSwitcher = new AsyncSceneSwitcher(sceneTree, scenePath, minDuration, onSceneCreate, onSceneReady);
+        sceneSwitcher.RequestSceneSwitch();
+    }
+
+    public static void ChangeScene(this SceneTree sceneTree, string scenePath, double minDuration, bool createContainer = true, Action<Node>? onSceneReady = null)
+    {
+        var onSceneCreate = createContainer ? scene =>
+        {
+            var rootContainer = sceneTree.GetRootContainer();
+            SceneContainerFactory.CreateSceneContainer(scene, rootContainer);
+        }
+        : (Action<Node>?)null;
+
+        var sceneSwitcher = new AsyncSceneSwitcher(sceneTree, scenePath, minDuration, onSceneCreate, onSceneReady);
+        sceneSwitcher.RequestSceneSwitch();
     }
 
     public static IRootContainer GetRootContainer(this SceneTree sceneTree)
     {
         var window = sceneTree.Root;
-        var container = window.GetNode<GodotRootContainer>("RootContainer");
+        var container = window.GetNodeOrNull<GodotRootContainer>("RootContainer") ?? throw new InvalidOperationException("RootContainer not found in SceneTree."); ;
         return container;
     }
 
