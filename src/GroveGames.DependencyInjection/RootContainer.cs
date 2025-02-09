@@ -1,29 +1,18 @@
 using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Collections;
-using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
 
-public sealed class RootContainer : IContainer
+public sealed class RootContainer : IRootContainer
 {
-    private readonly Container _container;
+    private readonly IContainer _container;
 
     public string Name => _container.Name;
     public IContainer Parent => _container.Parent;
+    public IContainerCache Cache => _container.Cache;
 
-    internal RootContainer(IContainerCache cache, Action<IContainerConfigurer> configure)
+    internal RootContainer(IContainer container)
     {
-        var name = string.Empty;
-        var parent = new EmptyContainer();
-        var resolver = new RootContainerResolver();
-        var disposables = new DisposableCollection();
-        _container = new Container(name, parent, resolver, cache, disposables, configure);
-    }
-
-    public static RootContainer Create(Action<IContainerConfigurer> configure)
-    {
-        var cache = ContainerCache.Shared;
-        return new RootContainer(cache, configure);
+        _container = container;
     }
 
     public void AddChild(IContainer child)
@@ -44,5 +33,10 @@ public sealed class RootContainer : IContainer
     public object Resolve(Type registrationType)
     {
         return _container.Resolve(registrationType);
+    }
+
+    public IContainer? FindChild(ReadOnlySpan<char> path)
+    {
+        return Cache.Find(path);
     }
 }

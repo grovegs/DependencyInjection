@@ -11,7 +11,7 @@ public class UninitializedObjectResolverTests
         // Arrange
         var mockDisposable = new Mock<IDisposable>();
         var implementationType = mockDisposable.Object.GetType();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
         var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
 
@@ -29,7 +29,7 @@ public class UninitializedObjectResolverTests
         // Arrange
         var mockDisposable = new Mock<IDisposable>();
         var implementationType = mockDisposable.Object.GetType();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
         var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
 
@@ -46,7 +46,7 @@ public class UninitializedObjectResolverTests
         // Arrange
         var mockDisposable = new Mock<IDisposable>();
         var implementationType = mockDisposable.Object.GetType();
-        var mockRegistrationResolver = new Mock<IRegistrationResolver>();
+        var mockRegistrationResolver = new Mock<IObjectResolver>();
         var mockDisposableCollection = new Mock<IDisposableCollection>();
         var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
 

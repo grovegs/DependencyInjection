@@ -10,7 +10,7 @@ internal static class ConstructorInjector
 {
     private const BindingFlags ConstructorBindingFlags = BindingFlags.Public | BindingFlags.Instance;
 
-    public static void Inject(object uninitializedObject, IRegistrationResolver registrationResolver)
+    public static void Inject(object uninitializedObject, IObjectResolver resolver)
     {
         var implementationType = uninitializedObject.GetType();
 
@@ -19,18 +19,18 @@ internal static class ConstructorInjector
             return;
         }
 
-        MethodBaseInjector.Inject(uninitializedObject, objectActivator!, registrationResolver);
+        MethodBaseInjector.Inject(uninitializedObject, objectActivator!, resolver);
     }
 
-    private static bool TryCreateObjectActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType, out IObjectActivator? objectActivator)
+    private static bool TryCreateObjectActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType, out IObjectActivator? activator)
     {
         if (TryFindConstructorInfo(implementationType, out var constructorInfo))
         {
-            objectActivator = new MethodBaseActivator(constructorInfo!);
+            activator = new MethodBaseActivator(constructorInfo!);
             return true;
         }
 
-        objectActivator = null;
+        activator = null;
         return false;
     }
 
@@ -43,7 +43,10 @@ internal static class ConstructorInjector
         {
             var parametersCount = constructorInfo.GetParameters().Length;
 
-            if (foundParametersCount > parametersCount) continue;
+            if (foundParametersCount > parametersCount)
+            {
+                continue;
+            }
 
             foundConstructorInfo = constructorInfo;
             foundParametersCount = parametersCount;

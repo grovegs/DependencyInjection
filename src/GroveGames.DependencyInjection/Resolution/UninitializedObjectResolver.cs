@@ -6,25 +6,25 @@ using GroveGames.DependencyInjection.Injectors;
 
 namespace GroveGames.DependencyInjection.Resolution;
 
-internal sealed class UninitializedObjectResolver : IObjectResolver
+internal sealed class UninitializedObjectResolver : IInstanceResolver
 {
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     private readonly Type _implementationType;
-    private readonly IRegistrationResolver _registrationResolver;
-    private readonly IDisposableCollection _disposableCollection;
+    private readonly IObjectResolver _resolver;
+    private readonly IDisposableCollection _disposables;
 
-    public UninitializedObjectResolver([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType, IRegistrationResolver registrationResolver, IDisposableCollection disposableCollection)
+    public UninitializedObjectResolver([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType, IObjectResolver resolver, IDisposableCollection disposables)
     {
         _implementationType = implementationType;
-        _registrationResolver = registrationResolver;
-        _disposableCollection = disposableCollection;
+        _resolver = resolver;
+        _disposables = disposables;
     }
 
     public object Resolve()
     {
         var instance = RuntimeHelpers.GetUninitializedObject(_implementationType);
-        ConstructorInjector.Inject(instance, _registrationResolver);
-        _disposableCollection.TryAdd(instance);
+        ConstructorInjector.Inject(instance, _resolver);
+        _disposables.TryAdd(instance);
         return instance;
     }
 }

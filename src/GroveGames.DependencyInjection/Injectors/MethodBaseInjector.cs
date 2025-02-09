@@ -5,18 +5,18 @@ namespace GroveGames.DependencyInjection.Injectors;
 
 internal static class MethodBaseInjector
 {
-    public static void Inject(object uninitializedObject, IObjectActivator objectActivator, IRegistrationResolver registrationResolver)
+    public static void Inject(object uninitializedObject, IObjectActivator activator, IObjectResolver resolver)
     {
-        var parameterTypes = objectActivator.ParameterTypes;
+        var parameterTypes = activator.ParameterTypes;
         var parameterTypesLength = parameterTypes.Length;
         var parameters = new object[parameterTypesLength];
 
         for (var i = 0; i < parameterTypesLength; i++)
         {
             var parameterType = parameterTypes[i];
-            parameters[i] = registrationResolver.Resolve(parameterType);
+            parameters[i] = resolver.Resolve(parameterType);
         }
 
-        objectActivator.Activate(uninitializedObject, parameters);
+        activator.Activate(uninitializedObject, parameters);
     }
 }
