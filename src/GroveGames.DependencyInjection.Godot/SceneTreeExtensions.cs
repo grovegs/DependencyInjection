@@ -34,7 +34,7 @@ public static class SceneTreeExtensions
     {
         var rootContainer = sceneTree.GetRootContainer();
         var scene = sceneTree.CurrentScene
-            ?? throw new InvalidOperationException("No current scene found in SceneTree.");
+            ?? throw new InvalidOperationException("CurrentScene found in SceneTree.");
 
         var container = rootContainer.FindChild(scene.Name.ToString())
             ?? throw new InvalidOperationException($"Container not found for scene: {scene.Name}");
