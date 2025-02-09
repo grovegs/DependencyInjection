@@ -8,7 +8,7 @@ public sealed partial class RootContainerBootstrapper : Node
     {
         var container = GodotRootContainerFactory.CreateGodotRootContainer();
         var scene = GetTree().CurrentScene;
-        SceneInstaller.Install(scene, container);
+        SceneContainerFactory.CreateSceneContainer(scene, container);
         QueueFree();
     }
 }
