@@ -30,9 +30,9 @@ internal sealed class RootContainerBuilder : IRootContainerBuilder
         return _builder.AddSingleton(registrationType, implementationType);
     }
 
-    public IContainerBuilder AddSingleton(Type registrationType, Func<object> factory)
+    public IContainerBuilder AddSingleton(Type registrationType, Func<object> instanceFactory)
     {
-        return _builder.AddSingleton(registrationType, factory);
+        return _builder.AddSingleton(registrationType, instanceFactory);
     }
 
     public IContainerBuilder AddTransient([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
@@ -40,8 +40,8 @@ internal sealed class RootContainerBuilder : IRootContainerBuilder
         return _builder.AddTransient(registrationType, implementationType);
     }
 
-    public IContainerBuilder AddTransient(Type registrationType, Func<object> factory)
+    public IContainerBuilder AddTransient(Type registrationType, Func<object> instanceFactory)
     {
-        return _builder.AddTransient(registrationType, factory);
+        return _builder.AddTransient(registrationType, instanceFactory);
     }
 }

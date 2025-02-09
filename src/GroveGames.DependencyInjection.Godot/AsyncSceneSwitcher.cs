@@ -7,15 +7,17 @@ public sealed class AsyncSceneSwitcher
     private readonly SceneTree _sceneTree;
     private readonly string _scenePath;
     private readonly double _minimumDuration;
-    private readonly Action? _onSceneReady;
+    private readonly Action<Node>? _onSceneCreate;
+    private readonly Action<Node>? _onSceneReady;
     private double _elapsedTime;
     private ulong _lastFrameTime;
 
-    public AsyncSceneSwitcher(SceneTree sceneTree, string scenePath, double minDuration, Action? onSceneReady = null)
+    public AsyncSceneSwitcher(SceneTree sceneTree, string scenePath, double minDuration, Action<Node>? onSceneCreate = null, Action<Node>? onSceneReady = null)
     {
         _sceneTree = sceneTree;
         _scenePath = scenePath;
         _minimumDuration = minDuration;
+        _onSceneCreate = onSceneCreate;
         _onSceneReady = onSceneReady;
     }
 
@@ -36,14 +38,13 @@ public sealed class AsyncSceneSwitcher
     private void SwitchScene(PackedScene packedScene)
     {
         var scene = packedScene.Instantiate();
-        var parent = _sceneTree.GetRootContainer();
-        SceneInstaller.Install(scene, parent);
+        _onSceneCreate?.Invoke(scene);
 
         scene.Ready += () =>
         {
             _sceneTree.UnloadCurrentScene();
             _sceneTree.CurrentScene = scene;
-            _onSceneReady?.Invoke();
+            _onSceneReady?.Invoke(scene);
         };
 
         _sceneTree.Root.AddChild(scene);

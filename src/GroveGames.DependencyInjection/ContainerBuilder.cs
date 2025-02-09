@@ -38,51 +38,51 @@ internal sealed class ContainerBuilder : IContainerBuilder
         return container;
     }
 
-    private void AddSingleton(Type registrationType, Type implementationType, IInstanceResolver resolver)
+    private void AddSingleton(Type registrationType, Type implementationType, IInstanceResolver instanceResolver)
     {
-        var singletonResolver = new SingletonResolver(resolver);
-        _resolver.AddResolver(registrationType, singletonResolver);
+        var resolver = new SingletonResolver(instanceResolver);
+        _resolver.AddResolver(registrationType, resolver);
     }
 
     public IContainerBuilder AddSingleton(Type registrationType, object implementationInstance)
     {
-        var objectResolver = new InitializedObjectResolver(implementationInstance, _resolver, _disposables);
-        AddSingleton(registrationType, registrationType, objectResolver);
+        var resolver = new InitializedObjectResolver(implementationInstance, _resolver, _disposables);
+        AddSingleton(registrationType, registrationType, resolver);
         _immediateResolutionTypes.Add(registrationType);
         return this;
     }
 
     public IContainerBuilder AddSingleton([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
-        var objectResolver = new UninitializedObjectResolver(implementationType, _resolver, _disposables);
-        AddSingleton(registrationType, implementationType, objectResolver);
+        var resolver = new UninitializedObjectResolver(implementationType, _resolver, _disposables);
+        AddSingleton(registrationType, implementationType, resolver);
         return this;
     }
 
-    public IContainerBuilder AddSingleton(Type registrationType, Func<object> factory)
+    public IContainerBuilder AddSingleton(Type registrationType, Func<object> instanceFactory)
     {
-        var objectResolver = new FactoryObjectResolver(factory, _resolver, _disposables);
-        AddSingleton(registrationType, registrationType, objectResolver);
+        var resolver = new FactoryObjectResolver(instanceFactory, _resolver, _disposables);
+        AddSingleton(registrationType, registrationType, resolver);
         return this;
     }
 
-    private void AddTransient(Type registrationType, Type implementationType, IInstanceResolver resolver)
+    private void AddTransient(Type registrationType, Type implementationType, IInstanceResolver instanceResolver)
     {
-        var instanceResolver = new TransientResolver(resolver);
-        _resolver.AddResolver(registrationType, instanceResolver);
+        var resolver = new TransientResolver(instanceResolver);
+        _resolver.AddResolver(registrationType, resolver);
     }
 
     public IContainerBuilder AddTransient([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
     {
-        var objectResolver = new UninitializedObjectResolver(implementationType, _resolver, _disposables);
-        AddTransient(registrationType, implementationType, objectResolver);
+        var resolver = new UninitializedObjectResolver(implementationType, _resolver, _disposables);
+        AddTransient(registrationType, implementationType, resolver);
         return this;
     }
 
-    public IContainerBuilder AddTransient(Type registrationType, Func<object> factory)
+    public IContainerBuilder AddTransient(Type registrationType, Func<object> instanceFactory)
     {
-        var objectResolver = new FactoryObjectResolver(factory, _resolver, _disposables);
-        AddTransient(registrationType, registrationType, objectResolver);
+        var resolver = new FactoryObjectResolver(instanceFactory, _resolver, _disposables);
+        AddTransient(registrationType, registrationType, resolver);
         return this;
     }
 }
