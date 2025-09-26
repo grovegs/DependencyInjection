@@ -13,9 +13,12 @@ on:
           - minor
           - patch
 
+permissions:
+  contents: write
+
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/godot-package-release.yml@main
+    uses: grovegs/workflows/.github/workflows/godot-package-release.yml@v0.0.1
     with:
       name: Dependency Injection
       core-project: src/GroveGames.DependencyInjection
