@@ -12,7 +12,7 @@ on:
 
 jobs:
   format:
-    uses: grovegs/workflows/.github/workflows/godot-package-format.yml@v0.0.1
+    uses: grovegs/workflows/.github/workflows/godot-package-format.yml@v0.1.7
     with:
       core-project: src/GroveGames.DependencyInjection
       godot-project: src/GroveGames.DependencyInjection.Godot
