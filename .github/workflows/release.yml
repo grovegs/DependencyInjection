@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version-type:
-        description: "Select the version to increment (major, minor, patch)"
+        description: Select the version to increment such as major, minor, or patch
         required: true
         default: patch
         type: choice
@@ -15,17 +15,27 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   release:
-    uses: grovegs/workflows/.github/workflows/godot-package-release.yml@v0.0.1
+    name: Release Package
+    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.0.33
     with:
-      name: Dependency Injection
-      core-project: src/GroveGames.DependencyInjection
-      godot-project: src/GroveGames.DependencyInjection.Godot
-      godot-addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
-      global-json-file: global.json
+      package-name: Dependency Injection
       version-type: ${{ inputs.version-type }}
+      runs-on: ubuntu-latest
+      dotnet-project: src/GroveGames.DependencyInjection
+      global-json-file: global.json
+      directory-build-props: Directory.Build.props
+      godot-addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
+      create-tag: true
+      publish-github: true
+      publish-nuget: true
+      publish-discord: true
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
+      app-id: ${{ secrets.APP_ID }}
+      app-private-key: ${{ secrets.APP_PRIVATE_KEY }}
       nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+      discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}

@@ -10,10 +10,12 @@ on:
       - main
       - develop
 
+permissions:
+  contents: read
+
 jobs:
-  tests:
-    uses: grovegs/workflows/.github/workflows/godot-package-tests.yml@v0.0.1
+  release:
+    uses: grovegs/workflows/.github/workflows/package-tests.yml@v1.0.33
     with:
-      core-test-project: tests/GroveGames.DependencyInjection.Tests
-      godot-test-project: tests/GroveGames.DependencyInjection.Godot.Tests
+      dotnet-project: tests/GroveGames.DependencyInjection.Tests
       global-json-file: global.json
