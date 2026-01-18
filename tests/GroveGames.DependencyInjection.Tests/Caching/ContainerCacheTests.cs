@@ -7,119 +7,115 @@ public class ContainerCacheTests
     [Fact]
     public void Shared_ShouldReturnSingletonInstance()
     {
-        // Act
         var instance1 = ContainerCache.Shared;
         var instance2 = ContainerCache.Shared;
 
-        // Assert
         Assert.Same(instance1, instance2);
     }
 
     [Fact]
     public void Find_ShouldReturnContainer_WhenPathIsValid()
     {
-        // Arrange
-        var rootContainer = new Mock<IContainer>();
-        rootContainer.SetupGet(c => c.Name).Returns(string.Empty);
-        rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
-        var childContainer = new Mock<IContainer>();
-        childContainer.SetupGet(c => c.Name).Returns("child");
-        childContainer.SetupGet(c => c.Parent).Returns(rootContainer.Object);
-        var grandchildContainer = new Mock<IContainer>();
-        grandchildContainer.SetupGet(c => c.Name).Returns("grandchild");
-        grandchildContainer.SetupGet(c => c.Parent).Returns(childContainer.Object);
+        var rootContainer = new TestContainer
+        {
+            Name = string.Empty,
+            Parent = null!
+        };
+        var childContainer = new TestContainer
+        {
+            Name = "child",
+            Parent = rootContainer
+        };
+        var grandchildContainer = new TestContainer
+        {
+            Name = "grandchild",
+            Parent = childContainer
+        };
         var containerCache = new ContainerCache();
-        containerCache.Add(rootContainer.Object);
-        containerCache.Add(childContainer.Object);
-        containerCache.Add(grandchildContainer.Object);
+        containerCache.Add(rootContainer);
+        containerCache.Add(childContainer);
+        containerCache.Add(grandchildContainer);
 
-        // Act
         var result = containerCache.Find("/child/grandchild");
 
-        // Assert
-        Assert.Equal(grandchildContainer.Object, result);
+        Assert.Equal(grandchildContainer, result);
     }
 
     [Fact]
     public void Find_ShouldReturnEmptyNameContainer_WhenPathIsEmpty()
     {
-        // Arrange
-        var rootContainer = new Mock<IContainer>();
-        rootContainer.SetupGet(c => c.Name).Returns(string.Empty);
-        rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
+        var rootContainer = new TestContainer
+        {
+            Name = string.Empty,
+            Parent = null!
+        };
         var containerCache = new ContainerCache();
-        containerCache.Add(rootContainer.Object);
+        containerCache.Add(rootContainer);
 
-        // Act
         var result = containerCache.Find(string.Empty);
 
-        // Assert
-        Assert.Equal(rootContainer.Object, result);
+        Assert.Equal(rootContainer, result);
     }
 
     [Fact]
     public void Find_ShouldReturnEmptyNameContainer_WhenPathIsSlash()
     {
-        // Arrange
-        var rootContainer = new Mock<IContainer>();
-        rootContainer.SetupGet(c => c.Name).Returns(string.Empty);
-        rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
+        var rootContainer = new TestContainer
+        {
+            Name = string.Empty,
+            Parent = null!
+        };
         var containerCache = new ContainerCache();
-        containerCache.Add(rootContainer.Object);
+        containerCache.Add(rootContainer);
 
-        // Act
         var result = containerCache.Find("/");
 
-        // Assert
-        Assert.Equal(rootContainer.Object, result);
+        Assert.Equal(rootContainer, result);
     }
 
     [Fact]
     public void Find_ShouldReturnNull_WhenPathDoesNotMatch()
     {
-        // Arrange
-        var rootContainer = new Mock<IContainer>();
-        rootContainer.SetupGet(c => c.Name).Returns("root");
-        rootContainer.SetupGet(c => c.Parent).Returns((IContainer)null!);
+        var rootContainer = new TestContainer
+        {
+            Name = "root",
+            Parent = null!
+        };
         var containerCache = new ContainerCache();
-        containerCache.Add(rootContainer.Object);
+        containerCache.Add(rootContainer);
 
-        // Act
         var result = containerCache.Find("nonexistent/path");
 
-        // Assert
         Assert.Null(result);
     }
 
     [Fact]
     public void Add_ShouldAddContainerToCache()
     {
-        // Arrange
-        var container = new Mock<IContainer>();
-        container.SetupGet(c => c.Name).Returns("test");
+        var container = new TestContainer
+        {
+            Name = "test"
+        };
         var containerCache = new ContainerCache();
 
-        // Act
-        containerCache.Add(container.Object);
+        containerCache.Add(container);
 
-        // Assert
         var result = containerCache.Find("test");
-        Assert.Equal(container.Object, result);
+        Assert.Equal(container, result);
     }
 
     [Fact]
     public void Remove_ShouldRemoveContainerFromCache()
     {
-        // Arrange
-        var container = new Mock<IContainer>();
-        container.SetupGet(c => c.Name).Returns("test");
+        var container = new TestContainer
+        {
+            Name = "test"
+        };
         var containerCache = new ContainerCache();
-        containerCache.Add(container.Object);
+        containerCache.Add(container);
 
-        // Act
-        containerCache.Remove(container.Object);
+        containerCache.Remove(container);
 
-        // Assert
         var result = containerCache.Find("test");
         Assert.Null(result);
     }
@@ -127,22 +123,47 @@ public class ContainerCacheTests
     [Fact]
     public void Clear_ShouldRemoveAllContainersFromCache()
     {
-        // Arrange
-        var container1 = new Mock<IContainer>();
-        container1.SetupGet(c => c.Name).Returns("test1");
-        var container2 = new Mock<IContainer>();
-        container2.SetupGet(c => c.Name).Returns("test2");
+        var container1 = new TestContainer
+        {
+            Name = "test1"
+        };
+        var container2 = new TestContainer
+        {
+            Name = "test2"
+        };
         var containerCache = new ContainerCache();
-        containerCache.Add(container1.Object);
-        containerCache.Add(container2.Object);
+        containerCache.Add(container1);
+        containerCache.Add(container2);
 
-        // Act
         containerCache.Clear();
 
-        // Assert
         var result1 = containerCache.Find("test1");
         var result2 = containerCache.Find("test2");
         Assert.Null(result1);
         Assert.Null(result2);
+    }
+
+    private sealed class TestContainer : IContainer
+    {
+        public string Name { get; set; } = string.Empty;
+        public IContainer Parent { get; set; } = null!;
+        public IContainerCache Cache { get; set; } = null!;
+
+        public void AddChild(IContainer child)
+        {
+        }
+
+        public void RemoveChild(IContainer child)
+        {
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return null!;
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }

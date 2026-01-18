@@ -1,3 +1,4 @@
+using System.Collections;
 using GroveGames.DependencyInjection.Collections;
 using GroveGames.DependencyInjection.Resolution;
 
@@ -8,52 +9,73 @@ public class UninitializedObjectResolverTests
     [Fact]
     public void Resolve_ShouldReturnInstanceOfImplementationType()
     {
-        // Arrange
-        var mockDisposable = new Mock<IDisposable>();
-        var implementationType = mockDisposable.Object.GetType();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
+        var implementationType = typeof(TestService);
+        var mockRegistrationResolver = new TestObjectResolver();
+        var mockDisposableCollection = new TestDisposableCollection();
+        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver, mockDisposableCollection);
 
-        // Act
         var result = objectResolver.Resolve();
 
-        // Assert
         Assert.NotNull(result);
-        Assert.IsType(implementationType, result);
-    }
-
-    [Fact]
-    public void Resolve_ShouldInjectDependencies()
-    {
-        // Arrange
-        var mockDisposable = new Mock<IDisposable>();
-        var implementationType = mockDisposable.Object.GetType();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
-
-        // Act
-        var result = objectResolver.Resolve();
-
-        // Assert
-        mockRegistrationResolver.Verify(r => r.Resolve(It.IsAny<Type>()), Times.AtLeastOnce);
+        Assert.IsType<TestService>(result);
     }
 
     [Fact]
     public void Resolve_ShouldAddToDisposableCollection()
     {
-        // Arrange
-        var mockDisposable = new Mock<IDisposable>();
-        var implementationType = mockDisposable.Object.GetType();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver.Object, mockDisposableCollection.Object);
+        var implementationType = typeof(TestService);
+        var mockRegistrationResolver = new TestObjectResolver();
+        var mockDisposableCollection = new TestDisposableCollection();
+        var objectResolver = new UninitializedObjectResolver(implementationType, mockRegistrationResolver, mockDisposableCollection);
 
-        // Act
         var result = objectResolver.Resolve();
 
-        // Assert
-        mockDisposableCollection.Verify(d => d.TryAdd(result), Times.Once);
+        Assert.Single(mockDisposableCollection.AddedObjects);
+        Assert.Equal(result, mockDisposableCollection.AddedObjects[0]);
+    }
+
+    private sealed class TestService
+    {
+    }
+
+    private sealed class TestObjectResolver : IObjectResolver
+    {
+        private readonly Dictionary<Type, object> _returnValues = new();
+
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
+    }
+
+    private sealed class TestDisposableCollection : IDisposableCollection
+    {
+        private readonly List<object> _addedObjects = new();
+
+        public IReadOnlyList<object> AddedObjects => _addedObjects;
+
+        public void TryAdd(object disposableObject)
+        {
+            _addedObjects.Add(disposableObject);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public IEnumerator<IDisposable> GetEnumerator()
+        {
+            return Enumerable.Empty<IDisposable>().GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

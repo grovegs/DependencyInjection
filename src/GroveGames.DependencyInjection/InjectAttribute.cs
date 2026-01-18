@@ -1,4 +1,6 @@
-﻿namespace GroveGames.DependencyInjection;
+using System;
+
+namespace GroveGames.DependencyInjection;
 
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class InjectAttribute : Attribute

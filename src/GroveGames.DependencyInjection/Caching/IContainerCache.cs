@@ -1,3 +1,5 @@
+using System;
+
 namespace GroveGames.DependencyInjection.Caching;
 
 public interface IContainerCache

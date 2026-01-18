@@ -1,5 +1,5 @@
+using System.Collections;
 using System.Reflection;
-
 using GroveGames.DependencyInjection.Caching;
 using GroveGames.DependencyInjection.Collections;
 using GroveGames.DependencyInjection.Resolution;
@@ -10,126 +10,236 @@ public class ContainerTests
 {
     private Container CreateContainer(
         string name = "TestContainer",
-        Mock<IContainerResolver>? resolverMock = null,
-        Mock<IContainerCache>? cacheMock = null,
-        Mock<IDisposableCollection>? disposablesMock = null,
-        Mock<IContainer>? parentMock = null
+        TestContainerResolver? resolverMock = null,
+        TestContainerCache? cacheMock = null,
+        TestDisposableCollection? disposablesMock = null,
+        TestContainer? parentMock = null
     )
     {
-        resolverMock ??= new Mock<IContainerResolver>();
-        cacheMock ??= new Mock<IContainerCache>();
-        disposablesMock ??= new Mock<IDisposableCollection>();
-        parentMock ??= new Mock<IContainer>();
-        parentMock.Setup(p => p.AddChild(It.IsAny<IContainer>()));
+        resolverMock ??= new TestContainerResolver();
+        cacheMock ??= new TestContainerCache();
+        disposablesMock ??= new TestDisposableCollection();
+        parentMock ??= new TestContainer();
 
         return new Container(
             name,
-            parentMock.Object,
-            resolverMock.Object,
-            cacheMock.Object,
-            disposablesMock.Object
+            parentMock,
+            resolverMock,
+            cacheMock,
+            disposablesMock
         );
     }
 
     [Fact]
     public void Constructor_ShouldInitializeContainer()
     {
-        // Arrange
-        var mockParentContainer = new Mock<IContainer>();
-        var mockCache = new Mock<IContainerCache>();
+        var mockParentContainer = new TestContainer();
+        var mockCache = new TestContainerCache();
 
-        // Act
         var container = CreateContainer(parentMock: mockParentContainer, cacheMock: mockCache);
 
-        // Assert
         Assert.Equal("TestContainer", container.Name);
-        Assert.Equal(mockParentContainer.Object, container.Parent);
-        mockParentContainer.Verify(p => p.AddChild(container), Times.Once);
-        mockCache.Verify(c => c.Add(container), Times.Once);
+        Assert.Equal(mockParentContainer, container.Parent);
+        Assert.Single(mockParentContainer.AddedChildren);
+        Assert.Equal(container, mockParentContainer.AddedChildren[0]);
+        Assert.Single(mockCache.AddedContainers);
+        Assert.Equal(container, mockCache.AddedContainers[0]);
     }
 
     [Fact]
     public void AddChild_ShouldAddChildContainer()
     {
-        // Arrange
         var container = CreateContainer();
-        var childMock = new Mock<IContainer>();
-        childMock.Setup(c => c.Name).Returns("ChildContainer");
+        var childMock = new TestContainer { Name = "ChildContainer" };
 
-        // Act
-        container.AddChild(childMock.Object);
+        container.AddChild(childMock);
 
-        // Assert
         var childrenField = typeof(Container).GetField("_children", BindingFlags.NonPublic | BindingFlags.Instance);
         var children = childrenField?.GetValue(container) as List<IContainer>;
-        Assert.Contains(childMock.Object, children!);
+        Assert.Contains(childMock, children!);
     }
 
     [Fact]
     public void AddChild_ShouldThrowArgumentException_WhenDuplicateChildIsAdded()
     {
-        // Arrange
         var container = CreateContainer();
-        var childMock = new Mock<IContainer>();
-        childMock.Setup(c => c.Name).Returns("ChildContainer");
-        container.AddChild(childMock.Object);
+        var childMock = new TestContainer { Name = "ChildContainer" };
+        container.AddChild(childMock);
 
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => container.AddChild(childMock.Object));
+        var ex = Assert.Throws<ArgumentException>(() => container.AddChild(childMock));
         Assert.Contains("A child container with the same name", ex.Message);
     }
 
     [Fact]
     public void RemoveChild_ShouldRemoveChildContainer()
     {
-        // Arrange
         var container = CreateContainer();
-        var childMock = new Mock<IContainer>();
-        childMock.Setup(c => c.Name).Returns("ChildContainer");
-        container.AddChild(childMock.Object);
+        var childMock = new TestContainer { Name = "ChildContainer" };
+        container.AddChild(childMock);
 
-        // Act
-        container.RemoveChild(childMock.Object);
+        container.RemoveChild(childMock);
 
-        // Assert
         var childrenField = typeof(Container).GetField("_children", BindingFlags.NonPublic | BindingFlags.Instance);
         var children = childrenField?.GetValue(container) as List<IContainer>;
-        Assert.DoesNotContain(childMock.Object, children!);
+        Assert.DoesNotContain(childMock, children!);
     }
 
     [Fact]
     public void Dispose_ShouldDisposeAllResources()
     {
-        // Arrange
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockParentContainer = new Mock<IContainer>();
+        var mockDisposables = new TestDisposableCollection();
+        var mockCache = new TestContainerCache();
+        var mockParentContainer = new TestContainer();
 
         var container = CreateContainer(disposablesMock: mockDisposables, cacheMock: mockCache, parentMock: mockParentContainer);
 
-        // Act
         container.Dispose();
 
-        // Assert
-        mockDisposables.Verify(d => d.Dispose(), Times.Once);
-        mockCache.Verify(c => c.Remove(container), Times.Once);
-        mockParentContainer.Verify(p => p.RemoveChild(container), Times.Once);
+        Assert.Equal(1, mockDisposables.DisposeCallCount);
+        Assert.Single(mockCache.RemovedContainers);
+        Assert.Equal(container, mockCache.RemovedContainers[0]);
+        Assert.Single(mockParentContainer.RemovedChildren);
+        Assert.Equal(container, mockParentContainer.RemovedChildren[0]);
     }
 
     [Fact]
     public void Resolve_ShouldUseResolverToResolveType()
     {
-        // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
+        var mockResolver = new TestContainerResolver();
         var container = CreateContainer(resolverMock: mockResolver);
 
         var mockObject = new object();
-        mockResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns(mockObject);
+        mockResolver.SetupResolve(typeof(object), mockObject);
 
-        // Act
         var result = container.Resolve(typeof(object));
 
-        // Assert
         Assert.Equal(mockObject, result);
+    }
+
+    private sealed class TestContainer : IContainer
+    {
+        private readonly List<IContainer> _addedChildren = new();
+        private readonly List<IContainer> _removedChildren = new();
+        private readonly Dictionary<Type, object> _returnValues = new();
+
+        public string Name { get; set; } = string.Empty;
+        public IContainer Parent { get; set; } = null!;
+        public IContainerCache Cache { get; set; } = null!;
+
+        public int DisposeCallCount { get; private set; }
+        public IReadOnlyList<IContainer> AddedChildren => _addedChildren;
+        public IReadOnlyList<IContainer> RemovedChildren => _removedChildren;
+
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
+
+        public void AddChild(IContainer child)
+        {
+            _addedChildren.Add(child);
+        }
+
+        public void RemoveChild(IContainer child)
+        {
+            _removedChildren.Add(child);
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
+
+        public void Dispose()
+        {
+            DisposeCallCount++;
+        }
+    }
+
+    private sealed class TestContainerResolver : IContainerResolver
+    {
+        private readonly Dictionary<Type, object> _returnValues = new();
+        private readonly List<(Type Type, IInstanceResolver Resolver)> _addedResolvers = new();
+
+        public int ClearCallCount { get; private set; }
+        public IReadOnlyList<(Type Type, IInstanceResolver Resolver)> AddedResolvers => _addedResolvers;
+
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
+
+        public void AddResolver(Type registrationType, IInstanceResolver resolver)
+        {
+            _addedResolvers.Add((registrationType, resolver));
+        }
+
+        public void Clear()
+        {
+            ClearCallCount++;
+        }
+    }
+
+    private sealed class TestContainerCache : IContainerCache
+    {
+        private readonly List<IContainer> _addedContainers = new();
+        private readonly List<IContainer> _removedContainers = new();
+
+        public int ClearCallCount { get; private set; }
+        public IReadOnlyList<IContainer> AddedContainers => _addedContainers;
+        public IReadOnlyList<IContainer> RemovedContainers => _removedContainers;
+
+        public IContainer? Find(in ReadOnlySpan<char> path)
+        {
+            return null;
+        }
+
+        public void Add(IContainer container)
+        {
+            _addedContainers.Add(container);
+        }
+
+        public void Remove(IContainer container)
+        {
+            _removedContainers.Add(container);
+        }
+
+        public void Clear()
+        {
+            ClearCallCount++;
+        }
+    }
+
+    private sealed class TestDisposableCollection : IDisposableCollection
+    {
+        private readonly List<object> _addedObjects = new();
+
+        public int DisposeCallCount { get; private set; }
+        public IReadOnlyList<object> AddedObjects => _addedObjects;
+
+        public void TryAdd(object disposableObject)
+        {
+            _addedObjects.Add(disposableObject);
+        }
+
+        public void Dispose()
+        {
+            DisposeCallCount++;
+        }
+
+        public IEnumerator<IDisposable> GetEnumerator()
+        {
+            return Enumerable.Empty<IDisposable>().GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace GroveGames.DependencyInjection.Resolution;
+using System;
+using System.Collections.Generic;
+
+namespace GroveGames.DependencyInjection.Resolution;
 
 public sealed class ContainerResolver : IContainerResolver
 {

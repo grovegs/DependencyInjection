@@ -1,4 +1,6 @@
-﻿namespace GroveGames.DependencyInjection.Resolution;
+using System;
+
+namespace GroveGames.DependencyInjection.Resolution;
 
 public interface IObjectResolver
 {

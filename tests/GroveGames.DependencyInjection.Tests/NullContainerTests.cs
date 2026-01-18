@@ -1,3 +1,5 @@
+using GroveGames.DependencyInjection.Caching;
+
 namespace GroveGames.DependencyInjection.Tests;
 
 public class NullContainerTests
@@ -5,78 +7,81 @@ public class NullContainerTests
     [Fact]
     public void Name_ShouldReturnEmptyString()
     {
-        // Arrange
         var container = new NullContainer();
 
-        // Act
         var name = container.Name;
 
-        // Assert
         Assert.Equal(string.Empty, name);
     }
 
     [Fact]
     public void Parent_ShouldReturnNull()
     {
-        // Arrange
         var container = new NullContainer();
 
-        // Act
         var parent = container.Parent;
 
-        // Assert
         Assert.Null(parent);
     }
 
     [Fact]
     public void AddChild_ShouldDoNothing()
     {
-        // Arrange
         var container = new NullContainer();
-        var mockChild = new Mock<IContainer>();
+        var mockChild = new TestContainer();
 
-        // Act
-        container.AddChild(mockChild.Object);
-
-        // Assert
+        container.AddChild(mockChild);
     }
 
     [Fact]
     public void RemoveChild_ShouldDoNothing()
     {
-        // Arrange
         var container = new NullContainer();
-        var mockChild = new Mock<IContainer>();
+        var mockChild = new TestContainer();
 
-        // Act
-        container.RemoveChild(mockChild.Object);
-
-        // Assert
+        container.RemoveChild(mockChild);
     }
 
     [Fact]
     public void Dispose_ShouldDoNothing()
     {
-        // Arrange
         var container = new NullContainer();
 
-        // Act
         container.Dispose();
-
-        // Assert
     }
 
     [Fact]
     public void Resolve_ShouldReturnNull()
     {
-        // Arrange
         var container = new NullContainer();
         var registrationType = typeof(object);
 
-        // Act
         var result = container.Resolve(registrationType);
 
-        // Assert
         Assert.Null(result);
+    }
+
+    private sealed class TestContainer : IContainer
+    {
+        public string Name { get; set; } = string.Empty;
+        public IContainer Parent { get; set; } = null!;
+        public IContainerCache Cache { get; set; } = null!;
+
+        public void AddChild(IContainer child)
+        {
+        }
+
+        public void RemoveChild(IContainer child)
+        {
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return null!;
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }

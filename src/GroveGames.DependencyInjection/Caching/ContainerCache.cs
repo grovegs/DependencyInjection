@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace GroveGames.DependencyInjection.Caching;
 
 internal sealed class ContainerCache : IContainerCache

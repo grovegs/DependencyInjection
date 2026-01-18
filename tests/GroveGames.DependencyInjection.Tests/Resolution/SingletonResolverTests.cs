@@ -7,17 +7,13 @@ public class SingletonResolverTests
     [Fact]
     public void Resolve_ShouldReturnSameInstance()
     {
-        // Arrange
-        var mockObjectResolver = new Mock<IInstanceResolver>();
         var expectedInstance = new object();
-        mockObjectResolver.Setup(r => r.Resolve()).Returns(expectedInstance);
-        var singletonResolver = new SingletonResolver(mockObjectResolver.Object);
+        var mockObjectResolver = new TestInstanceResolver(expectedInstance);
+        var singletonResolver = new SingletonResolver(mockObjectResolver);
 
-        // Act
         var instance1 = singletonResolver.Resolve();
         var instance2 = singletonResolver.Resolve();
 
-        // Assert
         Assert.Same(expectedInstance, instance1);
         Assert.Same(instance1, instance2);
     }
@@ -25,16 +21,30 @@ public class SingletonResolverTests
     [Fact]
     public void Resolve_ShouldCallObjectResolverOnlyOnce()
     {
-        // Arrange
-        var mockObjectResolver = new Mock<IInstanceResolver>();
-        mockObjectResolver.Setup(r => r.Resolve()).Returns(new object());
-        var singletonResolver = new SingletonResolver(mockObjectResolver.Object);
+        var mockObjectResolver = new TestInstanceResolver(new object());
+        var singletonResolver = new SingletonResolver(mockObjectResolver);
 
-        // Act
         singletonResolver.Resolve();
         singletonResolver.Resolve();
 
-        // Assert
-        mockObjectResolver.Verify(r => r.Resolve(), Times.Once);
+        Assert.Equal(1, mockObjectResolver.ResolveCallCount);
+    }
+
+    private sealed class TestInstanceResolver : IInstanceResolver
+    {
+        private readonly object _returnValue;
+
+        public int ResolveCallCount { get; private set; }
+
+        public TestInstanceResolver(object returnValue)
+        {
+            _returnValue = returnValue;
+        }
+
+        public object Resolve()
+        {
+            ResolveCallCount++;
+            return _returnValue;
+        }
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace GroveGames.DependencyInjection.Collections;
+using System;
+using System.Collections.Generic;
+
+namespace GroveGames.DependencyInjection.Collections;
 
 internal interface IDisposableCollection : IDisposable, IEnumerable<IDisposable>
 {

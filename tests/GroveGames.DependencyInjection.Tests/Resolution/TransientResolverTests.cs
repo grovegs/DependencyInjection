@@ -7,17 +7,31 @@ public class TransientResolverTests
     [Fact]
     public void Resolve_ShouldCallObjectResolverResolve()
     {
-        // Arrange
-        var mockObjectResolver = new Mock<IInstanceResolver>();
-        var transientResolver = new TransientResolver(mockObjectResolver.Object);
         var expectedObject = new object();
-        mockObjectResolver.Setup(r => r.Resolve()).Returns(expectedObject);
+        var mockObjectResolver = new TestInstanceResolver(expectedObject);
+        var transientResolver = new TransientResolver(mockObjectResolver);
 
-        // Act
         var resolvedObject = transientResolver.Resolve();
 
-        // Assert
-        mockObjectResolver.Verify(r => r.Resolve(), Times.Once);
+        Assert.Equal(1, mockObjectResolver.ResolveCallCount);
         Assert.Equal(expectedObject, resolvedObject);
+    }
+
+    private sealed class TestInstanceResolver : IInstanceResolver
+    {
+        private readonly object _returnValue;
+
+        public int ResolveCallCount { get; private set; }
+
+        public TestInstanceResolver(object returnValue)
+        {
+            _returnValue = returnValue;
+        }
+
+        public object Resolve()
+        {
+            ResolveCallCount++;
+            return _returnValue;
+        }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace GroveGames.DependencyInjection;
 
 public class RegistrationNotFoundException : InvalidOperationException

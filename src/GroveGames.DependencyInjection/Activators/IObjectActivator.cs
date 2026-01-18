@@ -1,4 +1,6 @@
-﻿namespace GroveGames.DependencyInjection.Activators;
+using System;
+
+namespace GroveGames.DependencyInjection.Activators;
 
 internal interface IObjectActivator
 {

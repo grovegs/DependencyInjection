@@ -7,52 +7,42 @@ public class ContainerResolverTests
     [Fact]
     public void Resolve_ShouldReturnInstanceFromInstanceResolver()
     {
-        // Arrange
         var registrationType = typeof(object);
         var expectedInstance = new object();
-        var mockInstanceResolver = new Mock<IInstanceResolver>();
-        mockInstanceResolver.Setup(r => r.Resolve()).Returns(expectedInstance);
-        var mockParentResolver = new Mock<IObjectResolver>();
-        var containerResolver = new ContainerResolver(mockParentResolver.Object);
-        containerResolver.AddResolver(registrationType, mockInstanceResolver.Object);
+        var mockInstanceResolver = new TestInstanceResolver(expectedInstance);
+        var mockParentResolver = new TestObjectResolver();
+        var containerResolver = new ContainerResolver(mockParentResolver);
+        containerResolver.AddResolver(registrationType, mockInstanceResolver);
 
-        // Act
         var resolvedInstance = containerResolver.Resolve(registrationType);
 
-        // Assert
         Assert.Equal(expectedInstance, resolvedInstance);
     }
 
     [Fact]
     public void Resolve_ShouldReturnInstanceFromParentResolver_WhenInstanceResolverNotFound()
     {
-        // Arrange
         var registrationType = typeof(object);
         var expectedInstance = new object();
-        var mockParentResolver = new Mock<IObjectResolver>();
-        mockParentResolver.Setup(r => r.Resolve(registrationType)).Returns(expectedInstance);
-        var containerResolver = new ContainerResolver(mockParentResolver.Object);
+        var mockParentResolver = new TestObjectResolver();
+        mockParentResolver.SetupResolve(registrationType, expectedInstance);
+        var containerResolver = new ContainerResolver(mockParentResolver);
 
-        // Act
         var resolvedInstance = containerResolver.Resolve(registrationType);
 
-        // Assert
         Assert.Equal(expectedInstance, resolvedInstance);
     }
 
     [Fact]
     public void AddInstanceResolver_ShouldAddInstanceResolver()
     {
-        // Arrange
         var registrationType = typeof(object);
-        var mockInstanceResolver = new Mock<IInstanceResolver>();
-        var mockParentResolver = new Mock<IObjectResolver>();
-        var containerResolver = new ContainerResolver(mockParentResolver.Object);
+        var mockInstanceResolver = new TestInstanceResolver(new object());
+        var mockParentResolver = new TestObjectResolver();
+        var containerResolver = new ContainerResolver(mockParentResolver);
 
-        // Act
-        containerResolver.AddResolver(registrationType, mockInstanceResolver.Object);
+        containerResolver.AddResolver(registrationType, mockInstanceResolver);
 
-        // Assert
         var field = typeof(ContainerResolver).GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         Assert.NotNull(field);
         var instanceResolvers = field.GetValue(containerResolver) as Dictionary<Type, IInstanceResolver>;
@@ -63,21 +53,48 @@ public class ContainerResolverTests
     [Fact]
     public void Clear_ShouldRemoveAllInstanceResolvers()
     {
-        // Arrange
         var registrationType = typeof(object);
-        var mockInstanceResolver = new Mock<IInstanceResolver>();
-        var mockParentResolver = new Mock<IObjectResolver>();
-        var containerResolver = new ContainerResolver(mockParentResolver.Object);
-        containerResolver.AddResolver(registrationType, mockInstanceResolver.Object);
+        var mockInstanceResolver = new TestInstanceResolver(new object());
+        var mockParentResolver = new TestObjectResolver();
+        var containerResolver = new ContainerResolver(mockParentResolver);
+        containerResolver.AddResolver(registrationType, mockInstanceResolver);
 
-        // Act
         containerResolver.Clear();
 
-        // Assert
         var field = typeof(ContainerResolver).GetField("_resolversByRegistrationTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         Assert.NotNull(field);
         var instanceResolvers = field.GetValue(containerResolver) as Dictionary<Type, IInstanceResolver>;
         Assert.NotNull(instanceResolvers);
         Assert.Empty(instanceResolvers);
+    }
+
+    private sealed class TestInstanceResolver : IInstanceResolver
+    {
+        private readonly object _returnValue;
+
+        public TestInstanceResolver(object returnValue)
+        {
+            _returnValue = returnValue;
+        }
+
+        public object Resolve()
+        {
+            return _returnValue;
+        }
+    }
+
+    private sealed class TestObjectResolver : IObjectResolver
+    {
+        private readonly Dictionary<Type, object> _returnValues = new();
+
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
     }
 }

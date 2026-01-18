@@ -5,7 +5,48 @@ namespace GroveGames.DependencyInjection.Tests.Injectors;
 
 public class MethodInjectorTests
 {
-    private class TestClassWithInjectMethod
+    [Fact]
+    public void Inject_ShouldCallMethodBaseInjector_WhenInjectMethodIsFound()
+    {
+        var mockRegistrationResolver = new TestObjectResolver();
+        var testObject = new TestClassWithInjectMethod();
+        mockRegistrationResolver.SetupResolve(typeof(string), "ResolvedValue");
+
+        MethodInjector.Inject(testObject, mockRegistrationResolver);
+
+        Assert.True(testObject.MethodCalled);
+        Assert.Equal("ResolvedValue", testObject.StringValue);
+        Assert.Equal(1, mockRegistrationResolver.GetResolveCallCount(typeof(string)));
+    }
+
+    [Fact]
+    public void Inject_ShouldNotCallMethodBaseInjector_WhenNoInjectMethodIsFound()
+    {
+        var mockRegistrationResolver = new TestObjectResolver();
+        var testObject = new TestClassWithoutInjectMethod();
+
+        MethodInjector.Inject(testObject, mockRegistrationResolver);
+
+        Assert.Equal(0, mockRegistrationResolver.GetResolveCallCount(typeof(string)));
+    }
+
+    [Fact]
+    public void Inject_ShouldSelectMethodWithMostParameters_WhenMultipleInjectMethodsExist()
+    {
+        var testObject = new TestClassWithMultipleInjectMethods();
+        var mockRegistrationResolver = new TestObjectResolver();
+        mockRegistrationResolver.SetupResolve(typeof(string), "StringValue");
+        mockRegistrationResolver.SetupResolve(typeof(int), 42);
+
+        MethodInjector.Inject(testObject, mockRegistrationResolver);
+
+        Assert.Equal("StringValue", testObject.StringValue);
+        Assert.Equal(42, testObject.IntValue);
+        Assert.Equal(1, mockRegistrationResolver.GetResolveCallCount(typeof(string)));
+        Assert.Equal(1, mockRegistrationResolver.GetResolveCallCount(typeof(int)));
+    }
+
+    private sealed class TestClassWithInjectMethod
     {
         public bool MethodCalled { get; private set; } = false;
         public string? StringValue { get; private set; }
@@ -19,7 +60,7 @@ public class MethodInjectorTests
     }
 
 
-    private class TestClassWithMultipleInjectMethods
+    private sealed class TestClassWithMultipleInjectMethods
     {
         public string? StringValue { get; private set; }
         public int IntValue { get; private set; }
@@ -38,58 +79,31 @@ public class MethodInjectorTests
         }
     }
 
-    private class TestClassWithoutInjectMethod
+    private sealed class TestClassWithoutInjectMethod
     {
         public void RegularMethod() { }
     }
 
-    [Fact]
-    public void Inject_ShouldCallMethodBaseInjector_WhenInjectMethodIsFound()
+    private sealed class TestObjectResolver : IObjectResolver
     {
-        // Arrange
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var testObject = new TestClassWithInjectMethod();
-        mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("ResolvedValue");
+        private readonly Dictionary<Type, object> _returnValues = new();
+        private readonly Dictionary<Type, int> _resolveCallCounts = new();
 
-        // Act
-        MethodInjector.Inject(testObject, mockRegistrationResolver.Object);
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
 
-        // Assert
-        Assert.True(testObject.MethodCalled);
-        Assert.Equal("ResolvedValue", testObject.StringValue);
-        mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
-    }
+        public int GetResolveCallCount(Type type)
+        {
+            return _resolveCallCounts.TryGetValue(type, out var count) ? count : 0;
+        }
 
-    [Fact]
-    public void Inject_ShouldNotCallMethodBaseInjector_WhenNoInjectMethodIsFound()
-    {
-        // Arrange
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var testObject = new TestClassWithoutInjectMethod();
+        public object Resolve(Type registrationType)
+        {
+            _resolveCallCounts[registrationType] = GetResolveCallCount(registrationType) + 1;
 
-        // Act
-        MethodInjector.Inject(testObject, mockRegistrationResolver.Object);
-
-        // Assert
-        mockRegistrationResolver.Verify(rr => rr.Resolve(It.IsAny<Type>()), Times.Never);
-    }
-
-    [Fact]
-    public void Inject_ShouldSelectMethodWithMostParameters_WhenMultipleInjectMethodsExist()
-    {
-        // Arrange
-        var testObject = new TestClassWithMultipleInjectMethods();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(string))).Returns("StringValue");
-        mockRegistrationResolver.Setup(rr => rr.Resolve(typeof(int))).Returns(42);
-
-        // Act
-        MethodInjector.Inject(testObject, mockRegistrationResolver.Object);
-
-        // Assert
-        Assert.Equal("StringValue", testObject.StringValue);
-        Assert.Equal(42, testObject.IntValue);
-        mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(string)), Times.Once);
-        mockRegistrationResolver.Verify(rr => rr.Resolve(typeof(int)), Times.Once);
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
     }
 }

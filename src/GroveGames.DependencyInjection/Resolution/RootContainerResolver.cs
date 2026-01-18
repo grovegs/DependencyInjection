@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace GroveGames.DependencyInjection.Resolution;
 
 internal sealed class RootContainerResolver : IContainerResolver

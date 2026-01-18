@@ -7,62 +7,60 @@ public class DisposableCollectionTests
     [Fact]
     public void TryAdd_AddsDisposableObjectToCollection()
     {
-        // Arrange
-        var disposableMock = new Mock<IDisposable>();
+        var disposable = new TestDisposable();
         var collection = new DisposableCollection();
 
-        // Act
-        collection.TryAdd(disposableMock.Object);
+        collection.TryAdd(disposable);
 
-        // Assert
         Assert.NotEmpty(collection);
     }
 
     [Fact]
     public void TryAdd_DoesNotAddNonDisposableObjectToCollection()
     {
-        // Arrange
         var nonDisposableObject = new object();
         var collection = new DisposableCollection();
 
-        // Act
         collection.TryAdd(nonDisposableObject);
 
-        // Assert
         Assert.Empty(collection);
     }
 
     [Fact]
     public void Dispose_DisposesAllDisposablesInCollection()
     {
-        // Arrange
-        var disposableMock1 = new Mock<IDisposable>();
-        var disposableMock2 = new Mock<IDisposable>();
+        var disposable1 = new TestDisposable();
+        var disposable2 = new TestDisposable();
         var collection = new DisposableCollection();
-        collection.TryAdd(disposableMock1.Object);
-        collection.TryAdd(disposableMock2.Object);
+        collection.TryAdd(disposable1);
+        collection.TryAdd(disposable2);
 
-        // Act
         collection.Dispose();
 
-        // Assert
-        disposableMock1.Verify(d => d.Dispose(), Times.Once);
-        disposableMock2.Verify(d => d.Dispose(), Times.Once);
+        Assert.Equal(1, disposable1.DisposeCallCount);
+        Assert.Equal(1, disposable2.DisposeCallCount);
     }
 
     [Fact]
     public void Dispose_CanBeCalledMultipleTimes()
     {
-        // Arrange
-        var disposableMock = new Mock<IDisposable>();
+        var disposable = new TestDisposable();
         var collection = new DisposableCollection();
-        collection.TryAdd(disposableMock.Object);
+        collection.TryAdd(disposable);
 
-        // Act
         collection.Dispose();
         collection.Dispose();
 
-        // Assert
-        disposableMock.Verify(d => d.Dispose(), Times.Once);
+        Assert.Equal(1, disposable.DisposeCallCount);
+    }
+
+    private sealed class TestDisposable : IDisposable
+    {
+        public int DisposeCallCount { get; private set; }
+
+        public void Dispose()
+        {
+            DisposeCallCount++;
+        }
     }
 }

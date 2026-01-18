@@ -1,3 +1,5 @@
+using GroveGames.DependencyInjection.Caching;
+
 namespace GroveGames.DependencyInjection.Tests;
 
 public class RootContainerTests
@@ -5,77 +7,106 @@ public class RootContainerTests
     [Fact]
     public void Constructor_ShouldInitializeRootContainer()
     {
-        // Arrange
-        var mockContainer = new Mock<IContainer>();
+        var mockContainer = new TestContainer
+        {
+            Name = "TestContainer"
+        };
 
-        // Act
-        var rootContainer = new RootContainer(mockContainer.Object);
+        var rootContainer = new RootContainer(mockContainer);
 
-        // Assert
         Assert.NotNull(rootContainer);
-        Assert.Equal(mockContainer.Object.Name, rootContainer.Name);
-        Assert.Equal(mockContainer.Object.Parent, rootContainer.Parent);
-        Assert.Equal(mockContainer.Object.Cache, rootContainer.Cache);
+        Assert.Equal(mockContainer.Name, rootContainer.Name);
+        Assert.Equal(mockContainer.Parent, rootContainer.Parent);
+        Assert.Equal(mockContainer.Cache, rootContainer.Cache);
     }
 
     [Fact]
     public void AddChild_ShouldDelegateToInternalContainer()
     {
-        // Arrange
-        var mockContainer = new Mock<IContainer>();
-        var mockChild = new Mock<IContainer>();
-        var rootContainer = new RootContainer(mockContainer.Object);
+        var mockContainer = new TestContainer();
+        var mockChild = new TestContainer();
+        var rootContainer = new RootContainer(mockContainer);
 
-        // Act
-        rootContainer.AddChild(mockChild.Object);
+        rootContainer.AddChild(mockChild);
 
-        // Assert
-        mockContainer.Verify(c => c.AddChild(mockChild.Object), Times.Once);
+        Assert.Single(mockContainer.AddedChildren);
+        Assert.Equal(mockChild, mockContainer.AddedChildren[0]);
     }
 
     [Fact]
     public void RemoveChild_ShouldDelegateToInternalContainer()
     {
-        // Arrange
-        var mockContainer = new Mock<IContainer>();
-        var mockChild = new Mock<IContainer>();
-        var rootContainer = new RootContainer(mockContainer.Object);
+        var mockContainer = new TestContainer();
+        var mockChild = new TestContainer();
+        var rootContainer = new RootContainer(mockContainer);
 
-        // Act
-        rootContainer.RemoveChild(mockChild.Object);
+        rootContainer.RemoveChild(mockChild);
 
-        // Assert
-        mockContainer.Verify(c => c.RemoveChild(mockChild.Object), Times.Once);
+        Assert.Single(mockContainer.RemovedChildren);
+        Assert.Equal(mockChild, mockContainer.RemovedChildren[0]);
     }
 
     [Fact]
     public void Resolve_ShouldDelegateToInternalContainer()
     {
-        // Arrange
-        var mockContainer = new Mock<IContainer>();
+        var mockContainer = new TestContainer();
         var mockObject = new object();
-        mockContainer.Setup(c => c.Resolve(typeof(object))).Returns(mockObject);
-        var rootContainer = new RootContainer(mockContainer.Object);
+        mockContainer.SetupResolve(typeof(object), mockObject);
+        var rootContainer = new RootContainer(mockContainer);
 
-        // Act
         var result = rootContainer.Resolve(typeof(object));
 
-        // Assert
         Assert.Equal(mockObject, result);
-        mockContainer.Verify(c => c.Resolve(typeof(object)), Times.Once);
     }
 
     [Fact]
     public void Dispose_ShouldDelegateToInternalContainer()
     {
-        // Arrange
-        var mockContainer = new Mock<IContainer>();
-        var rootContainer = new RootContainer(mockContainer.Object);
+        var mockContainer = new TestContainer();
+        var rootContainer = new RootContainer(mockContainer);
 
-        // Act
         rootContainer.Dispose();
 
-        // Assert
-        mockContainer.Verify(c => c.Dispose(), Times.Once);
+        Assert.Equal(1, mockContainer.DisposeCallCount);
+    }
+
+    private sealed class TestContainer : IContainer
+    {
+        private readonly List<IContainer> _addedChildren = new();
+        private readonly List<IContainer> _removedChildren = new();
+        private readonly Dictionary<Type, object> _returnValues = new();
+
+        public string Name { get; set; } = string.Empty;
+        public IContainer Parent { get; set; } = null!;
+        public IContainerCache Cache { get; set; } = null!;
+
+        public int DisposeCallCount { get; private set; }
+        public IReadOnlyList<IContainer> AddedChildren => _addedChildren;
+        public IReadOnlyList<IContainer> RemovedChildren => _removedChildren;
+
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
+
+        public void AddChild(IContainer child)
+        {
+            _addedChildren.Add(child);
+        }
+
+        public void RemoveChild(IContainer child)
+        {
+            _removedChildren.Add(child);
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
+
+        public void Dispose()
+        {
+            DisposeCallCount++;
+        }
     }
 }

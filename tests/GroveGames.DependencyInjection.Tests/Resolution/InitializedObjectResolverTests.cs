@@ -1,3 +1,4 @@
+using System.Collections;
 using GroveGames.DependencyInjection.Collections;
 using GroveGames.DependencyInjection.Resolution;
 
@@ -5,7 +6,62 @@ namespace GroveGames.DependencyInjection.Tests.Resolution;
 
 public class InitializedObjectResolverTests
 {
-    private class TestClassWithInjectMethod : IDisposable
+    [Fact]
+    public void Resolve_ShouldReturnImplementationInstance()
+    {
+        var mockImplementation = new TestClassWithInjectMethod();
+        var mockRegistrationResolver = new TestObjectResolver();
+        var mockDisposableCollection = new TestDisposableCollection();
+        var objectResolver = new InitializedObjectResolver(
+            mockImplementation,
+            mockRegistrationResolver,
+            mockDisposableCollection
+        );
+
+        var result = objectResolver.Resolve();
+
+        Assert.NotNull(result);
+        Assert.Equal(mockImplementation, result);
+    }
+
+    [Fact]
+    public void Resolve_ShouldInjectDependencies()
+    {
+        var mockImplementation = new TestClassWithInjectMethod();
+        var mockRegistrationResolver = new TestObjectResolver();
+        mockRegistrationResolver.SetupResolve(_ => "InjectedString");
+        var mockDisposableCollection = new TestDisposableCollection();
+        var objectResolver = new InitializedObjectResolver(
+            mockImplementation,
+            mockRegistrationResolver,
+            mockDisposableCollection
+        );
+
+        objectResolver.Resolve();
+
+        Assert.True(mockImplementation.Initialized);
+        Assert.Equal("InjectedString", mockImplementation.StringValue);
+    }
+
+    [Fact]
+    public void Resolve_ShouldAddToDisposableCollection()
+    {
+        var mockImplementation = new TestClassWithInjectMethod();
+        var mockRegistrationResolver = new TestObjectResolver();
+        var mockDisposableCollection = new TestDisposableCollection();
+        var objectResolver = new InitializedObjectResolver(
+            mockImplementation,
+            mockRegistrationResolver,
+            mockDisposableCollection
+        );
+
+        objectResolver.Resolve();
+
+        Assert.Single(mockDisposableCollection.AddedObjects);
+        Assert.Equal(mockImplementation, mockDisposableCollection.AddedObjects[0]);
+    }
+
+    private sealed class TestClassWithInjectMethod : IDisposable
     {
         public bool Initialized { get; private set; } = false;
         public bool Disposed { get; private set; }
@@ -24,66 +80,55 @@ public class InitializedObjectResolverTests
         }
     }
 
-    [Fact]
-    public void Resolve_ShouldReturnImplementationInstance()
+    private sealed class TestObjectResolver : IObjectResolver
     {
-        // Arrange
-        var mockImplementation = new TestClassWithInjectMethod();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new InitializedObjectResolver(
-            mockImplementation,
-            mockRegistrationResolver.Object,
-            mockDisposableCollection.Object
-        );
+        private readonly Dictionary<Type, object> _returnValues = new();
+        private Func<Type, object>? _resolveFunc;
 
-        // Act
-        var result = objectResolver.Resolve();
+        public void SetupResolve(Type type, object returnValue)
+        {
+            _returnValues[type] = returnValue;
+        }
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(mockImplementation, result);
+        public void SetupResolve(Func<Type, object> resolveFunc)
+        {
+            _resolveFunc = resolveFunc;
+        }
+
+        public object Resolve(Type registrationType)
+        {
+            if (_resolveFunc != null)
+            {
+                return _resolveFunc(registrationType);
+            }
+
+            return _returnValues.TryGetValue(registrationType, out var value) ? value : null!;
+        }
     }
 
-    [Fact]
-    public void Resolve_ShouldInjectDependencies()
+    private sealed class TestDisposableCollection : IDisposableCollection
     {
-        // Arrange
-        var mockImplementation = new TestClassWithInjectMethod();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        mockRegistrationResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns("InjectedString");
-        var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new InitializedObjectResolver(
-            mockImplementation,
-            mockRegistrationResolver.Object,
-            mockDisposableCollection.Object
-        );
+        private readonly List<object> _addedObjects = new();
 
-        // Act
-        objectResolver.Resolve();
+        public IReadOnlyList<object> AddedObjects => _addedObjects;
 
-        // Assert
-        Assert.True(mockImplementation.Initialized);
-        Assert.Equal("InjectedString", mockImplementation.StringValue);
-    }
+        public void TryAdd(object disposableObject)
+        {
+            _addedObjects.Add(disposableObject);
+        }
 
-    [Fact]
-    public void Resolve_ShouldAddToDisposableCollection()
-    {
-        // Arrange
-        var mockImplementation = new TestClassWithInjectMethod();
-        var mockRegistrationResolver = new Mock<IObjectResolver>();
-        var mockDisposableCollection = new Mock<IDisposableCollection>();
-        var objectResolver = new InitializedObjectResolver(
-            mockImplementation,
-            mockRegistrationResolver.Object,
-            mockDisposableCollection.Object
-        );
+        public void Dispose()
+        {
+        }
 
-        // Act
-        objectResolver.Resolve();
+        public IEnumerator<IDisposable> GetEnumerator()
+        {
+            return Enumerable.Empty<IDisposable>().GetEnumerator();
+        }
 
-        // Assert
-        mockDisposableCollection.Verify(d => d.TryAdd(mockImplementation), Times.Once);
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }
