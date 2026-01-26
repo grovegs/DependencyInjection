@@ -20,7 +20,7 @@ permissions:
 jobs:
   release:
     name: Release Package
-    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.0.33
+    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.1.7
     with:
       package-name: Dependency Injection
       version-type: ${{ inputs.version-type }}
@@ -28,6 +28,8 @@ jobs:
       dotnet-project: src/GroveGames.DependencyInjection
       global-json-file: global.json
       directory-build-props: Directory.Build.props
+      readme-file: README.md
+      license-file: LICENSE
       godot-addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
       create-tag: true
       publish-github: true
