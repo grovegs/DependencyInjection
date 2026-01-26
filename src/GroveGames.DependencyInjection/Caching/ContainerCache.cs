@@ -8,7 +8,12 @@ internal sealed class ContainerCache : IContainerCache
 {
     public static readonly ContainerCache Shared = new();
 
-    private readonly List<IContainer> _containers = [];
+    private readonly List<IContainer> _containers;
+
+    public ContainerCache()
+    {
+        _containers = [];
+    }
 
     public IContainer? Find(in ReadOnlySpan<char> path)
     {
