@@ -14,7 +14,8 @@ dotnet pack -c Release
 - Use initializers only in constructor bodies, not field declarations (except for static constants and simple static readonly values)
 - Use zero-allocation APIs (Span\<T\>, ReadOnlySpan\<T\>, stackalloc, etc.) when available
 - net10.0 supports most optimizations natively
-- For netstandard2.1: use official NuGet packages (e.g., `System.Memory` for Span\<T\>, `Microsoft.Bcl.HashCode`)
+- netstandard2.1 includes Span\<T\>/ReadOnlySpan\<T\> natively
+- For netstandard2.1: use official NuGet packages only when needed (e.g., `System.Threading.Channels`, `Microsoft.Bcl.TimeProvider`)
 - When no official package exists, write polyfills in `Polyfills/` using C# 14 extension members
 - Follow `.editorconfig` naming: `_camelCase` for private fields, `s_camelCase` for static, `IPascalCase` for interfaces
 - Seal implementation classes unless designed for inheritance
@@ -53,29 +54,17 @@ dotnet pack -c Release
 
 - Core library targets: `net10.0` (AOT enabled) and `netstandard2.1`
 - Polyfills in `Polyfills/` folder for netstandard2.1 compatibility
-- Unity package extends core via `netstandard2.1` dependency
 - Godot addon extends core via `net10.0` dependency
 
-## Unity/Godot Engine Code Rules
+## Godot Engine Code Rules
 
 - Never throw C# exceptions (ArgumentNullException, ArgumentException, etc.) in engine implementations
 - Use engine-specific error handling instead:
-  - Unity: `Debug.LogError()`, `Debug.LogWarning()`, `Debug.Assert()`
   - Godot: `GD.PushError()`, `GD.PushWarning()`, `GD.Assert()`
 - Check parameters for null and provide fallback values with engine logging
-- Example Unity: `if (settings == null) { Debug.LogError("Settings cannot be null"); settings = CreateInstance<Settings>(); }`
 - Example Godot: `if (settings == null) { GD.PushError("Settings cannot be null"); settings = new(); }`
 
-## Unity/Godot Configuration Patterns
-
-**Unity Settings:**
-
-- Use ScriptableObject for project-wide settings (stored in Assets/Settings/)
-- Use EditorBuildSettings.AddConfigObject() for runtime access
-- Settings provider in Editor/ folder using UI Toolkit (PropertyField, VisualElement)
-- No singletons - settings accessed via GetOrCreate()
-- No Resources.Load() - EditorBuildSettings.TryGetConfigObject() for runtime
-- Factory accepts settings instance for DI-friendly architecture
+## Godot Configuration Patterns
 
 **Godot Settings:**
 
