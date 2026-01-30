@@ -54,17 +54,42 @@ dotnet pack -c Release
 
 - Core library targets: `net10.0` (AOT enabled) and `netstandard2.1`
 - Polyfills in `Polyfills/` folder for netstandard2.1 compatibility
+- Unity package extends core via `netstandard2.1` dependency
 - Godot addon extends core via `net10.0` dependency
 
-## Godot Engine Code Rules
+## Unity/Godot Engine Code Rules
 
 - Never throw C# exceptions (ArgumentNullException, ArgumentException, etc.) in engine implementations
 - Use engine-specific error handling instead:
+  - Unity: `Debug.LogError()`, `Debug.LogWarning()`, `Debug.Assert()`
   - Godot: `GD.PushError()`, `GD.PushWarning()`, `GD.Assert()`
 - Check parameters for null and provide fallback values with engine logging
+- Example Unity: `if (settings == null) { Debug.LogError("Settings cannot be null"); settings = CreateInstance<Settings>(); }`
 - Example Godot: `if (settings == null) { GD.PushError("Settings cannot be null"); settings = new(); }`
 
-## Godot Configuration Patterns
+## Unity/Godot Configuration Patterns
+
+**Unity Settings:**
+
+- Use ScriptableObject for project-wide settings (stored in Assets/Settings/)
+- Use EditorBuildSettings.AddConfigObject() for runtime access
+- Settings provider in Editor/ folder using UI Toolkit (PropertyField, VisualElement)
+- No singletons - settings accessed via GetOrCreate()
+- No Resources.Load() - EditorBuildSettings.TryGetConfigObject() for runtime
+- Factory accepts settings instance for DI-friendly architecture
+
+**Unity C# Configuration:**
+
+- Unity projects must include `csc.rsp` file in `Assets/` directory to enable C# 10 features:
+
+  ```text
+  -langversion:10
+  -nullable:enable
+  ```
+
+- This enables nullable reference types and C# 10 language features (pattern matching, global usings, etc.)
+- Required for compatibility with the core library that uses modern C# features
+- The `csc.rsp` file is in the Unity project, not the package root (Unity compiles the project, not individual packages)
 
 **Godot Settings:**
 
