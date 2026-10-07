@@ -10,6 +10,7 @@ namespace GroveGames.DependencyInjection.Unity
     public static class ContainerBootstrapper
     {
         private static readonly Dictionary<int, IContainer> s_sceneContainers = new();
+        private static readonly HashSet<int> s_pendingScenes = new();
         private static IContainer? s_root;
         private static Task? s_rootInitialization;
 
@@ -75,8 +76,13 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
-        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        internal static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            if (s_sceneContainers.ContainsKey(scene.handle) || s_pendingScenes.Contains(scene.handle))
+            {
+                return;
+            }
+
             var installers = FindSceneInstallers(scene);
 
             if (installers.Count == 0)
@@ -84,6 +90,7 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
+            s_pendingScenes.Add(scene.handle);
             _ = InitializeSceneAsync(scene, installers);
         }
 
@@ -95,6 +102,7 @@ namespace GroveGames.DependencyInjection.Unity
 
                 if (rootInitialization == null)
                 {
+                    s_pendingScenes.Remove(scene.handle);
                     return;
                 }
 
@@ -102,12 +110,13 @@ namespace GroveGames.DependencyInjection.Unity
             }
             catch
             {
+                s_pendingScenes.Remove(scene.handle);
                 return;
             }
 
             var root = s_root;
 
-            if (root == null || root.IsDisposed || !scene.isLoaded)
+            if (!s_pendingScenes.Remove(scene.handle) || root == null || root.IsDisposed || !scene.isLoaded)
             {
                 return;
             }
@@ -136,6 +145,8 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void OnSceneUnloaded(Scene scene)
         {
+            s_pendingScenes.Remove(scene.handle);
+
             if (!s_sceneContainers.Remove(scene.handle, out var container))
             {
                 return;
@@ -174,6 +185,7 @@ namespace GroveGames.DependencyInjection.Unity
             Application.quitting -= Shutdown;
             ContainerPlayerLoop.Unregister();
             s_sceneContainers.Clear();
+            s_pendingScenes.Clear();
             s_rootInitialization = null;
             var root = s_root;
             s_root = null;

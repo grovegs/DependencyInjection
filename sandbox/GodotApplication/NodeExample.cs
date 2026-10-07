@@ -12,19 +12,4 @@ public partial class NodeExample : Node, INodeExample
         _singleton = singleton;
         GD.Print("NodeExample injected.");
     }
-
-    public override void _EnterTree()
-    {
-        GD.Print("NodeExample entered tree.");
-    }
-
-    public override void _Ready()
-    {
-        GD.Print("NodeExample ready.");
-    }
-
-    public override void _ExitTree()
-    {
-        GD.Print("NodeExample exited tree.");
-    }
 }

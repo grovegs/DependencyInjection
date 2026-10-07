@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference
-      Include="..\..\src\GroveGames.DependencyInjection.Godot\GroveGames.DependencyInjection.Godot.csproj" />
+      Include="..\..\src\GroveGames.DependencyInjection\GroveGames.DependencyInjection.csproj" />
   </ItemGroup>
 
 </Project>

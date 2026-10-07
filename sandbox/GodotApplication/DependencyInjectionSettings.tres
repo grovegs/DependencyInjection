@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DependencyInjectionSettingsResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/GroveGames.DependencyInjection/DependencyInjectionSettingsResource.cs" id="1_settings"]
+[ext_resource type="Resource" path="res://GameRootInstaller.tres" id="2_root"]
+
+[resource]
+script = ExtResource("1_settings")
+RootInstallers = [ExtResource("2_root")]

@@ -1,0 +1,26 @@
+{
+    "name": "GroveGames.DependencyInjection.Unity.Editor.Tests",
+    "rootNamespace": "GroveGames.DependencyInjection.Unity.Editor.Tests",
+    "references": [
+        "GUID:0acc523941302664db1f4e527237feb3",
+        "GUID:27619889b8ba8c24980f49ee34dbb44a",
+        "GUID:680da9f8e63646ddb3c20c2f4045387d",
+        "GUID:2086dbd4793e4f25b793ee82da7ae76c"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "GroveGames.DependencyInjection.dll",
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

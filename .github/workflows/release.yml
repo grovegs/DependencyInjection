@@ -30,6 +30,7 @@ jobs:
       directory-build-props: Directory.Build.props
       readme-file: README.md
       license-file: LICENSE
+      godot-addon: src/GroveGames.DependencyInjection.Godot/addons/GroveGames.DependencyInjection
       unity-package: src/GroveGames.DependencyInjection.Unity/Packages/com.grovegames.dependencyinjection
       create-tag: true
       publish-github: true

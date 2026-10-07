@@ -1,0 +1,8 @@
+﻿<Solution>
+  <Project Path="GroveGames.DependencyInjection.Unity.Editor.csproj" />
+  <Project Path="GroveGames.DependencyInjection.Unity.Tests.csproj" />
+  <Project Path="GroveGames.DependencyInjection.Unity.csproj" />
+  <Project Path="Sandbox.csproj" />
+  <Project Path="PluginBuilder.Editor.csproj" />
+  <Project Path="GroveGames.DependencyInjection.Unity.Editor.Tests.csproj" />
+</Solution>

@@ -4,6 +4,6 @@ public sealed class Singleton : ISingleton
 {
     public Singleton()
     {
-        GD.Print("Singleton injected.");
+        GD.Print("Singleton created.");
     }
 }

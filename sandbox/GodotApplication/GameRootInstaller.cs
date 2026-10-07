@@ -1,0 +1,14 @@
+using Godot;
+
+using GroveGames.DependencyInjection;
+
+[GlobalClass]
+public partial class GameRootInstaller : RootInstaller
+{
+    public override void Install(IContainerBuilder builder)
+    {
+        builder.AddSingleton<ISingleton, Singleton>();
+        builder.AddSingleton<RootEntryPoint>();
+        GD.Print("Root installed.");
+    }
+}
