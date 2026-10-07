@@ -7,8 +7,6 @@ namespace GroveGames.DependencyInjection.Unity
 {
     public static class GameObjectResolverExtensions
     {
-        private static Transform? s_staging;
-
         public static void InjectGameObject(this IObjectResolver resolver, GameObject gameObject)
         {
             if (gameObject == null)
@@ -43,7 +41,7 @@ namespace GroveGames.DependencyInjection.Unity
             where T : Component
         {
             var gameObject = new GameObject(typeof(T).Name);
-            gameObject.transform.SetParent(GetStaging(), false);
+            gameObject.transform.SetParent(GameObjectStaging.Transform, false);
             var instance = gameObject.AddComponent<T>();
             Activate(resolver, gameObject, null);
             return instance;
@@ -52,7 +50,7 @@ namespace GroveGames.DependencyInjection.Unity
         public static T Instantiate<T>(this IObjectResolver resolver, T prefab)
             where T : Component
         {
-            var instance = Object.Instantiate(prefab, GetStaging(), false);
+            var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
             Activate(resolver, instance.gameObject, null);
             return instance;
         }
@@ -60,14 +58,14 @@ namespace GroveGames.DependencyInjection.Unity
         public static T Instantiate<T>(this IObjectResolver resolver, T prefab, Transform parent)
             where T : Component
         {
-            var instance = Object.Instantiate(prefab, GetStaging(), false);
+            var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
             Activate(resolver, instance.gameObject, parent);
             return instance;
         }
 
         public static GameObject Instantiate(this IObjectResolver resolver, GameObject prefab, Transform? parent = null)
         {
-            var instance = Object.Instantiate(prefab, GetStaging(), false);
+            var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
             Activate(resolver, instance, parent);
             return instance;
         }
@@ -82,29 +80,6 @@ namespace GroveGames.DependencyInjection.Unity
             {
                 Object.DontDestroyOnLoad(gameObject);
             }
-        }
-
-        private static Transform GetStaging()
-        {
-            if (s_staging != null)
-            {
-                return s_staging;
-            }
-
-            var staging = new GameObject("DependencyInjectionStaging")
-            {
-                hideFlags = HideFlags.HideInHierarchy
-            };
-
-            staging.SetActive(false);
-
-            if (Application.isPlaying)
-            {
-                Object.DontDestroyOnLoad(staging);
-            }
-
-            s_staging = staging.transform;
-            return s_staging;
         }
     }
 }
