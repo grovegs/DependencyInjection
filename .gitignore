@@ -83,3 +83,16 @@ mono_crash.*.json
 ### NuGet ###
 # Ignore NuGet package files
 *.nupkg
+*.snupkg
+
+### Visual Studio ###
+.vs/
+*.userprefs
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+### JetBrains Rider ###
+.idea/
+*.sln.iml

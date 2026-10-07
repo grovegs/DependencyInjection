@@ -11,13 +11,13 @@ config_version=5
 [application]
 
 config/name="GodotApplication"
-run/main_scene="res://Splash.tscn"
+run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.3", "C#", "Mobile")
 config/icon="res://icon.svg"
 
 [autoload]
 
-RootContainerBootstrapper="*res://addons/GroveGames.DependencyInjection/RootContainerBootstrapper.cs"
+ContainerBootstrapper="*res://addons/GroveGames.DependencyInjection/ContainerBootstrapper.cs"
 
 [dotnet]
 
@@ -29,8 +29,7 @@ enabled=PackedStringArray("res://addons/GroveGames.DependencyInjection/plugin.cf
 
 [grove_games]
 
-dependency_injection/root_installer="res://RootInstaller.tres"
-dependency_injection/auto_load=true
+dependency_injection/settings_resource="res://DependencyInjectionSettings.tres"
 
 [rendering]
 

@@ -6,19 +6,30 @@ namespace GroveGames.DependencyInjection;
 [Tool]
 public partial class Plugin : EditorPlugin
 {
+    private const string AutoloadName = "ContainerBootstrapper";
+    private const string AutoloadPath = "res://addons/GroveGames.DependencyInjection/ContainerBootstrapper.cs";
+
     public override void _EnterTree()
     {
-        GodotSettings.CreateIfNotExist();
+        var settingsKey = DependencyInjectionSettingsResource.GetProjectSettingsKey();
 
-        if (GodotSettings.AutoLoad.Value)
+        if (!ProjectSettings.HasSetting(settingsKey))
         {
-            AddAutoloadSingleton(nameof(RootContainerBootstrapper), $"res://addons/GroveGames.DependencyInjection/{nameof(RootContainerBootstrapper)}.cs");
+            var resourcePath = DependencyInjectionSettingsResource.GetDefaultResourcePath();
+            ProjectSettings.SetSetting(settingsKey, resourcePath);
+            ProjectSettings.SetInitialValue(settingsKey, resourcePath);
+            ProjectSettings.Save();
         }
     }
 
-    public override void _ExitTree()
+    public override void _EnablePlugin()
     {
-        RemoveAutoloadSingleton(nameof(RootContainerBootstrapper));
+        AddAutoloadSingleton(AutoloadName, AutoloadPath);
+    }
+
+    public override void _DisablePlugin()
+    {
+        RemoveAutoloadSingleton(AutoloadName);
     }
 }
 #endif

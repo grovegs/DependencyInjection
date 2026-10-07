@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="GameRootInstaller" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://GameRootInstaller.cs" id="1_root"]
+
+[resource]
+script = ExtResource("1_root")

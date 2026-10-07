@@ -1,0 +1,16 @@
+{
+    "name": "GroveGames.DependencyInjection.Unity",
+    "rootNamespace": "GroveGames.DependencyInjection.Unity",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "GroveGames.DependencyInjection.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

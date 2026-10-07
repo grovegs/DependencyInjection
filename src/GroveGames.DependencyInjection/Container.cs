@@ -1,34 +1,332 @@
-using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Collections;
+﻿using System.Diagnostics.CodeAnalysis;
+
 using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
 
-public sealed class Container : IContainer
+internal sealed class Container : IContainer
 {
-    private readonly string _name;
-    private readonly IContainer _parent;
-    private readonly IContainerResolver _resolver;
-    private readonly IContainerCache _cache;
-    private readonly IDisposableCollection _disposables;
-    private readonly List<IContainer> _children;
+    private readonly Container? _parent;
+    private readonly InjectorCache _injectors;
+    private readonly Dictionary<Type, Binding> _bindings;
+    private readonly List<IDisposable> _disposables;
+    private readonly HashSet<object> _owned;
+    private readonly CancellationTokenSource _disposeCancellation;
+    private Binding[] _entryPoints;
+    private Container[] _children;
+    private IUpdatable[] _updatables;
+    private IFixedUpdatable[] _fixedUpdatables;
+    private ILateUpdatable[] _lateUpdatables;
+    private bool _isInitializing;
+    private bool _isInitialized;
     private bool _isDisposed;
 
-    public string Name => _name;
-    public IContainer Parent => _parent;
-    public IContainerCache Cache => _cache;
+    public IContainer? Parent => _parent;
+    public bool IsInitialized => _isInitialized;
+    public bool IsDisposed => _isDisposed;
+    internal InjectorCache Injectors => _injectors;
 
-    internal Container(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache, IDisposableCollection disposables)
+    internal Container(Container? parent, InjectorCache injectors)
     {
-        _name = name;
         _parent = parent;
-        _resolver = resolver;
-        _cache = cache;
-        _disposables = disposables;
+        _injectors = injectors;
+        _bindings = [];
+        _disposables = [];
+        _owned = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        _disposeCancellation = new CancellationTokenSource();
+        _entryPoints = [];
         _children = [];
-        _isDisposed = false;
-        _parent.AddChild(this);
-        _cache.Add(this);
+        _updatables = [];
+        _fixedUpdatables = [];
+        _lateUpdatables = [];
+    }
+
+    internal void AddBinding(Type serviceType, Binding binding)
+    {
+        if (_bindings.ContainsKey(serviceType))
+        {
+            throw new InvalidOperationException($"{serviceType} is already registered.");
+        }
+
+        _bindings.Add(serviceType, binding);
+    }
+
+    internal void SetEntryPoints(Binding[] entryPoints)
+    {
+        _entryPoints = entryPoints;
+    }
+
+    internal Binding? FindBinding(Type serviceType)
+    {
+        for (var container = this; container is not null; container = container._parent)
+        {
+            if (container._bindings.TryGetValue(serviceType, out var binding))
+            {
+                return binding;
+            }
+        }
+
+        return null;
+    }
+
+    internal void AddExternal(object instance)
+    {
+        _owned.Add(instance);
+    }
+
+    internal void OwnSingleton(object instance)
+    {
+        if (IsOwned(instance))
+        {
+            return;
+        }
+
+        _owned.Add(instance);
+
+        if (instance is IDisposable disposable)
+        {
+            _disposables.Add(disposable);
+        }
+    }
+
+    internal void OwnTransient(object instance)
+    {
+        if (instance is not IDisposable disposable || IsOwned(instance))
+        {
+            return;
+        }
+
+        _owned.Add(instance);
+        _disposables.Add(disposable);
+    }
+
+    private bool IsOwned(object instance)
+    {
+        for (var container = this; container is not null; container = container._parent)
+        {
+            if (container._owned.Contains(instance))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    internal void AddChild(Container child)
+    {
+        var children = _children;
+        var newChildren = new Container[children.Length + 1];
+        Array.Copy(children, newChildren, children.Length);
+        newChildren[children.Length] = child;
+        _children = newChildren;
+    }
+
+    internal void RemoveChild(Container child)
+    {
+        var children = _children;
+        var index = Array.IndexOf(children, child);
+
+        if (index < 0)
+        {
+            return;
+        }
+
+        if (children.Length == 1)
+        {
+            _children = [];
+            return;
+        }
+
+        var newChildren = new Container[children.Length - 1];
+        Array.Copy(children, 0, newChildren, 0, index);
+        Array.Copy(children, index + 1, newChildren, index, children.Length - index - 1);
+        _children = newChildren;
+    }
+
+    public object Resolve(Type serviceType)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        var binding = FindBinding(serviceType) ?? throw new RegistrationNotFoundException(serviceType);
+        return binding.Resolve();
+    }
+
+    public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? instance)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        var binding = FindBinding(serviceType);
+
+        if (binding is null)
+        {
+            instance = null;
+            return false;
+        }
+
+        instance = binding.Resolve();
+        return true;
+    }
+
+    public void Inject(object instance)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        var injector = _injectors.Get(instance.GetType());
+
+        if (injector.IsEmpty)
+        {
+            return;
+        }
+
+        injector.Inject(instance, this);
+    }
+
+    public IContainer CreateChild(Action<IContainerBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        var builder = new ContainerBuilder(this);
+        configure.Invoke(builder);
+        return builder.Build();
+    }
+
+    public async ValueTask InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+        if (_isInitializing || _isInitialized)
+        {
+            throw new InvalidOperationException("Container is already initialized.");
+        }
+
+        if (_parent is not null && !_parent._isInitialized)
+        {
+            throw new InvalidOperationException("Parent container must be initialized first.");
+        }
+
+        _isInitializing = true;
+
+        try
+        {
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCancellation.Token);
+            var token = cancellation.Token;
+            var instances = ResolveEntryPoints();
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IAsyncPreInitializable initializable)
+                {
+                    await initializable.PreInitializeAsync(token);
+                    token.ThrowIfCancellationRequested();
+                }
+            }
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IAsyncInitializable initializable)
+                {
+                    await initializable.InitializeAsync(token);
+                    token.ThrowIfCancellationRequested();
+                }
+            }
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IAsyncPostInitializable initializable)
+                {
+                    await initializable.PostInitializeAsync(token);
+                    token.ThrowIfCancellationRequested();
+                }
+            }
+
+            token.ThrowIfCancellationRequested();
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IPreInitializable initializable)
+                {
+                    initializable.PreInitialize();
+                }
+            }
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IInitializable initializable)
+                {
+                    initializable.Initialize();
+                }
+            }
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IPostInitializable initializable)
+                {
+                    initializable.PostInitialize();
+                }
+            }
+
+            token.ThrowIfCancellationRequested();
+            _updatables = Collect<IUpdatable>(instances);
+            _fixedUpdatables = Collect<IFixedUpdatable>(instances);
+            _lateUpdatables = Collect<ILateUpdatable>(instances);
+            _isInitialized = true;
+        }
+        finally
+        {
+            _isInitializing = false;
+        }
+    }
+
+    public void Update(float deltaTime)
+    {
+        var updatables = _updatables;
+
+        for (var i = 0; i < updatables.Length && !_isDisposed; i++)
+        {
+            updatables[i].Update(deltaTime);
+        }
+
+        var children = _children;
+
+        for (var i = 0; i < children.Length && !_isDisposed; i++)
+        {
+            children[i].Update(deltaTime);
+        }
+    }
+
+    public void FixedUpdate(float deltaTime)
+    {
+        var fixedUpdatables = _fixedUpdatables;
+
+        for (var i = 0; i < fixedUpdatables.Length && !_isDisposed; i++)
+        {
+            fixedUpdatables[i].FixedUpdate(deltaTime);
+        }
+
+        var children = _children;
+
+        for (var i = 0; i < children.Length && !_isDisposed; i++)
+        {
+            children[i].FixedUpdate(deltaTime);
+        }
+    }
+
+    public void LateUpdate(float deltaTime)
+    {
+        var lateUpdatables = _lateUpdatables;
+
+        for (var i = 0; i < lateUpdatables.Length && !_isDisposed; i++)
+        {
+            lateUpdatables[i].LateUpdate(deltaTime);
+        }
+
+        var children = _children;
+
+        for (var i = 0; i < children.Length && !_isDisposed; i++)
+        {
+            children[i].LateUpdate(deltaTime);
+        }
     }
 
     public void Dispose()
@@ -38,51 +336,101 @@ public sealed class Container : IContainer
             return;
         }
 
-        _disposables.Dispose();
-
-        for (var i = _children.Count - 1; i >= 0; i--)
-        {
-            var child = _children[i];
-            child.Dispose();
-        }
-
-        _resolver.Clear();
-        _children.Clear();
-        _cache.Remove(this);
-        _parent.RemoveChild(this);
         _isDisposed = true;
-    }
+        _disposeCancellation.Cancel();
+        _updatables = [];
+        _fixedUpdatables = [];
+        _lateUpdatables = [];
+        _entryPoints = [];
+        List<Exception>? exceptions = null;
+        var children = _children;
+        _children = [];
 
-    private bool ContainsChild(IContainer child)
-    {
-        foreach (var existingChild in _children)
+        for (var i = children.Length - 1; i >= 0; i--)
         {
-            if (existingChild.Name.Equals(child.Name, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                return true;
+                children[i].Dispose();
+            }
+            catch (Exception exception)
+            {
+                (exceptions ??= []).Add(exception);
             }
         }
 
-        return false;
-    }
-
-    public void AddChild(IContainer child)
-    {
-        if (ContainsChild(child))
+        for (var i = _disposables.Count - 1; i >= 0; i--)
         {
-            throw new ArgumentException($"A child container with the same name already exists in the parent container. Child Name: {child.Name}, Parent Container Name: {Name}");
+            try
+            {
+                _disposables[i].Dispose();
+            }
+            catch (Exception exception)
+            {
+                (exceptions ??= []).Add(exception);
+            }
         }
 
-        _children.Add(child);
+        _disposables.Clear();
+        _owned.Clear();
+        _bindings.Clear();
+        _parent?.RemoveChild(this);
+
+        if (exceptions is not null)
+        {
+            throw new AggregateException(exceptions);
+        }
     }
 
-    public void RemoveChild(IContainer child)
+    private object[] ResolveEntryPoints()
     {
-        _children.Remove(child);
+        var entryPoints = _entryPoints;
+        var instances = new List<object>(entryPoints.Length);
+        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+
+        for (var i = 0; i < entryPoints.Length; i++)
+        {
+            var instance = entryPoints[i].Resolve();
+
+            if (!seen.Add(instance) || (_parent is not null && _parent.IsOwned(instance)))
+            {
+                continue;
+            }
+
+            instances.Add(instance);
+        }
+
+        return instances.ToArray();
     }
 
-    public object Resolve(Type registrationType)
+    private static T[] Collect<T>(object[] instances)
+        where T : class
     {
-        return _resolver.Resolve(registrationType);
+        var count = 0;
+
+        for (var i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] is T)
+            {
+                count++;
+            }
+        }
+
+        if (count == 0)
+        {
+            return [];
+        }
+
+        var result = new T[count];
+        var index = 0;
+
+        for (var i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] is T item)
+            {
+                result[index++] = item;
+            }
+        }
+
+        return result;
     }
 }
