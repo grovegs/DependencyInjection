@@ -176,7 +176,7 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
 - **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root` and `TryGetSceneContainer`
 - **`DependencyInjectionSettings`**: ScriptableObject listing the root installers
-- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it. The container that created it owns the GameObject: it is kept across scene loads and destroyed when the container is disposed, after the component itself
+- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject: it is kept across scene loads and destroyed when the container is disposed, after the component itself
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
 ## Godot
