@@ -41,46 +41,45 @@ namespace GroveGames.DependencyInjection.Unity
             where T : Component
         {
             var gameObject = new GameObject(typeof(T).Name);
+            gameObject.transform.SetParent(GameObjectStaging.Transform, false);
             var instance = gameObject.AddComponent<T>();
-            Own(resolver, gameObject, true);
-            resolver.InjectGameObject(gameObject);
+            Activate(resolver, gameObject, null);
             return instance;
         }
 
         public static T Instantiate<T>(this IObjectResolver resolver, T prefab)
             where T : Component
         {
-            var instance = Object.Instantiate(prefab);
-            Own(resolver, instance.gameObject, true);
-            resolver.InjectGameObject(instance.gameObject);
+            var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
+            Activate(resolver, instance.gameObject, null);
             return instance;
         }
 
         public static T Instantiate<T>(this IObjectResolver resolver, T prefab, Transform parent)
             where T : Component
         {
-            var instance = Object.Instantiate(prefab, parent);
-            Own(resolver, instance.gameObject, false);
-            resolver.InjectGameObject(instance.gameObject);
+            var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
+            Activate(resolver, instance.gameObject, parent);
             return instance;
         }
 
         public static GameObject Instantiate(this IObjectResolver resolver, GameObject prefab, Transform? parent = null)
         {
-            var instance = Object.Instantiate(prefab, parent);
-            Own(resolver, instance, parent == null);
-            resolver.InjectGameObject(instance);
+            var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
+            Activate(resolver, instance, parent);
             return instance;
         }
 
-        private static void Own(IObjectResolver resolver, GameObject gameObject, bool dontDestroyOnLoad)
+        private static void Activate(IObjectResolver resolver, GameObject gameObject, Transform? parent)
         {
-            if (dontDestroyOnLoad)
+            resolver.AddDisposable(new GameObjectLifetime(gameObject));
+            resolver.InjectGameObject(gameObject);
+            gameObject.transform.SetParent(parent, false);
+
+            if (parent == null && Application.isPlaying)
             {
                 Object.DontDestroyOnLoad(gameObject);
             }
-
-            resolver.AddDisposable(new GameObjectLifetime(gameObject));
         }
     }
 }
