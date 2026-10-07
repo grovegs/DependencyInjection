@@ -136,7 +136,7 @@ public sealed class GameRootInstaller : RootInstaller
 
     public override void Install(IContainerBuilder builder)
     {
-        builder.AddSingletonFromPrefab(_audioOutputPrefab, dontDestroyOnLoad: true);
+        builder.AddSingletonFromPrefab(_audioOutputPrefab);
         builder.AddSingleton<IAudioPlayer, AudioPlayer>();
     }
 }
@@ -169,7 +169,7 @@ Updates are driven from the player loop, so no `MonoBehaviour` lifecycle methods
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
 - **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root` and `TryGetSceneContainer`
 - **`DependencyInjectionSettings`**: ScriptableObject listing the root installers
-- **`AddSingletonFromPrefab`** and **`AddSingletonOnNewGameObject`**: Register components created on first resolve
+- **`AddSingletonFromPrefab`** and **`AddSingletonOnNewGameObject`**: Register components created on first resolve. The container owns their GameObjects: they are kept across scene loads and destroyed when the container is disposed
 - **`InjectGameObject`** and **`Instantiate`**: Inject `[Inject]` methods on every `MonoBehaviour` of a hierarchy
 
 ## Godot

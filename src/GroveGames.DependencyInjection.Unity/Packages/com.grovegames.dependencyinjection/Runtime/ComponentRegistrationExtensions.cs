@@ -6,39 +6,30 @@ namespace GroveGames.DependencyInjection.Unity
 {
     public static class ComponentRegistrationExtensions
     {
-        public static IContainerBuilder AddSingletonFromPrefab<T>(this IContainerBuilder builder, T prefab, bool dontDestroyOnLoad = false)
+        public static IContainerBuilder AddSingletonFromPrefab<T>(this IContainerBuilder builder, T prefab)
             where T : Component
         {
-            return builder.AddSingleton(typeof(T), resolver =>
+            builder.AddSingleton(typeof(ComponentOwner<T>), resolver =>
             {
-                var instance = Object.Instantiate(prefab);
-
-                if (dontDestroyOnLoad)
-                {
-                    Object.DontDestroyOnLoad(instance.gameObject);
-                }
-
-                resolver.InjectGameObject(instance.gameObject);
-                return instance;
+                var owner = new ComponentOwner<T>(Object.Instantiate(prefab));
+                resolver.InjectGameObject(owner.Component.gameObject);
+                return owner;
             });
+
+            return builder.AddSingleton(typeof(T), resolver => ((ComponentOwner<T>)resolver.Resolve(typeof(ComponentOwner<T>))).Component);
         }
 
-        public static IContainerBuilder AddSingletonOnNewGameObject<T>(this IContainerBuilder builder, string name, bool dontDestroyOnLoad = false)
+        public static IContainerBuilder AddSingletonOnNewGameObject<T>(this IContainerBuilder builder, string name)
             where T : Component
         {
-            return builder.AddSingleton(typeof(T), resolver =>
+            builder.AddSingleton(typeof(ComponentOwner<T>), resolver =>
             {
-                var gameObject = new GameObject(name);
-
-                if (dontDestroyOnLoad)
-                {
-                    Object.DontDestroyOnLoad(gameObject);
-                }
-
-                var instance = gameObject.AddComponent<T>();
-                resolver.InjectGameObject(gameObject);
-                return instance;
+                var owner = new ComponentOwner<T>(new GameObject(name).AddComponent<T>());
+                resolver.InjectGameObject(owner.Component.gameObject);
+                return owner;
             });
+
+            return builder.AddSingleton(typeof(T), resolver => ((ComponentOwner<T>)resolver.Resolve(typeof(ComponentOwner<T>))).Component);
         }
     }
 }
