@@ -1,6 +1,5 @@
 # DependencyInjection
 
-
 [![Build Status](https://github.com/grovegs/DependencyInjection/actions/workflows/release.yml/badge.svg)](https://github.com/grovegs/DependencyInjection/actions/workflows/release.yml)
 [![Tests](https://github.com/grovegs/DependencyInjection/actions/workflows/tests.yml/badge.svg)](https://github.com/grovegs/DependencyInjection/actions/workflows/tests.yml)
 [![Latest Release](https://img.shields.io/github/v/release/grovegs/DependencyInjection)](https://github.com/grovegs/DependencyInjection/releases/latest)
@@ -38,14 +37,14 @@ Each registration binds exactly one service type: `AddSingleton<T>()` binds `T`,
 
 Lifecycle interfaces and `IDisposable` are detected automatically on singletons; they never need to be registered.
 
-| Order | Interface | Method |
-|---|---|---|
-| 1 | `IAsyncPreInitializable` | `ValueTask PreInitializeAsync(CancellationToken)` |
-| 2 | `IAsyncInitializable` | `ValueTask InitializeAsync(CancellationToken)` |
-| 3 | `IAsyncPostInitializable` | `ValueTask PostInitializeAsync(CancellationToken)` |
-| 4 | `IPreInitializable` | `void PreInitialize()` |
-| 5 | `IInitializable` | `void Initialize()` |
-| 6 | `IPostInitializable` | `void PostInitialize()` |
+| Order       | Interface                                         | Method                                                     |
+| ----------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| 1           | `IAsyncPreInitializable`                          | `ValueTask PreInitializeAsync(CancellationToken)`          |
+| 2           | `IAsyncInitializable`                             | `ValueTask InitializeAsync(CancellationToken)`             |
+| 3           | `IAsyncPostInitializable`                         | `ValueTask PostInitializeAsync(CancellationToken)`         |
+| 4           | `IPreInitializable`                               | `void PreInitialize()`                                     |
+| 5           | `IInitializable`                                  | `void Initialize()`                                        |
+| 6           | `IPostInitializable`                              | `void PostInitialize()`                                    |
 | every frame | `IUpdatable`, `IFixedUpdatable`, `ILateUpdatable` | `Update(float)`, `FixedUpdate(float)`, `LateUpdate(float)` |
 
 Every async phase is awaited before any sync phase runs. Within a phase, entries run in registration order. Updating a container also updates its children. Disposing a container cancels a pending initialization, disposes its children and then disposes every instance it created in reverse creation order. Instances passed to `AddSingleton(object)` are not disposed by the container.

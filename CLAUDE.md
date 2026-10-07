@@ -22,8 +22,8 @@ dotnet pack -c Release
 - Interface-first design for public APIs
 - Use readonly for fields that don't change after construction
 - Use ArgumentNullException.ThrowIfNull(), ArgumentOutOfRangeException.ThrowIfGreaterThan(), and ObjectDisposedException.ThrowIf() for validation
-- For thread-safe classes: use volatile int _disposed with Interlocked for disposal
-- For single-threaded classes: use bool _disposed
+- For thread-safe classes: use volatile int \_disposed with Interlocked for disposal
+- For single-threaded classes: use bool \_disposed
 - Create separate concurrent implementations when thread safety is needed (e.g., ObjectPool vs ConcurrentObjectPool)
 - Only use volatile and Interlocked when concurrent access is required
 
@@ -61,8 +61,8 @@ dotnet pack -c Release
 
 - Never throw C# exceptions (ArgumentNullException, ArgumentException, etc.) in engine implementations
 - Use engine-specific error handling instead:
-  - Unity: `Debug.LogError()`, `Debug.LogWarning()`, `Debug.Assert()`
-  - Godot: `GD.PushError()`, `GD.PushWarning()`, `GD.Assert()`
+    - Unity: `Debug.LogError()`, `Debug.LogWarning()`, `Debug.Assert()`
+    - Godot: `GD.PushError()`, `GD.PushWarning()`, `GD.Assert()`
 - Check parameters for null and provide fallback values with engine logging
 - Example Unity: `if (settings == null) { Debug.LogError("Settings cannot be null"); settings = CreateInstance<Settings>(); }`
 - Example Godot: `if (settings == null) { GD.PushError("Settings cannot be null"); settings = new(); }`
@@ -82,10 +82,10 @@ dotnet pack -c Release
 
 - Unity projects must include `csc.rsp` file in `Assets/` directory to enable C# 10 features:
 
-  ```text
-  -langversion:10
-  -nullable:enable
-  ```
+    ```text
+    -langversion:10
+    -nullable:enable
+    ```
 
 - This enables nullable reference types and C# 10 language features (pattern matching, global usings, etc.)
 - Required for compatibility with the core library that uses modern C# features
