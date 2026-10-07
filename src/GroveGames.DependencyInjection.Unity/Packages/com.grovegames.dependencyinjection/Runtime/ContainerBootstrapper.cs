@@ -133,6 +133,13 @@ namespace GroveGames.DependencyInjection.Unity
                 });
 
                 s_sceneContainers[scene.handle] = container;
+                await ContainerPlayerLoop.NextFrameAsync();
+
+                if (container.IsDisposed)
+                {
+                    return;
+                }
+
                 await container.InitializeAsync();
                 ContainerPlayerLoop.Add(container);
             }

@@ -85,6 +85,33 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             yield return SceneManager.UnloadSceneAsync(scene);
         }
 
+        [UnityTest]
+        public IEnumerator OnSceneLoaded_SceneActivatedSameFrame_InitializesInActiveScene()
+        {
+            var previousActiveScene = SceneManager.GetActiveScene();
+            var scene = SceneManager.CreateScene(nameof(OnSceneLoaded_SceneActivatedSameFrame_InitializesInActiveScene));
+            var gameObject = new GameObject(nameof(TestCreatingSceneInstaller));
+            SceneManager.MoveGameObjectToScene(gameObject, scene);
+            gameObject.AddComponent<TestCreatingSceneInstaller>();
+
+            ContainerBootstrapper.OnSceneLoaded(scene, LoadSceneMode.Additive);
+            SceneManager.SetActiveScene(scene);
+
+            IContainer? container = null;
+
+            for (var i = 0; i < 100 && (container == null || !container.IsInitialized); i++)
+            {
+                ContainerBootstrapper.TryGetSceneContainer(scene, out container);
+                yield return null;
+            }
+
+            Assert.IsNotNull(container);
+            Assert.AreEqual(scene, container!.Resolve<TestObjectCreator>().CreatedScene);
+
+            SceneManager.SetActiveScene(previousActiveScene);
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
         [Test]
         public void OnSceneLoaded_SceneWithoutInstaller_CreatesNoContainer()
         {
@@ -109,6 +136,24 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private sealed class TestService
         {
+        }
+
+        private sealed class TestCreatingSceneInstaller : SceneInstaller
+        {
+            public override void Install(IContainerBuilder builder)
+            {
+                builder.AddSingleton<TestObjectCreator>();
+            }
+        }
+
+        private sealed class TestObjectCreator : IInitializable
+        {
+            public Scene CreatedScene { get; private set; }
+
+            public void Initialize()
+            {
+                CreatedScene = new GameObject(nameof(TestObjectCreator)).scene;
+            }
         }
     }
 }
