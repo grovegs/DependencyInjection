@@ -55,6 +55,36 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             Assert.IsFalse(ContainerBootstrapper.TryGetSceneContainer(scene, out _));
         }
 
+        [UnityTest]
+        public IEnumerator SceneInstaller_Destroyed_DisposesSceneContainerBeforeSceneUnloads()
+        {
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_Destroyed_DisposesSceneContainerBeforeSceneUnloads));
+            var gameObject = new GameObject(nameof(TestSceneInstaller));
+            SceneManager.MoveGameObjectToScene(gameObject, scene);
+            gameObject.AddComponent<TestSceneInstaller>();
+
+            ContainerBootstrapper.OnSceneLoaded(scene, LoadSceneMode.Additive);
+
+            IContainer? container = null;
+
+            for (var i = 0; i < 100 && (container == null || !container.IsInitialized); i++)
+            {
+                ContainerBootstrapper.TryGetSceneContainer(scene, out container);
+                yield return null;
+            }
+
+            Assert.IsNotNull(container);
+
+            Object.Destroy(gameObject);
+            yield return null;
+
+            Assert.IsTrue(container!.IsDisposed);
+            Assert.IsTrue(scene.isLoaded);
+            Assert.IsFalse(ContainerBootstrapper.TryGetSceneContainer(scene, out _));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
         [Test]
         public void OnSceneLoaded_SceneWithoutInstaller_CreatesNoContainer()
         {

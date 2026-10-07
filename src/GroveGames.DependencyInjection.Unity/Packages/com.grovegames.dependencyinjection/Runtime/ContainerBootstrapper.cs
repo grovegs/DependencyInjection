@@ -145,6 +145,11 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void OnSceneUnloaded(Scene scene)
         {
+            DisposeSceneContainer(scene);
+        }
+
+        internal static void DisposeSceneContainer(Scene scene)
+        {
             s_pendingScenes.Remove(scene.handle);
 
             if (!s_sceneContainers.Remove(scene.handle, out var container))
