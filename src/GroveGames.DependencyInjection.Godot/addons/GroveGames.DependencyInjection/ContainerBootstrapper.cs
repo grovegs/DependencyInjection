@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 using Godot;
 
-namespace GroveGames.DependencyInjection;
+namespace GroveGames.DependencyInjection.Godot;
 
 public sealed partial class ContainerBootstrapper : Node
 {

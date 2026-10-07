@@ -1,6 +1,6 @@
 using Godot;
 
-namespace GroveGames.DependencyInjection;
+namespace GroveGames.DependencyInjection.Godot;
 
 public abstract partial class RootInstaller : Resource, IInstaller
 {

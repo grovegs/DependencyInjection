@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Godot;
 
 using GroveGames.DependencyInjection;
+using GroveGames.DependencyInjection.Godot;
 
 public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IProcessable
 {

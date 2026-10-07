@@ -393,7 +393,7 @@ public sealed class ContainerTests
         builder.AddSingleton(log);
         builder.AddSingleton(resolver =>
         {
-            ((IContainer)resolver).AddDisposable(new TestDisposable("Owned", resolver.Resolve<TestLog>()));
+            resolver.AddDisposable(new TestDisposable("Owned", resolver.Resolve<TestLog>()));
             return new TestDisposable("Created", resolver.Resolve<TestLog>());
         });
         var container = builder.Build();

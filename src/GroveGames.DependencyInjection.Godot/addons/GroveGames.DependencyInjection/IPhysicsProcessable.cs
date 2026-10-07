@@ -1,4 +1,4 @@
-namespace GroveGames.DependencyInjection;
+namespace GroveGames.DependencyInjection.Godot;
 
 public interface IPhysicsProcessable
 {

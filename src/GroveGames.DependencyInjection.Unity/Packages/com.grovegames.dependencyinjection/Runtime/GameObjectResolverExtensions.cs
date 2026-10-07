@@ -80,10 +80,7 @@ namespace GroveGames.DependencyInjection.Unity
                 Object.DontDestroyOnLoad(gameObject);
             }
 
-            if (resolver is IContainer container)
-            {
-                container.AddDisposable(new GameObjectLifetime(gameObject));
-            }
+            resolver.AddDisposable(new GameObjectLifetime(gameObject));
         }
     }
 }

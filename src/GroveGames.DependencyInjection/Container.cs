@@ -181,7 +181,6 @@ internal sealed class Container : IContainer
     }
 
     public IReadOnlyList<T> ResolveAll<T>()
-        where T : class
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         var types = _singletonTypes;

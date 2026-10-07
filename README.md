@@ -44,7 +44,7 @@ using var root = builder.Build();
 await root.InitializeAsync(cancellationToken);
 ```
 
-Each registration binds exactly one service type: `AddSingleton<T>()` binds `T` and `AddSingleton<TService, TImplementation>()` binds `TService`. To expose one instance under another type, register an alias factory:
+Each registration binds exactly one service type: `AddSingleton<T>()` binds `T` and `AddSingleton<TService, TImplementation>()` binds `TService`. A singleton is one instance per container, so a child container can register its own. Value types work like any other service, for example `builder.AddSingleton(new GameModeConfig(...))` and `resolver.Resolve<GameModeConfig>()`. To expose one instance under another type, register an alias factory:
 
 ```csharp
 builder.AddSingleton<ElephantAds>();
@@ -103,7 +103,7 @@ container.Inject(healthBar);
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
 - **`IContainer`**: Resolves services, runs lifecycle phases and owns created instances; `AddDisposable` hands any other cleanup to the container
-- **`IObjectResolver`**: Resolve and inject API that can be injected into factories
+- **`IObjectResolver`**: `Resolve`, `ResolveAll`, `Inject` and `AddDisposable`; it is what factories and services receive
 - **`IInstaller`**: Groups registrations for a container or child container
 
 ## Unity
@@ -170,6 +170,8 @@ Singletons implementing `IUpdatable`, `IFixedUpdatable` or `ILateUpdatable` from
 
 ### Unity Components
 
+Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
+
 - **`RootInstaller`**: ScriptableObject installer for the root container
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
 - **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root` and `TryGetSceneContainer`
@@ -203,6 +205,7 @@ Derive from `RootInstaller`, create a resource for it and add it to a `Dependenc
 ```csharp
 using Godot;
 using GroveGames.DependencyInjection;
+using GroveGames.DependencyInjection.Godot;
 
 [GlobalClass]
 public partial class GameRootInstaller : RootInstaller
@@ -231,6 +234,8 @@ public sealed partial class MainInstaller : SceneInstaller
 ```
 
 ### Godot Components
+
+Godot types live in the `GroveGames.DependencyInjection.Godot` namespace.
 
 - **`RootInstaller`**: Resource installer for the root container
 - **`SceneInstaller`**: Node installer for a scene container
