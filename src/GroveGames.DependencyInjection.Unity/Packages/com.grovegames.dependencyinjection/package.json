@@ -1,0 +1,17 @@
+{
+  "name": "com.grovegames.dependencyinjection",
+  "version": "0.1.0",
+  "displayName": "GroveGames.DependencyInjection",
+  "description": "Lightweight dependency injection with lifecycle phases for .NET, Unity, and Godot",
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/grovegs/DependencyInjection",
+  "changelogUrl": "https://github.com/grovegs/DependencyInjection/releases",
+  "licensesUrl": "https://github.com/grovegs/DependencyInjection/blob/main/LICENSE",
+  "keywords": [
+    "dependency-injection"
+  ],
+  "author": {
+    "name": "Grove Games",
+    "url": "https://github.com/grovegs"
+  }
+}

@@ -26,7 +26,7 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageIcon>Icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Description>A lightweight dependency injection framework developed by Grove Games for .NET and Godot</Description>
+    <Description>A lightweight dependency injection framework developed by Grove Games for .NET, Unity and Godot</Description>
     <PackageTags>godot;dependency-injection</PackageTags>
   </PropertyGroup>
 

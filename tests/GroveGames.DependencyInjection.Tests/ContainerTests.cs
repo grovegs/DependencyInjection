@@ -1,135 +1,647 @@
-using System.Reflection;
+﻿namespace GroveGames.DependencyInjection.Tests;
 
-using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Collections;
-using GroveGames.DependencyInjection.Resolution;
-
-namespace GroveGames.DependencyInjection.Tests;
-
-public class ContainerTests
+public sealed class ContainerTests
 {
-    private Container CreateContainer(
-        string name = "TestContainer",
-        Mock<IContainerResolver>? resolverMock = null,
-        Mock<IContainerCache>? cacheMock = null,
-        Mock<IDisposableCollection>? disposablesMock = null,
-        Mock<IContainer>? parentMock = null
-    )
+    [Fact]
+    public void Resolve_ObjectResolver_ReturnsContainer()
     {
-        resolverMock ??= new Mock<IContainerResolver>();
-        cacheMock ??= new Mock<IContainerCache>();
-        disposablesMock ??= new Mock<IDisposableCollection>();
-        parentMock ??= new Mock<IContainer>();
-        parentMock.Setup(p => p.AddChild(It.IsAny<IContainer>()));
+        using var container = new ContainerBuilder().Build();
 
-        return new Container(
-            name,
-            parentMock.Object,
-            resolverMock.Object,
-            cacheMock.Object,
-            disposablesMock.Object
-        );
+        var resolver = container.Resolve<IObjectResolver>();
+
+        Assert.Same(container, resolver);
     }
 
     [Fact]
-    public void Constructor_ShouldInitializeContainer()
+    public void Resolve_UnregisteredType_ThrowsRegistrationNotFoundException()
     {
-        // Arrange
-        var mockParentContainer = new Mock<IContainer>();
-        var mockCache = new Mock<IContainerCache>();
+        using var container = new ContainerBuilder().Build();
 
-        // Act
-        var container = CreateContainer(parentMock: mockParentContainer, cacheMock: mockCache);
+        var exception = Record.Exception(() => container.Resolve<TestLog>());
 
-        // Assert
-        Assert.Equal("TestContainer", container.Name);
-        Assert.Equal(mockParentContainer.Object, container.Parent);
-        mockParentContainer.Verify(p => p.AddChild(container), Times.Once);
-        mockCache.Verify(c => c.Add(container), Times.Once);
+        Assert.IsType<RegistrationNotFoundException>(exception);
     }
 
     [Fact]
-    public void AddChild_ShouldAddChildContainer()
+    public void Resolve_AfterDispose_ThrowsObjectDisposedException()
     {
-        // Arrange
-        var container = CreateContainer();
-        var childMock = new Mock<IContainer>();
-        childMock.Setup(c => c.Name).Returns("ChildContainer");
-
-        // Act
-        container.AddChild(childMock.Object);
-
-        // Assert
-        var childrenField = typeof(Container).GetField("_children", BindingFlags.NonPublic | BindingFlags.Instance);
-        var children = childrenField?.GetValue(container) as List<IContainer>;
-        Assert.Contains(childMock.Object, children!);
-    }
-
-    [Fact]
-    public void AddChild_ShouldThrowArgumentException_WhenDuplicateChildIsAdded()
-    {
-        // Arrange
-        var container = CreateContainer();
-        var childMock = new Mock<IContainer>();
-        childMock.Setup(c => c.Name).Returns("ChildContainer");
-        container.AddChild(childMock.Object);
-
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => container.AddChild(childMock.Object));
-        Assert.Contains("A child container with the same name", ex.Message);
-    }
-
-    [Fact]
-    public void RemoveChild_ShouldRemoveChildContainer()
-    {
-        // Arrange
-        var container = CreateContainer();
-        var childMock = new Mock<IContainer>();
-        childMock.Setup(c => c.Name).Returns("ChildContainer");
-        container.AddChild(childMock.Object);
-
-        // Act
-        container.RemoveChild(childMock.Object);
-
-        // Assert
-        var childrenField = typeof(Container).GetField("_children", BindingFlags.NonPublic | BindingFlags.Instance);
-        var children = childrenField?.GetValue(container) as List<IContainer>;
-        Assert.DoesNotContain(childMock.Object, children!);
-    }
-
-    [Fact]
-    public void Dispose_ShouldDisposeAllResources()
-    {
-        // Arrange
-        var mockDisposables = new Mock<IDisposableCollection>();
-        var mockCache = new Mock<IContainerCache>();
-        var mockParentContainer = new Mock<IContainer>();
-
-        var container = CreateContainer(disposablesMock: mockDisposables, cacheMock: mockCache, parentMock: mockParentContainer);
-
-        // Act
+        var container = new ContainerBuilder().Build();
         container.Dispose();
 
-        // Assert
-        mockDisposables.Verify(d => d.Dispose(), Times.Once);
-        mockCache.Verify(c => c.Remove(container), Times.Once);
-        mockParentContainer.Verify(p => p.RemoveChild(container), Times.Once);
+        var exception = Record.Exception(() => container.Resolve<IObjectResolver>());
+
+        Assert.IsType<ObjectDisposedException>(exception);
     }
 
     [Fact]
-    public void Resolve_ShouldUseResolverToResolveType()
+    public void CreateChild_ParentRegistration_ResolvesFromParent()
     {
-        // Arrange
-        var mockResolver = new Mock<IContainerResolver>();
-        var container = CreateContainer(resolverMock: mockResolver);
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var parent = builder.Build();
 
-        var mockObject = new object();
-        mockResolver.Setup(r => r.Resolve(It.IsAny<Type>())).Returns(mockObject);
+        var child = parent.CreateChild(_ => { });
 
-        // Act
-        var result = container.Resolve(typeof(object));
+        Assert.Same(parent.Resolve<TestLog>(), child.Resolve<TestLog>());
+        Assert.Same(parent, child.Parent);
+    }
 
-        // Assert
-        Assert.Equal(mockObject, result);
+    [Fact]
+    public void CreateChild_SameServiceType_OverridesParent()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var parent = builder.Build();
+
+        var child = parent.CreateChild(childBuilder => childBuilder.AddSingleton<TestLog>());
+
+        Assert.NotSame(parent.Resolve<TestLog>(), child.Resolve<TestLog>());
+    }
+
+    [Fact]
+    public void CreateChild_Installer_InstallsRegistrations()
+    {
+        using var parent = new ContainerBuilder().Build();
+
+        var child = parent.CreateChild(new TestInstaller());
+
+        Assert.True(child.TryResolve<TestLog>(out _));
+    }
+
+    [Fact]
+    public void Inject_PublicInjectMethod_InjectsDependencies()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var container = builder.Build();
+        var injectable = new TestInjectable();
+
+        container.Inject(injectable);
+
+        Assert.Same(container.Resolve<TestLog>(), injectable.Log);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_AllPhases_RunsAsyncPhasesBeforeSyncPhases()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton<TestEntryPoint>();
+        using var container = builder.Build();
+
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["AsyncPreInitialize", "AsyncInitialize", "AsyncPostInitialize", "PreInitialize", "Initialize", "PostInitialize"], log.Entries);
+        Assert.True(container.IsInitialized);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_MultipleEntryPoints_RunsEachPhaseInRegistrationOrder()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestNamedEntryPoint("A", resolver.Resolve<TestLog>()));
+        builder.AddSingleton<IInitializable>(resolver => new TestNamedEntryPoint("B", resolver.Resolve<TestLog>()));
+        using var container = builder.Build();
+
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["A.InitializeAsync", "B.InitializeAsync", "A.Initialize", "B.Initialize"], log.Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_EntryPointNotResolvedBefore_CreatesEntryPoint()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton<IInitializable, TestInitializable>();
+        using var container = builder.Build();
+
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["Initialize"], log.Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_AliasOfEntryPoint_InitializesOnce()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton<TestInitializable>();
+        builder.AddSingleton<IInitializable>(resolver => resolver.Resolve<TestInitializable>());
+        using var container = builder.Build();
+
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["Initialize"], log.Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ChildAliasOfParentEntryPoint_DoesNotInitializeAgain()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton<TestInitializable>();
+        using var parent = builder.Build();
+        await parent.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = parent.CreateChild(childBuilder => childBuilder.AddSingleton<IInitializable>(resolver => resolver.Resolve<TestInitializable>()));
+
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["Initialize"], log.Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_TransientEntryPoint_IsNotInitialized()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddTransient<TestInitializable>();
+        using var container = builder.Build();
+
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Empty(log.Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CalledTwice_ThrowsInvalidOperationException()
+    {
+        using var container = new ContainerBuilder().Build();
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        var exception = await Record.ExceptionAsync(() => container.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        Assert.IsType<InvalidOperationException>(exception);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_ParentNotInitialized_ThrowsInvalidOperationException()
+    {
+        using var parent = new ContainerBuilder().Build();
+        var child = parent.CreateChild(_ => { });
+
+        var exception = await Record.ExceptionAsync(() => child.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        Assert.IsType<InvalidOperationException>(exception);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_DisposedDuringAsyncPhase_SkipsSyncPhases()
+    {
+        var log = new TestLog();
+        var gate = new TaskCompletionSource<bool>();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(gate);
+        builder.AddSingleton<TestBlockingEntryPoint>();
+        var container = builder.Build();
+        var initialization = container.InitializeAsync(TestContext.Current.CancellationToken).AsTask();
+
+        container.Dispose();
+        gate.SetResult(true);
+        var exception = await Record.ExceptionAsync(() => initialization);
+
+        Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        Assert.DoesNotContain("Initialize", log.Entries);
+        Assert.False(container.IsInitialized);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CancelledToken_ThrowsOperationCanceledException()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton<TestEntryPoint>();
+        using var container = builder.Build();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        var exception = await Record.ExceptionAsync(() => container.InitializeAsync(cancellation.Token).AsTask());
+
+        Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        Assert.DoesNotContain("Initialize", log.Entries);
+    }
+
+    [Fact]
+    public async Task Update_AfterInitialize_UpdatesAllUpdatables()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestUpdatable>();
+        using var container = builder.Build();
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+        var updatable = container.Resolve<TestUpdatable>();
+
+        container.Update(0.5f);
+        container.FixedUpdate(0.25f);
+        container.LateUpdate(0.125f);
+
+        Assert.Equal(0.5f, updatable.UpdateTime);
+        Assert.Equal(0.25f, updatable.FixedUpdateTime);
+        Assert.Equal(0.125f, updatable.LateUpdateTime);
+    }
+
+    [Fact]
+    public void Update_BeforeInitialize_DoesNotUpdate()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestUpdatable>();
+        using var container = builder.Build();
+        var updatable = container.Resolve<TestUpdatable>();
+
+        container.Update(1f);
+
+        Assert.Equal(0f, updatable.UpdateTime);
+    }
+
+    [Fact]
+    public async Task Update_InitializedChild_UpdatesChild()
+    {
+        using var parent = new ContainerBuilder().Build();
+        await parent.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = parent.CreateChild(builder => builder.AddSingleton<TestUpdatable>());
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+        var updatable = child.Resolve<TestUpdatable>();
+
+        parent.Update(1f);
+
+        Assert.Equal(1f, updatable.UpdateTime);
+    }
+
+    [Fact]
+    public async Task Update_DisposedChild_IsNotUpdated()
+    {
+        using var parent = new ContainerBuilder().Build();
+        await parent.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = parent.CreateChild(builder => builder.AddSingleton<TestUpdatable>());
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+        var updatable = child.Resolve<TestUpdatable>();
+        child.Dispose();
+
+        parent.Update(1f);
+
+        Assert.Equal(0f, updatable.UpdateTime);
+    }
+
+    [Fact]
+    public async Task Update_ContainerDisposedByUpdatable_StopsUpdating()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestDisposingUpdatable>();
+        builder.AddSingleton<TestUpdatable>();
+        using var container = builder.Build();
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+        var updatable = container.Resolve<TestUpdatable>();
+
+        container.Update(1f);
+
+        Assert.Equal(0f, updatable.UpdateTime);
+    }
+
+    [Fact]
+    public void Dispose_CreatedInstances_DisposesInReverseCreationOrder()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestDisposable("A", resolver.Resolve<TestLog>()));
+        builder.AddTransient(resolver => new TestOtherDisposable(resolver.Resolve<TestLog>()));
+        var container = builder.Build();
+        container.Resolve<TestDisposable>();
+        container.Resolve<TestOtherDisposable>();
+
+        container.Dispose();
+
+        Assert.Equal(["Other.Dispose", "A.Dispose"], log.Entries);
+    }
+
+    [Fact]
+    public void Dispose_RegisteredInstance_DoesNotDisposeInstance()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(new TestDisposable("A", log));
+        var container = builder.Build();
+        container.Resolve<TestDisposable>();
+
+        container.Dispose();
+
+        Assert.Empty(log.Entries);
+    }
+
+    [Fact]
+    public void Dispose_AliasFactory_DisposesOnce()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestDisposable("A", resolver.Resolve<TestLog>()));
+        builder.AddSingleton<IDisposable>(resolver => resolver.Resolve<TestDisposable>());
+        var container = builder.Build();
+        container.Resolve<IDisposable>();
+
+        container.Dispose();
+
+        Assert.Equal(["A.Dispose"], log.Entries);
+    }
+
+    [Fact]
+    public void Dispose_AliasOfRegisteredInstance_DoesNotDisposeInstance()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(new TestDisposable("A", log));
+        builder.AddSingleton<IDisposable>(resolver => resolver.Resolve<TestDisposable>());
+        var container = builder.Build();
+        container.Resolve<IDisposable>();
+
+        container.Dispose();
+
+        Assert.Empty(log.Entries);
+    }
+
+    [Fact]
+    public void Dispose_ChildAliasOfParentInstance_DoesNotDisposeParentInstance()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestDisposable("Parent", resolver.Resolve<TestLog>()));
+        using var parent = builder.Build();
+        var child = parent.CreateChild(childBuilder => childBuilder.AddSingleton<IDisposable>(resolver => resolver.Resolve<TestDisposable>()));
+        child.Resolve<IDisposable>();
+
+        child.Dispose();
+
+        Assert.Empty(log.Entries);
+    }
+
+    [Fact]
+    public void Dispose_Parent_DisposesChildrenFirst()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestDisposable("Parent", resolver.Resolve<TestLog>()));
+        var parent = builder.Build();
+        parent.Resolve<TestDisposable>();
+        var child = parent.CreateChild(childBuilder => childBuilder.AddSingleton(resolver => new TestDisposable("Child", resolver.Resolve<TestLog>())));
+        child.Resolve<TestDisposable>();
+
+        parent.Dispose();
+
+        Assert.Equal(["Child.Dispose", "Parent.Dispose"], log.Entries);
+        Assert.True(child.IsDisposed);
+    }
+
+    [Fact]
+    public void Dispose_CalledTwice_DisposesOnce()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestDisposable("A", resolver.Resolve<TestLog>()));
+        var container = builder.Build();
+        container.Resolve<TestDisposable>();
+
+        container.Dispose();
+        container.Dispose();
+
+        Assert.Single(log.Entries);
+    }
+
+    [Fact]
+    public void Dispose_DisposableThrows_DisposesRemainingAndThrowsAggregateException()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver => new TestDisposable("A", resolver.Resolve<TestLog>()));
+        builder.AddSingleton<TestThrowingDisposable>();
+        var container = builder.Build();
+        container.Resolve<TestDisposable>();
+        container.Resolve<TestThrowingDisposable>();
+
+        var exception = Record.Exception(() => container.Dispose());
+
+        Assert.IsType<AggregateException>(exception);
+        Assert.Equal(["A.Dispose"], log.Entries);
+    }
+
+    private sealed class TestLog
+    {
+        public List<string> Entries { get; }
+
+        public TestLog()
+        {
+            Entries = [];
+        }
+    }
+
+    private sealed class TestInstaller : IInstaller
+    {
+        public void Install(IContainerBuilder builder)
+        {
+            builder.AddSingleton<TestLog>();
+        }
+    }
+
+    private sealed class TestInjectable
+    {
+        public TestLog? Log { get; private set; }
+
+        [Inject]
+        public void Construct(TestLog log)
+        {
+            Log = log;
+        }
+    }
+
+    private sealed class TestEntryPoint : IAsyncPreInitializable, IAsyncInitializable, IAsyncPostInitializable, IPreInitializable, IInitializable, IPostInitializable
+    {
+        private readonly TestLog _log;
+
+        public TestEntryPoint(TestLog log)
+        {
+            _log = log;
+        }
+
+        public async ValueTask PreInitializeAsync(CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            cancellationToken.ThrowIfCancellationRequested();
+            _log.Entries.Add("AsyncPreInitialize");
+        }
+
+        public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            _log.Entries.Add("AsyncInitialize");
+        }
+
+        public async ValueTask PostInitializeAsync(CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            _log.Entries.Add("AsyncPostInitialize");
+        }
+
+        public void PreInitialize()
+        {
+            _log.Entries.Add("PreInitialize");
+        }
+
+        public void Initialize()
+        {
+            _log.Entries.Add("Initialize");
+        }
+
+        public void PostInitialize()
+        {
+            _log.Entries.Add("PostInitialize");
+        }
+    }
+
+    private sealed class TestNamedEntryPoint : IAsyncInitializable, IInitializable
+    {
+        private readonly string _name;
+        private readonly TestLog _log;
+
+        public TestNamedEntryPoint(string name, TestLog log)
+        {
+            _name = name;
+            _log = log;
+        }
+
+        public ValueTask InitializeAsync(CancellationToken cancellationToken)
+        {
+            _log.Entries.Add($"{_name}.InitializeAsync");
+            return default;
+        }
+
+        public void Initialize()
+        {
+            _log.Entries.Add($"{_name}.Initialize");
+        }
+    }
+
+    private sealed class TestInitializable : IInitializable
+    {
+        private readonly TestLog _log;
+
+        public TestInitializable(TestLog log)
+        {
+            _log = log;
+        }
+
+        public void Initialize()
+        {
+            _log.Entries.Add("Initialize");
+        }
+    }
+
+    private sealed class TestBlockingEntryPoint : IAsyncInitializable, IInitializable
+    {
+        private readonly TestLog _log;
+        private readonly TaskCompletionSource<bool> _gate;
+
+        public TestBlockingEntryPoint(TestLog log, TaskCompletionSource<bool> gate)
+        {
+            _log = log;
+            _gate = gate;
+        }
+
+        public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+        {
+            await _gate.Task;
+        }
+
+        public void Initialize()
+        {
+            _log.Entries.Add("Initialize");
+        }
+    }
+
+    private sealed class TestUpdatable : IUpdatable, IFixedUpdatable, ILateUpdatable
+    {
+        public float UpdateTime { get; private set; }
+        public float FixedUpdateTime { get; private set; }
+        public float LateUpdateTime { get; private set; }
+
+        public void Update(float deltaTime)
+        {
+            UpdateTime += deltaTime;
+        }
+
+        public void FixedUpdate(float deltaTime)
+        {
+            FixedUpdateTime += deltaTime;
+        }
+
+        public void LateUpdate(float deltaTime)
+        {
+            LateUpdateTime += deltaTime;
+        }
+    }
+
+    private sealed class TestDisposingUpdatable : IUpdatable
+    {
+        private readonly IContainer _container;
+
+        public TestDisposingUpdatable(IContainer container)
+        {
+            _container = container;
+        }
+
+        public void Update(float deltaTime)
+        {
+            _container.Dispose();
+        }
+    }
+
+    private sealed class TestDisposable : IDisposable
+    {
+        private readonly string _name;
+        private readonly TestLog _log;
+
+        public TestDisposable(string name, TestLog log)
+        {
+            _name = name;
+            _log = log;
+        }
+
+        public void Dispose()
+        {
+            _log.Entries.Add($"{_name}.Dispose");
+        }
+    }
+
+    private sealed class TestOtherDisposable : IDisposable
+    {
+        private readonly TestLog _log;
+
+        public TestOtherDisposable(TestLog log)
+        {
+            _log = log;
+        }
+
+        public void Dispose()
+        {
+            _log.Entries.Add("Other.Dispose");
+        }
+    }
+
+    private sealed class TestThrowingDisposable : IDisposable
+    {
+        public void Dispose()
+        {
+            throw new InvalidOperationException();
+        }
     }
 }

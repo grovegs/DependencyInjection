@@ -1,13 +1,13 @@
-﻿using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Resolution;
-
-namespace GroveGames.DependencyInjection;
+﻿namespace GroveGames.DependencyInjection;
 
 public interface IContainer : IObjectResolver, IDisposable
 {
-    string Name { get; }
-    IContainer Parent { get; }
-    IContainerCache Cache { get; }
-    void AddChild(IContainer child);
-    void RemoveChild(IContainer child);
+    public IContainer? Parent { get; }
+    public bool IsInitialized { get; }
+    public bool IsDisposed { get; }
+    public ValueTask InitializeAsync(CancellationToken cancellationToken = default);
+    public IContainer CreateChild(Action<IContainerBuilder> configure);
+    public void Update(float deltaTime);
+    public void FixedUpdate(float deltaTime);
+    public void LateUpdate(float deltaTime);
 }

@@ -1,6 +1,6 @@
-namespace GroveGames.DependencyInjection;
+﻿namespace GroveGames.DependencyInjection;
 
 public interface IInstaller
 {
-    void Install(IContainerBuilder builder);
+    public void Install(IContainerBuilder builder);
 }

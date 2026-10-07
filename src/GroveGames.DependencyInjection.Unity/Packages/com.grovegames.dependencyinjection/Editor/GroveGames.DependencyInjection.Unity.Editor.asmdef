@@ -1,0 +1,20 @@
+{
+    "name": "GroveGames.DependencyInjection.Unity.Editor",
+    "rootNamespace": "GroveGames.DependencyInjection.Unity.Editor",
+    "references": [
+        "GUID:680da9f8e63646ddb3c20c2f4045387d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "GroveGames.DependencyInjection.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

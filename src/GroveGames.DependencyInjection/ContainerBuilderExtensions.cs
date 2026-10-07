@@ -4,80 +4,49 @@ namespace GroveGames.DependencyInjection;
 
 public static class ContainerBuilderExtensions
 {
-    public static IContainerBuilder AddSingleton(this IContainerBuilder builder, object implementationInstance)
-    {
-        var implementationType = implementationInstance.GetType();
-        return builder.AddSingleton(implementationType, implementationInstance);
-    }
-
-    public static IContainerBuilder AddSingleton(this IContainerBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
-    {
-        return builder.AddSingleton(implementationType, implementationType);
-    }
-
-    public static IContainerBuilder AddSingleton<TRegistration, TImplementation>(this IContainerBuilder builder, TImplementation implementationInstance)
-        where TRegistration : class
-        where TImplementation : class, TRegistration
-    {
-        var registrationType = typeof(TRegistration);
-        return builder.AddSingleton(registrationType, implementationInstance);
-    }
-
-    public static IContainerBuilder AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TRegistration, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerBuilder builder)
-        where TRegistration : class
-        where TImplementation : class, TRegistration
-    {
-        var registrationType = typeof(TRegistration);
-        var implementationType = typeof(TImplementation);
-        return builder.AddSingleton(registrationType, implementationType);
-    }
-
-    public static IContainerBuilder AddSingleton<TImplementation>(this IContainerBuilder builder, TImplementation implementationInstance)
+    public static IContainerBuilder AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IContainerBuilder builder)
         where TImplementation : class
     {
-        var implementationType = typeof(TImplementation);
-        return builder.AddSingleton(implementationType, implementationInstance);
+        return builder.AddSingleton(typeof(TImplementation), typeof(TImplementation));
     }
 
-    public static IContainerBuilder AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerBuilder builder)
+    public static IContainerBuilder AddSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IContainerBuilder builder)
+        where TService : class
+        where TImplementation : class, TService
+    {
+        return builder.AddSingleton(typeof(TService), typeof(TImplementation));
+    }
+
+    public static IContainerBuilder AddSingleton<TService>(this IContainerBuilder builder, TService instance)
+        where TService : class
+    {
+        return builder.AddSingleton(typeof(TService), (object)instance);
+    }
+
+    public static IContainerBuilder AddSingleton<TService>(this IContainerBuilder builder, Func<IObjectResolver, TService> factory)
+        where TService : class
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        return builder.AddSingleton(typeof(TService), factory);
+    }
+
+    public static IContainerBuilder AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IContainerBuilder builder)
         where TImplementation : class
     {
-        var implementationType = typeof(TImplementation);
-        return builder.AddSingleton(implementationType, implementationType);
+        return builder.AddTransient(typeof(TImplementation), typeof(TImplementation));
     }
 
-    public static IContainerBuilder AddSingleton<TRegistration>(this IContainerBuilder builder, Func<TRegistration> instanceFactory)
-        where TRegistration : class
+    public static IContainerBuilder AddTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IContainerBuilder builder)
+        where TService : class
+        where TImplementation : class, TService
     {
-        var registrationType = typeof(TRegistration);
-        return builder.AddSingleton(registrationType, instanceFactory);
+        return builder.AddTransient(typeof(TService), typeof(TImplementation));
     }
 
-    public static IContainerBuilder AddTransient(this IContainerBuilder builder, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
+    public static IContainerBuilder AddTransient<TService>(this IContainerBuilder builder, Func<IObjectResolver, TService> factory)
+        where TService : class
     {
-        return builder.AddTransient(implementationType, implementationType);
-    }
-
-    public static IContainerBuilder AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TRegistration, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerBuilder builder)
-        where TRegistration : class
-        where TImplementation : class, TRegistration
-    {
-        var registrationType = typeof(TRegistration);
-        var implementationType = typeof(TImplementation);
-        return builder.AddTransient(registrationType, implementationType);
-    }
-
-    public static IContainerBuilder AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TImplementation>(this IContainerBuilder builder)
-        where TImplementation : class
-    {
-        var implementationType = typeof(TImplementation);
-        return builder.AddTransient(implementationType, implementationType);
-    }
-
-    public static IContainerBuilder AddTransient<TRegistration>(this IContainerBuilder builder, Func<TRegistration> instanceFactory)
-    where TRegistration : class
-    {
-        var registrationType = typeof(TRegistration);
-        return builder.AddTransient(registrationType, instanceFactory);
+        ArgumentNullException.ThrowIfNull(factory);
+        return builder.AddTransient(typeof(TService), factory);
     }
 }

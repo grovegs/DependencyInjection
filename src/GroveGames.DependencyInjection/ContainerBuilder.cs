@@ -1,88 +1,241 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
-using GroveGames.DependencyInjection.Caching;
-using GroveGames.DependencyInjection.Collections;
+using GroveGames.DependencyInjection.Registration;
 using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
 
-internal sealed class ContainerBuilder : IContainerBuilder
+public sealed class ContainerBuilder : IContainerBuilder
 {
-    private readonly string _name;
-    private readonly IContainer _parent;
-    private readonly IContainerResolver _resolver;
-    private readonly IContainerCache _cache;
-    private readonly IDisposableCollection _disposables;
-    private readonly List<Type> _immediateResolutionTypes;
+    private readonly Container? _parent;
+    private readonly List<ServiceRegistration> _registrations;
+    private bool _isBuilt;
 
-    public ContainerBuilder(string name, IContainer parent, IContainerResolver resolver, IContainerCache cache)
+    public ContainerBuilder()
     {
-        _name = name;
-        _parent = parent;
-        _resolver = resolver;
-        _cache = cache;
-        _disposables = new DisposableCollection();
-        _immediateResolutionTypes = [];
+        _parent = null;
+        _registrations = [];
     }
 
-    public Container Build()
+    internal ContainerBuilder(Container parent)
     {
-        var container = new Container(_name, _parent, _resolver, _cache, _disposables);
-        AddSingleton(typeof(IObjectResolver), container);
+        _parent = parent;
+        _registrations = [];
+    }
 
-        foreach (var immediateResolutionType in _immediateResolutionTypes)
+    public IContainerBuilder AddSingleton(Type serviceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+    {
+        ValidateImplementation(serviceType, implementationType);
+        return Add(new ServiceRegistration(serviceType, implementationType, Lifetime.Singleton, null, null));
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "Instance registrations never use constructors.")]
+    public IContainerBuilder AddSingleton(Type serviceType, object instance)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ArgumentNullException.ThrowIfNull(instance);
+
+        if (instance is Type)
         {
-            _resolver.Resolve(immediateResolutionType);
+            throw new ArgumentException("A Type cannot be registered as an instance; use AddSingleton(serviceType, implementationType).", nameof(instance));
+        }
+
+        if (!serviceType.IsInstanceOfType(instance))
+        {
+            throw new ArgumentException($"{instance.GetType()} is not assignable to {serviceType}.", nameof(instance));
+        }
+
+        return Add(new ServiceRegistration(serviceType, instance.GetType(), Lifetime.Singleton, instance, null));
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Factory registrations never use constructors.")]
+    public IContainerBuilder AddSingleton(Type serviceType, Func<IObjectResolver, object> factory)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ArgumentNullException.ThrowIfNull(factory);
+        return Add(new ServiceRegistration(serviceType, serviceType, Lifetime.Singleton, null, factory));
+    }
+
+    public IContainerBuilder AddTransient(Type serviceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+    {
+        ValidateImplementation(serviceType, implementationType);
+        return Add(new ServiceRegistration(serviceType, implementationType, Lifetime.Transient, null, null));
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Factory registrations never use constructors.")]
+    public IContainerBuilder AddTransient(Type serviceType, Func<IObjectResolver, object> factory)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ArgumentNullException.ThrowIfNull(factory);
+        return Add(new ServiceRegistration(serviceType, serviceType, Lifetime.Transient, null, factory));
+    }
+
+    public IContainer Build()
+    {
+        if (_isBuilt)
+        {
+            throw new InvalidOperationException("Container is already built.");
+        }
+
+        if (_parent is not null && _parent.IsDisposed)
+        {
+            throw new ObjectDisposedException(nameof(IContainer));
+        }
+
+        _isBuilt = true;
+        var container = new Container(_parent, _parent?.Injectors ?? new InjectorCache());
+        var self = new InstanceBinding(container);
+        container.AddBinding(typeof(IObjectResolver), self);
+        container.AddBinding(typeof(IContainer), self);
+        var bindings = new Binding[_registrations.Count];
+        var entryPoints = new List<Binding>();
+
+        for (var i = 0; i < _registrations.Count; i++)
+        {
+            var registration = _registrations[i];
+            var binding = CreateBinding(registration, container);
+            bindings[i] = binding;
+            container.AddBinding(registration.ServiceType, binding);
+
+            if (registration.Instance is not null)
+            {
+                container.AddExternal(registration.Instance);
+            }
+
+            if (registration.Lifetime == Lifetime.Singleton && LifecycleTypes.IsEntryPoint(registration.ImplementationType))
+            {
+                entryPoints.Add(binding);
+            }
+        }
+
+        for (var i = 0; i < bindings.Length; i++)
+        {
+            if (bindings[i].Activator is ConstructorActivator activator)
+            {
+                activator.Link(container);
+            }
+        }
+
+        DetectCircularDependencies(bindings);
+        container.SetEntryPoints(entryPoints.ToArray());
+        _parent?.AddChild(container);
+
+        try
+        {
+            for (var i = 0; i < _registrations.Count; i++)
+            {
+                var instance = _registrations[i].Instance;
+
+                if (instance is not null)
+                {
+                    container.Inject(instance);
+                }
+            }
+        }
+        catch
+        {
+            container.Dispose();
+            throw;
         }
 
         return container;
     }
 
-    private void AddSingleton(Type registrationType, Type implementationType, IInstanceResolver instanceResolver)
+    private static void ValidateImplementation(Type serviceType, Type implementationType)
     {
-        var resolver = new SingletonResolver(instanceResolver);
-        _resolver.AddResolver(registrationType, resolver);
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ArgumentNullException.ThrowIfNull(implementationType);
+
+        if (!serviceType.IsAssignableFrom(implementationType))
+        {
+            throw new ArgumentException($"{implementationType} is not assignable to {serviceType}.", nameof(implementationType));
+        }
     }
 
-    public IContainerBuilder AddSingleton(Type registrationType, object implementationInstance)
+    private IContainerBuilder Add(ServiceRegistration registration)
     {
-        var resolver = new InitializedObjectResolver(implementationInstance, _resolver, _disposables);
-        AddSingleton(registrationType, registrationType, resolver);
-        _immediateResolutionTypes.Add(registrationType);
+        if (_isBuilt)
+        {
+            throw new InvalidOperationException("Container is already built.");
+        }
+
+        _registrations.Add(registration);
         return this;
     }
 
-    public IContainerBuilder AddSingleton([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
+    private static Binding CreateBinding(ServiceRegistration registration, Container container)
     {
-        var resolver = new UninitializedObjectResolver(implementationType, _resolver, _disposables);
-        AddSingleton(registrationType, implementationType, resolver);
-        return this;
+        if (registration.Instance is not null)
+        {
+            return new InstanceBinding(registration.Instance);
+        }
+
+        InstanceActivator activator = registration.Factory is not null
+            ? new FactoryActivator(registration.ImplementationType, registration.Factory, container)
+            : new ConstructorActivator(registration.ImplementationType);
+
+        return registration.Lifetime == Lifetime.Singleton
+            ? new SingletonBinding(activator, container)
+            : new TransientBinding(activator, container);
     }
 
-    public IContainerBuilder AddSingleton(Type registrationType, Func<object> instanceFactory)
+    private static void DetectCircularDependencies(Binding[] bindings)
     {
-        var resolver = new FactoryObjectResolver(instanceFactory, _resolver, _disposables);
-        AddSingleton(registrationType, registrationType, resolver);
-        return this;
+        var visited = new HashSet<InstanceActivator>();
+        var path = new List<InstanceActivator>();
+
+        for (var i = 0; i < bindings.Length; i++)
+        {
+            var activator = bindings[i].Activator;
+
+            if (activator is not null)
+            {
+                Visit(activator, visited, path);
+            }
+        }
     }
 
-    private void AddTransient(Type registrationType, Type implementationType, IInstanceResolver instanceResolver)
+    private static void Visit(InstanceActivator activator, HashSet<InstanceActivator> visited, List<InstanceActivator> path)
     {
-        var resolver = new TransientResolver(instanceResolver);
-        _resolver.AddResolver(registrationType, resolver);
+        if (visited.Contains(activator))
+        {
+            return;
+        }
+
+        var index = path.IndexOf(activator);
+
+        if (index >= 0)
+        {
+            throw new CircularDependencyException(activator.ImplementationType, FormatPath(path, index, activator));
+        }
+
+        path.Add(activator);
+        var dependencies = activator.Dependencies;
+
+        for (var i = 0; i < dependencies.Length; i++)
+        {
+            var dependency = dependencies[i].Activator;
+
+            if (dependency is not null)
+            {
+                Visit(dependency, visited, path);
+            }
+        }
+
+        path.RemoveAt(path.Count - 1);
+        visited.Add(activator);
     }
 
-    public IContainerBuilder AddTransient([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type registrationType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type implementationType)
+    private static string FormatPath(List<InstanceActivator> path, int start, InstanceActivator activator)
     {
-        var resolver = new UninitializedObjectResolver(implementationType, _resolver, _disposables);
-        AddTransient(registrationType, implementationType, resolver);
-        return this;
-    }
+        var builder = new StringBuilder();
 
-    public IContainerBuilder AddTransient(Type registrationType, Func<object> instanceFactory)
-    {
-        var resolver = new FactoryObjectResolver(instanceFactory, _resolver, _disposables);
-        AddTransient(registrationType, registrationType, resolver);
-        return this;
+        for (var i = start; i < path.Count; i++)
+        {
+            builder.Append(path[i].ImplementationType.Name).Append(" -> ");
+        }
+
+        return builder.Append(activator.ImplementationType.Name).ToString();
     }
 }
