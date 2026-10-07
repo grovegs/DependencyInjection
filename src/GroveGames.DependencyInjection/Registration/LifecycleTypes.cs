@@ -9,9 +9,6 @@ internal static class LifecycleTypes
             || typeof(IAsyncPostInitializable).IsAssignableFrom(type)
             || typeof(IPreInitializable).IsAssignableFrom(type)
             || typeof(IInitializable).IsAssignableFrom(type)
-            || typeof(IPostInitializable).IsAssignableFrom(type)
-            || typeof(IUpdatable).IsAssignableFrom(type)
-            || typeof(IFixedUpdatable).IsAssignableFrom(type)
-            || typeof(ILateUpdatable).IsAssignableFrom(type);
+            || typeof(IPostInitializable).IsAssignableFrom(type);
     }
 }

@@ -231,78 +231,62 @@ public sealed class ContainerTests
     }
 
     [Fact]
-    public async Task Update_AfterInitialize_UpdatesAllUpdatables()
+    public void ResolveAll_MatchingSingletons_ReturnsInRegistrationOrder()
     {
         var builder = new ContainerBuilder();
-        builder.AddSingleton<TestUpdatable>();
+        builder.AddSingleton<TestTickableB>();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton<TestTickableA>();
         using var container = builder.Build();
-        await container.InitializeAsync(TestContext.Current.CancellationToken);
-        var updatable = container.Resolve<TestUpdatable>();
 
-        container.Update(0.5f);
-        container.FixedUpdate(0.25f);
-        container.LateUpdate(0.125f);
+        var tickables = container.ResolveAll<ITestTickable>();
 
-        Assert.Equal(0.5f, updatable.UpdateTime);
-        Assert.Equal(0.25f, updatable.FixedUpdateTime);
-        Assert.Equal(0.125f, updatable.LateUpdateTime);
+        Assert.Equal(2, tickables.Count);
+        Assert.IsType<TestTickableB>(tickables[0]);
+        Assert.IsType<TestTickableA>(tickables[1]);
     }
 
     [Fact]
-    public void Update_BeforeInitialize_DoesNotUpdate()
+    public void ResolveAll_AliasedSingleton_ReturnsInstanceOnce()
     {
         var builder = new ContainerBuilder();
-        builder.AddSingleton<TestUpdatable>();
+        builder.AddSingleton<TestTickableA>();
+        builder.AddSingleton<ITestTickable>(resolver => resolver.Resolve<TestTickableA>());
         using var container = builder.Build();
-        var updatable = container.Resolve<TestUpdatable>();
 
-        container.Update(1f);
+        var tickables = container.ResolveAll<ITestTickable>();
 
-        Assert.Equal(0f, updatable.UpdateTime);
+        Assert.Single(tickables);
     }
 
     [Fact]
-    public async Task Update_InitializedChild_UpdatesChild()
-    {
-        using var parent = new ContainerBuilder().Build();
-        await parent.InitializeAsync(TestContext.Current.CancellationToken);
-        var child = parent.CreateChild(builder => builder.AddSingleton<TestUpdatable>());
-        await child.InitializeAsync(TestContext.Current.CancellationToken);
-        var updatable = child.Resolve<TestUpdatable>();
-
-        parent.Update(1f);
-
-        Assert.Equal(1f, updatable.UpdateTime);
-    }
-
-    [Fact]
-    public async Task Update_DisposedChild_IsNotUpdated()
-    {
-        using var parent = new ContainerBuilder().Build();
-        await parent.InitializeAsync(TestContext.Current.CancellationToken);
-        var child = parent.CreateChild(builder => builder.AddSingleton<TestUpdatable>());
-        await child.InitializeAsync(TestContext.Current.CancellationToken);
-        var updatable = child.Resolve<TestUpdatable>();
-        child.Dispose();
-
-        parent.Update(1f);
-
-        Assert.Equal(0f, updatable.UpdateTime);
-    }
-
-    [Fact]
-    public async Task Update_ContainerDisposedByUpdatable_StopsUpdating()
+    public void ResolveAll_TransientRegistration_IsExcluded()
     {
         var builder = new ContainerBuilder();
-        builder.AddSingleton<TestDisposingUpdatable>();
-        builder.AddSingleton<TestUpdatable>();
+        builder.AddTransient<TestTickableA>();
         using var container = builder.Build();
-        await container.InitializeAsync(TestContext.Current.CancellationToken);
-        var updatable = container.Resolve<TestUpdatable>();
 
-        container.Update(1f);
+        var tickables = container.ResolveAll<ITestTickable>();
 
-        Assert.Equal(0f, updatable.UpdateTime);
+        Assert.Empty(tickables);
+    }
+
+    [Fact]
+    public void ResolveAll_ChildAliasOfParentInstance_IsExcluded()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestTickableA>();
+        using var parent = builder.Build();
+        var child = parent.CreateChild(childBuilder =>
+        {
+            childBuilder.AddSingleton<ITestTickable>(resolver => resolver.Resolve<TestTickableA>());
+            childBuilder.AddSingleton<TestTickableB>();
+        });
+
+        var tickables = child.ResolveAll<ITestTickable>();
+
+        Assert.Single(tickables);
+        Assert.IsType<TestTickableB>(tickables[0]);
     }
 
     [Fact]
@@ -399,6 +383,37 @@ public sealed class ContainerTests
 
         Assert.Equal(["Child.Dispose", "Parent.Dispose"], log.Entries);
         Assert.True(child.IsDisposed);
+    }
+
+    [Fact]
+    public void AddDisposable_ContainerDisposed_DisposesAfterLaterCreatedInstances()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver =>
+        {
+            resolver.AddDisposable(new TestDisposable("Owned", resolver.Resolve<TestLog>()));
+            return new TestDisposable("Created", resolver.Resolve<TestLog>());
+        });
+        var container = builder.Build();
+        container.Resolve<TestDisposable>();
+
+        container.Dispose();
+
+        Assert.Equal(["Created.Dispose", "Owned.Dispose"], log.Entries);
+    }
+
+    [Fact]
+    public void AddDisposable_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var log = new TestLog();
+        var container = new ContainerBuilder().Build();
+        container.Dispose();
+
+        var exception = Record.Exception(() => container.AddDisposable(new TestDisposable("A", log)));
+
+        Assert.IsType<ObjectDisposedException>(exception);
     }
 
     [Fact]
@@ -568,41 +583,16 @@ public sealed class ContainerTests
         }
     }
 
-    private sealed class TestUpdatable : IUpdatable, IFixedUpdatable, ILateUpdatable
+    private interface ITestTickable
     {
-        public float UpdateTime { get; private set; }
-        public float FixedUpdateTime { get; private set; }
-        public float LateUpdateTime { get; private set; }
-
-        public void Update(float deltaTime)
-        {
-            UpdateTime += deltaTime;
-        }
-
-        public void FixedUpdate(float deltaTime)
-        {
-            FixedUpdateTime += deltaTime;
-        }
-
-        public void LateUpdate(float deltaTime)
-        {
-            LateUpdateTime += deltaTime;
-        }
     }
 
-    private sealed class TestDisposingUpdatable : IUpdatable
+    private sealed class TestTickableA : ITestTickable
     {
-        private readonly IContainer _container;
+    }
 
-        public TestDisposingUpdatable(IContainer container)
-        {
-            _container = container;
-        }
-
-        public void Update(float deltaTime)
-        {
-            _container.Dispose();
-        }
+    private sealed class TestTickableB : ITestTickable
+    {
     }
 
     private sealed class TestDisposable : IDisposable

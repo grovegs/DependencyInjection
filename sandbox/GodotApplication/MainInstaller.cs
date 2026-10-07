@@ -1,6 +1,7 @@
 using Godot;
 
 using GroveGames.DependencyInjection;
+using GroveGames.DependencyInjection.Godot;
 
 public sealed partial class MainInstaller : SceneInstaller
 {

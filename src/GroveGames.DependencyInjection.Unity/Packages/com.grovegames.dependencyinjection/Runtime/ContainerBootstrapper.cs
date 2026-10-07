@@ -52,7 +52,7 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            ContainerPlayerLoop.Register(s_root);
+            ContainerPlayerLoop.Install();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             Application.quitting += Shutdown;
@@ -64,6 +64,7 @@ namespace GroveGames.DependencyInjection.Unity
             try
             {
                 await root.InitializeAsync();
+                ContainerPlayerLoop.Add(root);
             }
             catch (OperationCanceledException)
             {
@@ -133,6 +134,7 @@ namespace GroveGames.DependencyInjection.Unity
 
                 s_sceneContainers[scene.handle] = container;
                 await container.InitializeAsync();
+                ContainerPlayerLoop.Add(container);
             }
             catch (OperationCanceledException)
             {
@@ -145,12 +147,19 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void OnSceneUnloaded(Scene scene)
         {
+            DisposeSceneContainer(scene);
+        }
+
+        internal static void DisposeSceneContainer(Scene scene)
+        {
             s_pendingScenes.Remove(scene.handle);
 
             if (!s_sceneContainers.Remove(scene.handle, out var container))
             {
                 return;
             }
+
+            ContainerPlayerLoop.Remove(container);
 
             try
             {
@@ -183,7 +192,7 @@ namespace GroveGames.DependencyInjection.Unity
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             Application.quitting -= Shutdown;
-            ContainerPlayerLoop.Unregister();
+            ContainerPlayerLoop.Uninstall();
             s_sceneContainers.Clear();
             s_pendingScenes.Clear();
             s_rootInitialization = null;

@@ -18,16 +18,14 @@ public static class ContainerBuilderExtensions
     }
 
     public static IContainerBuilder AddSingleton<TService>(this IContainerBuilder builder, TService instance)
-        where TService : class
     {
-        return builder.AddSingleton(typeof(TService), (object)instance);
+        return builder.AddSingleton(typeof(TService), (object)instance!);
     }
 
     public static IContainerBuilder AddSingleton<TService>(this IContainerBuilder builder, Func<IObjectResolver, TService> factory)
-        where TService : class
     {
         ArgumentNullException.ThrowIfNull(factory);
-        return builder.AddSingleton(typeof(TService), factory);
+        return builder.AddSingleton(typeof(TService), ToObjectFactory(factory));
     }
 
     public static IContainerBuilder AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IContainerBuilder builder)
@@ -44,9 +42,18 @@ public static class ContainerBuilderExtensions
     }
 
     public static IContainerBuilder AddTransient<TService>(this IContainerBuilder builder, Func<IObjectResolver, TService> factory)
-        where TService : class
     {
         ArgumentNullException.ThrowIfNull(factory);
-        return builder.AddTransient(typeof(TService), factory);
+        return builder.AddTransient(typeof(TService), ToObjectFactory(factory));
+    }
+
+    private static Func<IObjectResolver, object> ToObjectFactory<TService>(Func<IObjectResolver, TService> factory)
+    {
+        if (factory is Func<IObjectResolver, object> objectFactory)
+        {
+            return objectFactory;
+        }
+
+        return resolver => factory.Invoke(resolver)!;
     }
 }

@@ -1,6 +1,6 @@
 using Godot;
 
-namespace GroveGames.DependencyInjection;
+namespace GroveGames.DependencyInjection.Godot;
 
 [GlobalClass]
 public partial class DependencyInjectionSettingsResource : Resource
@@ -8,11 +8,11 @@ public partial class DependencyInjectionSettingsResource : Resource
     private const string ProjectSettingsKey = "grove_games/dependency_injection/settings_resource";
     private const string DefaultResourcePath = "res://addons/GroveGames.DependencyInjection/DependencyInjectionSettings.tres";
 
-    [Export] public Godot.Collections.Array<RootInstaller> RootInstallers { get; set; }
+    [Export] public global::Godot.Collections.Array<RootInstaller> RootInstallers { get; set; }
 
     public DependencyInjectionSettingsResource()
     {
-        RootInstallers = new Godot.Collections.Array<RootInstaller>();
+        RootInstallers = new global::Godot.Collections.Array<RootInstaller>();
     }
 
     public static DependencyInjectionSettingsResource GetOrCreate()

@@ -5,13 +5,11 @@ namespace GroveGames.DependencyInjection;
 public static class ObjectResolverExtensions
 {
     public static T Resolve<T>(this IObjectResolver resolver)
-        where T : class
     {
         return (T)resolver.Resolve(typeof(T));
     }
 
-    public static bool TryResolve<T>(this IObjectResolver resolver, [NotNullWhen(true)] out T? instance)
-        where T : class
+    public static bool TryResolve<T>(this IObjectResolver resolver, [MaybeNullWhen(false)] out T instance)
     {
         if (resolver.TryResolve(typeof(T), out var resolved))
         {
@@ -19,7 +17,7 @@ public static class ObjectResolverExtensions
             return true;
         }
 
-        instance = null;
+        instance = default;
         return false;
     }
 }

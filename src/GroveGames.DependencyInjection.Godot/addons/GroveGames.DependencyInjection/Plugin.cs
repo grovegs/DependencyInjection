@@ -1,7 +1,7 @@
 #if TOOLS
 using Godot;
 
-namespace GroveGames.DependencyInjection;
+namespace GroveGames.DependencyInjection.Godot;
 
 [Tool]
 public partial class Plugin : EditorPlugin

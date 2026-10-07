@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
+using GroveGames.DependencyInjection.Registration;
 using GroveGames.DependencyInjection.Resolution;
 
 namespace GroveGames.DependencyInjection;
@@ -12,11 +13,9 @@ internal sealed class Container : IContainer
     private readonly List<IDisposable> _disposables;
     private readonly HashSet<object> _owned;
     private readonly CancellationTokenSource _disposeCancellation;
-    private Binding[] _entryPoints;
+    private Type[] _singletonTypes;
+    private Binding[] _singletonBindings;
     private Container[] _children;
-    private IUpdatable[] _updatables;
-    private IFixedUpdatable[] _fixedUpdatables;
-    private ILateUpdatable[] _lateUpdatables;
     private bool _isInitializing;
     private bool _isInitialized;
     private bool _isDisposed;
@@ -34,11 +33,9 @@ internal sealed class Container : IContainer
         _disposables = [];
         _owned = new HashSet<object>(ReferenceEqualityComparer.Instance);
         _disposeCancellation = new CancellationTokenSource();
-        _entryPoints = [];
+        _singletonTypes = [];
+        _singletonBindings = [];
         _children = [];
-        _updatables = [];
-        _fixedUpdatables = [];
-        _lateUpdatables = [];
     }
 
     internal void AddBinding(Type serviceType, Binding binding)
@@ -51,9 +48,10 @@ internal sealed class Container : IContainer
         _bindings.Add(serviceType, binding);
     }
 
-    internal void SetEntryPoints(Binding[] entryPoints)
+    internal void SetSingletons(Type[] implementationTypes, Binding[] bindings)
     {
-        _entryPoints = entryPoints;
+        _singletonTypes = implementationTypes;
+        _singletonBindings = bindings;
     }
 
     internal Binding? FindBinding(Type serviceType)
@@ -182,6 +180,46 @@ internal sealed class Container : IContainer
         injector.Inject(instance, this);
     }
 
+    public IReadOnlyList<T> ResolveAll<T>()
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        var types = _singletonTypes;
+        var bindings = _singletonBindings;
+        List<T>? result = null;
+        HashSet<object>? seen = null;
+
+        for (var i = 0; i < types.Length; i++)
+        {
+            if (!typeof(T).IsAssignableFrom(types[i]))
+            {
+                continue;
+            }
+
+            var instance = bindings[i].Resolve();
+
+            if (instance is not T item || (_parent is not null && _parent.IsOwned(instance)))
+            {
+                continue;
+            }
+
+            seen ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
+
+            if (seen.Add(instance))
+            {
+                (result ??= []).Add(item);
+            }
+        }
+
+        return result is null ? [] : result.ToArray();
+    }
+
+    public void AddDisposable(IDisposable disposable)
+    {
+        ArgumentNullException.ThrowIfNull(disposable);
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        _disposables.Add(disposable);
+    }
+
     public IContainer CreateChild(Action<IContainerBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -267,65 +305,11 @@ internal sealed class Container : IContainer
             }
 
             token.ThrowIfCancellationRequested();
-            _updatables = Collect<IUpdatable>(instances);
-            _fixedUpdatables = Collect<IFixedUpdatable>(instances);
-            _lateUpdatables = Collect<ILateUpdatable>(instances);
             _isInitialized = true;
         }
         finally
         {
             _isInitializing = false;
-        }
-    }
-
-    public void Update(float deltaTime)
-    {
-        var updatables = _updatables;
-
-        for (var i = 0; i < updatables.Length && !_isDisposed; i++)
-        {
-            updatables[i].Update(deltaTime);
-        }
-
-        var children = _children;
-
-        for (var i = 0; i < children.Length && !_isDisposed; i++)
-        {
-            children[i].Update(deltaTime);
-        }
-    }
-
-    public void FixedUpdate(float deltaTime)
-    {
-        var fixedUpdatables = _fixedUpdatables;
-
-        for (var i = 0; i < fixedUpdatables.Length && !_isDisposed; i++)
-        {
-            fixedUpdatables[i].FixedUpdate(deltaTime);
-        }
-
-        var children = _children;
-
-        for (var i = 0; i < children.Length && !_isDisposed; i++)
-        {
-            children[i].FixedUpdate(deltaTime);
-        }
-    }
-
-    public void LateUpdate(float deltaTime)
-    {
-        var lateUpdatables = _lateUpdatables;
-
-        for (var i = 0; i < lateUpdatables.Length && !_isDisposed; i++)
-        {
-            lateUpdatables[i].LateUpdate(deltaTime);
-        }
-
-        var children = _children;
-
-        for (var i = 0; i < children.Length && !_isDisposed; i++)
-        {
-            children[i].LateUpdate(deltaTime);
         }
     }
 
@@ -338,10 +322,8 @@ internal sealed class Container : IContainer
 
         _isDisposed = true;
         _disposeCancellation.Cancel();
-        _updatables = [];
-        _fixedUpdatables = [];
-        _lateUpdatables = [];
-        _entryPoints = [];
+        _singletonTypes = [];
+        _singletonBindings = [];
         List<Exception>? exceptions = null;
         var children = _children;
         _children = [];
@@ -383,13 +365,19 @@ internal sealed class Container : IContainer
 
     private object[] ResolveEntryPoints()
     {
-        var entryPoints = _entryPoints;
-        var instances = new List<object>(entryPoints.Length);
+        var types = _singletonTypes;
+        var bindings = _singletonBindings;
+        var instances = new List<object>();
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
 
-        for (var i = 0; i < entryPoints.Length; i++)
+        for (var i = 0; i < types.Length; i++)
         {
-            var instance = entryPoints[i].Resolve();
+            if (!LifecycleTypes.IsEntryPoint(types[i]))
+            {
+                continue;
+            }
+
+            var instance = bindings[i].Resolve();
 
             if (!seen.Add(instance) || (_parent is not null && _parent.IsOwned(instance)))
             {
@@ -400,37 +388,5 @@ internal sealed class Container : IContainer
         }
 
         return instances.ToArray();
-    }
-
-    private static T[] Collect<T>(object[] instances)
-        where T : class
-    {
-        var count = 0;
-
-        for (var i = 0; i < instances.Length; i++)
-        {
-            if (instances[i] is T)
-            {
-                count++;
-            }
-        }
-
-        if (count == 0)
-        {
-            return [];
-        }
-
-        var result = new T[count];
-        var index = 0;
-
-        for (var i = 0; i < instances.Length; i++)
-        {
-            if (instances[i] is T item)
-            {
-                result[index++] = item;
-            }
-        }
-
-        return result;
     }
 }

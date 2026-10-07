@@ -263,6 +263,74 @@ public sealed class ContainerBuilderTests
         Assert.IsType<ArgumentException>(exception);
     }
 
+    [Fact]
+    public void Build_StructInstance_ResolvesValue()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(new TestSettings(5));
+        using var container = builder.Build();
+
+        var settings = container.Resolve<TestSettings>();
+
+        Assert.Equal(5, settings.Value);
+    }
+
+    [Fact]
+    public void Build_StructFactory_ResolvesValue()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(_ => new TestSettings(7));
+        using var container = builder.Build();
+
+        var settings = container.Resolve<TestSettings>();
+
+        Assert.Equal(7, settings.Value);
+    }
+
+    [Fact]
+    public void Build_StructConstructorParameter_InjectsValue()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(new TestSettings(3));
+        builder.AddSingleton<TestSettingsConsumer>();
+        using var container = builder.Build();
+
+        var consumer = container.Resolve<TestSettingsConsumer>();
+
+        Assert.Equal(3, consumer.Settings.Value);
+    }
+
+    [Fact]
+    public void TryResolve_UnregisteredStruct_ReturnsFalseAndDefault()
+    {
+        using var container = new ContainerBuilder().Build();
+
+        var found = container.TryResolve<TestSettings>(out var settings);
+
+        Assert.False(found);
+        Assert.Equal(0, settings.Value);
+    }
+
+    private readonly struct TestSettings
+    {
+        public int Value { get; }
+
+        public TestSettings(int value)
+        {
+            Value = value;
+        }
+    }
+
+    private sealed class TestSettingsConsumer
+    {
+        public TestSettings Settings { get; }
+
+        public TestSettingsConsumer(TestSettings settings)
+        {
+            Settings = settings;
+        }
+    }
+
     private interface ITestService
     {
     }
