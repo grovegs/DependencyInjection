@@ -182,6 +182,13 @@ internal sealed class Container : IContainer
         injector.Inject(instance, this);
     }
 
+    public void AddDisposable(IDisposable disposable)
+    {
+        ArgumentNullException.ThrowIfNull(disposable);
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        _disposables.Add(disposable);
+    }
+
     public IContainer CreateChild(Action<IContainerBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);

@@ -6,19 +6,13 @@ using Object = UnityEngine.Object;
 
 namespace GroveGames.DependencyInjection.Unity
 {
-    internal sealed class ComponentOwner<T> : IDisposable
-        where T : Component
+    internal sealed class GameObjectLifetime : IDisposable
     {
-        private readonly T _component;
         private readonly GameObject _gameObject;
 
-        public T Component => _component;
-
-        public ComponentOwner(T component)
+        public GameObjectLifetime(GameObject gameObject)
         {
-            _component = component;
-            _gameObject = component.gameObject;
-            Object.DontDestroyOnLoad(_gameObject);
+            _gameObject = gameObject;
         }
 
         public void Dispose()

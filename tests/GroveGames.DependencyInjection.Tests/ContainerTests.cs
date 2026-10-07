@@ -402,6 +402,37 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public void AddDisposable_ContainerDisposed_DisposesAfterLaterCreatedInstances()
+    {
+        var log = new TestLog();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton(log);
+        builder.AddSingleton(resolver =>
+        {
+            ((IContainer)resolver).AddDisposable(new TestDisposable("Owned", resolver.Resolve<TestLog>()));
+            return new TestDisposable("Created", resolver.Resolve<TestLog>());
+        });
+        var container = builder.Build();
+        container.Resolve<TestDisposable>();
+
+        container.Dispose();
+
+        Assert.Equal(["Created.Dispose", "Owned.Dispose"], log.Entries);
+    }
+
+    [Fact]
+    public void AddDisposable_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var log = new TestLog();
+        var container = new ContainerBuilder().Build();
+        container.Dispose();
+
+        var exception = Record.Exception(() => container.AddDisposable(new TestDisposable("A", log)));
+
+        Assert.IsType<ObjectDisposedException>(exception);
+    }
+
+    [Fact]
     public void Dispose_CalledTwice_DisposesOnce()
     {
         var log = new TestLog();

@@ -97,7 +97,7 @@ container.Inject(healthBar);
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
-- **`IContainer`**: Resolves services, runs lifecycle phases, updates and owns created instances
+- **`IContainer`**: Resolves services, runs lifecycle phases, updates and owns created instances; `AddDisposable` hands any other cleanup to the container
 - **`IObjectResolver`**: Resolve and inject API that can be injected into factories
 - **`IInstaller`**: Groups registrations for a container or child container
 
@@ -136,7 +136,7 @@ public sealed class GameRootInstaller : RootInstaller
 
     public override void Install(IContainerBuilder builder)
     {
-        builder.AddSingletonFromPrefab(_audioOutputPrefab);
+        builder.AddSingleton(resolver => resolver.Instantiate(_audioOutputPrefab));
         builder.AddSingleton<IAudioPlayer, AudioPlayer>();
     }
 }
@@ -169,8 +169,8 @@ Updates are driven from the player loop, so no `MonoBehaviour` lifecycle methods
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
 - **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root` and `TryGetSceneContainer`
 - **`DependencyInjectionSettings`**: ScriptableObject listing the root installers
-- **`AddSingletonFromPrefab`** and **`AddSingletonOnNewGameObject`**: Register components created on first resolve. The container owns their GameObjects: they are kept across scene loads and destroyed when the container is disposed
-- **`InjectGameObject`** and **`Instantiate`**: Inject `[Inject]` methods on every `MonoBehaviour` of a hierarchy
+- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it. The container that created it owns the GameObject: it is kept across scene loads and destroyed when the container is disposed, after the component itself
+- **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
 ## Godot
 
