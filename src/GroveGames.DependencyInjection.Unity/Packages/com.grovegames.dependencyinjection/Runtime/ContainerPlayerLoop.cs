@@ -20,11 +20,26 @@ namespace GroveGames.DependencyInjection.Unity
         {
         }
 
-        private static IContainer? s_container;
-
-        public static void Register(IContainer container)
+        private sealed class Entry
         {
-            s_container = container;
+            public readonly IContainer Container;
+            public readonly IReadOnlyList<IUpdatable> Updatables;
+            public readonly IReadOnlyList<IFixedUpdatable> FixedUpdatables;
+            public readonly IReadOnlyList<ILateUpdatable> LateUpdatables;
+
+            public Entry(IContainer container)
+            {
+                Container = container;
+                Updatables = container.ResolveAll<IUpdatable>();
+                FixedUpdatables = container.ResolveAll<IFixedUpdatable>();
+                LateUpdatables = container.ResolveAll<ILateUpdatable>();
+            }
+        }
+
+        private static Entry[] s_entries = Array.Empty<Entry>();
+
+        public static void Install()
+        {
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Update), typeof(ContainerUpdate), Update);
@@ -33,68 +48,129 @@ namespace GroveGames.DependencyInjection.Unity
             PlayerLoop.SetPlayerLoop(playerLoop);
         }
 
-        public static void Unregister()
+        public static void Uninstall()
         {
-            s_container = null;
+            s_entries = Array.Empty<Entry>();
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
             PlayerLoop.SetPlayerLoop(playerLoop);
         }
 
-        private static void Update()
+        public static void Add(IContainer container)
         {
-            var container = s_container;
-
-            if (container == null)
+            if (container.IsDisposed || IndexOf(container) >= 0)
             {
                 return;
             }
 
-            try
+            var entry = new Entry(container);
+            var entries = s_entries;
+            var newEntries = new Entry[entries.Length + 1];
+            Array.Copy(entries, newEntries, entries.Length);
+            newEntries[entries.Length] = entry;
+            s_entries = newEntries;
+        }
+
+        public static void Remove(IContainer container)
+        {
+            var index = IndexOf(container);
+
+            if (index < 0)
             {
-                container.Update(Time.deltaTime);
+                return;
             }
-            catch (Exception exception)
+
+            var entries = s_entries;
+            var newEntries = new Entry[entries.Length - 1];
+            Array.Copy(entries, 0, newEntries, 0, index);
+            Array.Copy(entries, index + 1, newEntries, index, entries.Length - index - 1);
+            s_entries = newEntries;
+        }
+
+        private static int IndexOf(IContainer container)
+        {
+            var entries = s_entries;
+
+            for (var i = 0; i < entries.Length; i++)
             {
-                Debug.LogException(exception);
+                if (ReferenceEquals(entries[i].Container, container))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static void Update()
+        {
+            var deltaTime = Time.deltaTime;
+            var entries = s_entries;
+
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var entry = entries[i];
+                var updatables = entry.Updatables;
+
+                try
+                {
+                    for (var j = 0; j < updatables.Count && !entry.Container.IsDisposed; j++)
+                    {
+                        updatables[j].Update(deltaTime);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
             }
         }
 
         private static void FixedUpdate()
         {
-            var container = s_container;
+            var deltaTime = Time.fixedDeltaTime;
+            var entries = s_entries;
 
-            if (container == null)
+            for (var i = 0; i < entries.Length; i++)
             {
-                return;
-            }
+                var entry = entries[i];
+                var fixedUpdatables = entry.FixedUpdatables;
 
-            try
-            {
-                container.FixedUpdate(Time.fixedDeltaTime);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
+                try
+                {
+                    for (var j = 0; j < fixedUpdatables.Count && !entry.Container.IsDisposed; j++)
+                    {
+                        fixedUpdatables[j].FixedUpdate(deltaTime);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
             }
         }
 
         private static void LateUpdate()
         {
-            var container = s_container;
+            var deltaTime = Time.deltaTime;
+            var entries = s_entries;
 
-            if (container == null)
+            for (var i = 0; i < entries.Length; i++)
             {
-                return;
-            }
+                var entry = entries[i];
+                var lateUpdatables = entry.LateUpdatables;
 
-            try
-            {
-                container.LateUpdate(Time.deltaTime);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
+                try
+                {
+                    for (var j = 0; j < lateUpdatables.Count && !entry.Container.IsDisposed; j++)
+                    {
+                        lateUpdatables[j].LateUpdate(deltaTime);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                }
             }
         }
 

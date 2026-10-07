@@ -89,7 +89,8 @@ public sealed class ContainerBuilder : IContainerBuilder
         container.AddBinding(typeof(IObjectResolver), self);
         container.AddBinding(typeof(IContainer), self);
         var bindings = new Binding[_registrations.Count];
-        var entryPoints = new List<Binding>();
+        var singletonTypes = new List<Type>();
+        var singletonBindings = new List<Binding>();
 
         for (var i = 0; i < _registrations.Count; i++)
         {
@@ -103,9 +104,10 @@ public sealed class ContainerBuilder : IContainerBuilder
                 container.AddExternal(registration.Instance);
             }
 
-            if (registration.Lifetime == Lifetime.Singleton && LifecycleTypes.IsEntryPoint(registration.ImplementationType))
+            if (registration.Lifetime == Lifetime.Singleton)
             {
-                entryPoints.Add(binding);
+                singletonTypes.Add(registration.ImplementationType);
+                singletonBindings.Add(binding);
             }
         }
 
@@ -118,7 +120,7 @@ public sealed class ContainerBuilder : IContainerBuilder
         }
 
         DetectCircularDependencies(bindings);
-        container.SetEntryPoints(entryPoints.ToArray());
+        container.SetSingletons(singletonTypes.ToArray(), singletonBindings.ToArray());
         _parent?.AddChild(container);
 
         try

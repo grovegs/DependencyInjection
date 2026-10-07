@@ -9,9 +9,21 @@ await root.InitializeAsync();
 using var scene = root.CreateChild(sceneBuilder => sceneBuilder.AddSingleton<Level>());
 await scene.InitializeAsync();
 
+var tickables = new List<ITickable>();
+tickables.AddRange(root.ResolveAll<ITickable>());
+tickables.AddRange(scene.ResolveAll<ITickable>());
+
 for (var frame = 0; frame < 3; frame++)
 {
-    root.Update(1f / 60f);
+    for (var i = 0; i < tickables.Count; i++)
+    {
+        tickables[i].Tick(1f / 60f);
+    }
+}
+
+public interface ITickable
+{
+    void Tick(float deltaTime);
 }
 
 public interface IClock
@@ -24,7 +36,7 @@ public sealed class SystemClock : IClock
     public DateTime Now => DateTime.Now;
 }
 
-public sealed class Game : IAsyncInitializable, IInitializable, IUpdatable, IDisposable
+public sealed class Game : IAsyncInitializable, IInitializable, ITickable, IDisposable
 {
     private readonly IClock _clock;
 
@@ -44,9 +56,9 @@ public sealed class Game : IAsyncInitializable, IInitializable, IUpdatable, IDis
         Console.WriteLine("Game initialized");
     }
 
-    public void Update(float deltaTime)
+    public void Tick(float deltaTime)
     {
-        Console.WriteLine($"Game updated {deltaTime:F4}");
+        Console.WriteLine($"Game ticked {deltaTime:F4}");
     }
 
     public void Dispose()
@@ -55,7 +67,7 @@ public sealed class Game : IAsyncInitializable, IInitializable, IUpdatable, IDis
     }
 }
 
-public sealed class Level : IPostInitializable, IUpdatable, IDisposable
+public sealed class Level : IPostInitializable, ITickable, IDisposable
 {
     private readonly Game _game;
 
@@ -69,9 +81,9 @@ public sealed class Level : IPostInitializable, IUpdatable, IDisposable
         Console.WriteLine("Level started");
     }
 
-    public void Update(float deltaTime)
+    public void Tick(float deltaTime)
     {
-        Console.WriteLine("Level updated");
+        Console.WriteLine("Level ticked");
     }
 
     public void Dispose()

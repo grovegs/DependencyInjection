@@ -7,8 +7,6 @@ public interface IContainer : IObjectResolver, IDisposable
     public bool IsDisposed { get; }
     public ValueTask InitializeAsync(CancellationToken cancellationToken = default);
     public IContainer CreateChild(Action<IContainerBuilder> configure);
+    public IReadOnlyList<T> ResolveAll<T>() where T : class;
     public void AddDisposable(IDisposable disposable);
-    public void Update(float deltaTime);
-    public void FixedUpdate(float deltaTime);
-    public void LateUpdate(float deltaTime);
 }

@@ -10,6 +10,7 @@ public sealed partial class ContainerBootstrapper : Node
 {
     private static readonly Dictionary<SceneInstaller, IContainer> s_sceneContainers = new();
     private static readonly HashSet<SceneInstaller> s_pendingInstallers = new();
+    private static readonly List<ProcessEntry> s_processEntries = new();
     private static IContainer s_root;
     private static Task s_rootInitialization;
 
@@ -54,7 +55,6 @@ public sealed partial class ContainerBootstrapper : Node
             return;
         }
 
-        AddChild(new ContainerLateUpdater());
         GetTree().NodeAdded += OnNodeAdded;
         s_rootInitialization = InitializeRootAsync(s_root);
     }
@@ -62,6 +62,7 @@ public sealed partial class ContainerBootstrapper : Node
     public override void _ExitTree()
     {
         GetTree().NodeAdded -= OnNodeAdded;
+        s_processEntries.Clear();
         s_sceneContainers.Clear();
         s_pendingInstallers.Clear();
         s_rootInitialization = null;
@@ -85,39 +86,63 @@ public sealed partial class ContainerBootstrapper : Node
 
     public override void _Process(double delta)
     {
-        var root = s_root;
+        for (var i = 0; i < s_processEntries.Count; i++)
+        {
+            var entry = s_processEntries[i];
 
-        if (root == null)
-        {
-            return;
-        }
-
-        try
-        {
-            root.Update((float)delta);
-        }
-        catch (Exception exception)
-        {
-            GD.PushError(exception.ToString());
+            try
+            {
+                for (var j = 0; j < entry.Processables.Count && !entry.Container.IsDisposed; j++)
+                {
+                    entry.Processables[j].Process(delta);
+                }
+            }
+            catch (Exception exception)
+            {
+                GD.PushError(exception.ToString());
+            }
         }
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        var root = s_root;
+        for (var i = 0; i < s_processEntries.Count; i++)
+        {
+            var entry = s_processEntries[i];
 
-        if (root == null)
+            try
+            {
+                for (var j = 0; j < entry.PhysicsProcessables.Count && !entry.Container.IsDisposed; j++)
+                {
+                    entry.PhysicsProcessables[j].PhysicsProcess(delta);
+                }
+            }
+            catch (Exception exception)
+            {
+                GD.PushError(exception.ToString());
+            }
+        }
+    }
+
+    private static void AddProcessEntry(IContainer container)
+    {
+        if (container.IsDisposed)
         {
             return;
         }
 
-        try
+        s_processEntries.Add(new ProcessEntry(container));
+    }
+
+    private static void RemoveProcessEntry(IContainer container)
+    {
+        for (var i = 0; i < s_processEntries.Count; i++)
         {
-            root.FixedUpdate((float)delta);
-        }
-        catch (Exception exception)
-        {
-            GD.PushError(exception.ToString());
+            if (ReferenceEquals(s_processEntries[i].Container, container))
+            {
+                s_processEntries.RemoveAt(i);
+                return;
+            }
         }
     }
 
@@ -126,6 +151,7 @@ public sealed partial class ContainerBootstrapper : Node
         try
         {
             await root.InitializeAsync();
+            AddProcessEntry(root);
         }
         catch (OperationCanceledException)
         {
@@ -181,6 +207,7 @@ public sealed partial class ContainerBootstrapper : Node
             var container = root.CreateChild(installer);
             s_sceneContainers[installer] = container;
             await container.InitializeAsync();
+            AddProcessEntry(container);
         }
         catch (OperationCanceledException)
         {
@@ -200,6 +227,8 @@ public sealed partial class ContainerBootstrapper : Node
             return;
         }
 
+        RemoveProcessEntry(container);
+
         try
         {
             container.Dispose();
@@ -207,6 +236,20 @@ public sealed partial class ContainerBootstrapper : Node
         catch (Exception exception)
         {
             GD.PushError(exception.ToString());
+        }
+    }
+
+    private sealed class ProcessEntry
+    {
+        public readonly IContainer Container;
+        public readonly IReadOnlyList<IProcessable> Processables;
+        public readonly IReadOnlyList<IPhysicsProcessable> PhysicsProcessables;
+
+        public ProcessEntry(IContainer container)
+        {
+            Container = container;
+            Processables = container.ResolveAll<IProcessable>();
+            PhysicsProcessables = container.ResolveAll<IPhysicsProcessable>();
         }
     }
 }

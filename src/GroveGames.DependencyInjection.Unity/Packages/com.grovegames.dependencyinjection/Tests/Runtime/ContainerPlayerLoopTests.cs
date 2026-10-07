@@ -10,20 +10,13 @@ namespace GroveGames.DependencyInjection.Unity.Tests
     public sealed class ContainerPlayerLoopTests
     {
         [UnityTest]
-        public IEnumerator Register_InitializedContainer_UpdatesEveryPhase()
+        public IEnumerator Add_InitializedContainer_UpdatesEveryPhase()
         {
             var builder = new ContainerBuilder();
             builder.AddSingleton<TestUpdatable>();
             var container = builder.Build();
-            var initialization = container.InitializeAsync().AsTask();
-
-            while (!initialization.IsCompleted)
-            {
-                yield return null;
-            }
-
             var updatable = container.Resolve<TestUpdatable>();
-            ContainerPlayerLoop.Register(container);
+            ContainerPlayerLoop.Add(container);
 
             try
             {
@@ -37,56 +30,44 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             }
             finally
             {
-                RestoreRoot();
+                ContainerPlayerLoop.Remove(container);
                 container.Dispose();
             }
         }
 
         [UnityTest]
-        public IEnumerator Unregister_RegisteredContainer_StopsUpdating()
+        public IEnumerator Remove_AddedContainer_StopsUpdating()
         {
             var builder = new ContainerBuilder();
             builder.AddSingleton<TestUpdatable>();
             var container = builder.Build();
-            var initialization = container.InitializeAsync().AsTask();
-
-            while (!initialization.IsCompleted)
-            {
-                yield return null;
-            }
-
             var updatable = container.Resolve<TestUpdatable>();
-            ContainerPlayerLoop.Register(container);
+            ContainerPlayerLoop.Add(container);
             yield return null;
-            ContainerPlayerLoop.Unregister();
+
+            ContainerPlayerLoop.Remove(container);
             var updateCount = updatable.UpdateCount;
+            yield return null;
+            yield return null;
 
-            try
-            {
-                yield return null;
-                yield return null;
-
-                Assert.AreEqual(updateCount, updatable.UpdateCount);
-            }
-            finally
-            {
-                RestoreRoot();
-                container.Dispose();
-            }
+            Assert.AreEqual(updateCount, updatable.UpdateCount);
+            container.Dispose();
         }
 
-        private static void RestoreRoot()
+        [UnityTest]
+        public IEnumerator Add_DisposedContainer_IsIgnored()
         {
-            var root = ContainerBootstrapper.Root;
+            var builder = new ContainerBuilder();
+            builder.AddSingleton<TestUpdatable>();
+            var container = builder.Build();
+            var updatable = container.Resolve<TestUpdatable>();
+            container.Dispose();
 
-            if (root != null)
-            {
-                ContainerPlayerLoop.Register(root);
-            }
-            else
-            {
-                ContainerPlayerLoop.Unregister();
-            }
+            ContainerPlayerLoop.Add(container);
+            yield return null;
+
+            Assert.AreEqual(0, updatable.UpdateCount);
+            ContainerPlayerLoop.Remove(container);
         }
 
         private sealed class TestUpdatable : IUpdatable, IFixedUpdatable, ILateUpdatable

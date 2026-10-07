@@ -12,7 +12,7 @@ A lightweight dependency injection framework for .NET, Unity, and Godot with bui
 ## Features
 
 - **Build-Time Validation**: Missing registrations, duplicate service types and circular dependencies fail when the container is built, not during gameplay
-- **Lifecycle Phases**: Async and sync pre-initialize, initialize and post-initialize phases, plus update, fixed update and late update
+- **Lifecycle Phases**: Async and sync pre-initialize, initialize and post-initialize phases; Unity and Godot add per-frame updates
 - **Automatic Detection**: Lifecycle interfaces and `IDisposable` are picked up from the implementation; there is nothing extra to register
 - **Scoped Containers**: Child containers per scene that resolve from their parent and are disposed with the scene
 - **Low Overhead**: Constructors are discovered once at build time and singleton resolves do not allocate
@@ -55,15 +55,14 @@ A container never disposes or initializes an instance that it or a parent contai
 
 ### Lifecycle
 
-| Order       | Interface                                         | Method                                                     |
-| ----------- | ------------------------------------------------- | ---------------------------------------------------------- |
-| 1           | `IAsyncPreInitializable`                          | `ValueTask PreInitializeAsync(CancellationToken)`          |
-| 2           | `IAsyncInitializable`                             | `ValueTask InitializeAsync(CancellationToken)`             |
-| 3           | `IAsyncPostInitializable`                         | `ValueTask PostInitializeAsync(CancellationToken)`         |
-| 4           | `IPreInitializable`                               | `void PreInitialize()`                                     |
-| 5           | `IInitializable`                                  | `void Initialize()`                                        |
-| 6           | `IPostInitializable`                              | `void PostInitialize()`                                    |
-| every frame | `IUpdatable`, `IFixedUpdatable`, `ILateUpdatable` | `Update(float)`, `FixedUpdate(float)`, `LateUpdate(float)` |
+| Order | Interface                 | Method                                             |
+| ----- | ------------------------- | -------------------------------------------------- |
+| 1     | `IAsyncPreInitializable`  | `ValueTask PreInitializeAsync(CancellationToken)`  |
+| 2     | `IAsyncInitializable`     | `ValueTask InitializeAsync(CancellationToken)`     |
+| 3     | `IAsyncPostInitializable` | `ValueTask PostInitializeAsync(CancellationToken)` |
+| 4     | `IPreInitializable`       | `void PreInitialize()`                             |
+| 5     | `IInitializable`          | `void Initialize()`                                |
+| 6     | `IPostInitializable`      | `void PostInitialize()`                            |
 
 Every async phase is awaited before any sync phase runs, and entries run in registration order within a phase. Lifecycle interfaces are detected on singletons only.
 
@@ -72,11 +71,17 @@ Every async phase is awaited before any sync phase runs, and entries run in regi
 ```csharp
 using var scene = root.CreateChild(builder => builder.AddSingleton<Level>());
 await scene.InitializeAsync(cancellationToken);
-
-root.Update(deltaTime);
 ```
 
-Updating a container also updates its children. Disposing a container cancels a pending initialization, disposes its children and then disposes every instance it created in reverse creation order. Instances passed to `AddSingleton(instance)` are owned by the caller and are not disposed.
+Disposing a container cancels a pending initialization, disposes its children and then disposes every instance it created in reverse creation order. Instances passed to `AddSingleton(instance)` are owned by the caller and are not disposed.
+
+### Resolving All Implementations
+
+`ResolveAll<T>()` returns every singleton of a container whose implementation is a `T`, in registration order, without instances owned by a parent container. The engine integrations use it to collect per-frame objects, and it works the same for your own interfaces:
+
+```csharp
+var tickables = container.ResolveAll<ITickable>();
+```
 
 ### Method Injection
 
@@ -97,7 +102,7 @@ container.Inject(healthBar);
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
-- **`IContainer`**: Resolves services, runs lifecycle phases, updates and owns created instances; `AddDisposable` hands any other cleanup to the container
+- **`IContainer`**: Resolves services, runs lifecycle phases and owns created instances; `AddDisposable` hands any other cleanup to the container
 - **`IObjectResolver`**: Resolve and inject API that can be injected into factories
 - **`IInstaller`**: Groups registrations for a container or child container
 
@@ -161,7 +166,7 @@ public sealed class BattleInstaller : SceneInstaller
 }
 ```
 
-Updates are driven from the player loop, so no `MonoBehaviour` lifecycle methods are needed.
+Singletons implementing `IUpdatable`, `IFixedUpdatable` or `ILateUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed.
 
 ### Unity Components
 
@@ -229,7 +234,7 @@ public sealed partial class MainInstaller : SceneInstaller
 
 - **`RootInstaller`**: Resource installer for the root container
 - **`SceneInstaller`**: Node installer for a scene container
-- **`ContainerBootstrapper`**: Autoload that builds containers and drives `_Process` and `_PhysicsProcess` updates
+- **`ContainerBootstrapper`**: Autoload that builds containers and calls `IProcessable.Process` and `IPhysicsProcessable.PhysicsProcess` on their singletons from `_Process` and `_PhysicsProcess`
 - **`DependencyInjectionSettingsResource`**: Resource listing the root installers
 - **`InjectTree`** and **`Instantiate`**: Inject `[Inject]` methods on a node tree
 
