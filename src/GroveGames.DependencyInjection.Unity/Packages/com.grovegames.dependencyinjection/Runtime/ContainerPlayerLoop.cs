@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 using UnityEngine;
 using UnityEngine.LowLevel;
@@ -8,6 +9,10 @@ namespace GroveGames.DependencyInjection.Unity
 {
     internal static class ContainerPlayerLoop
     {
+        private struct ContainerInitialization
+        {
+        }
+
         private struct ContainerUpdate
         {
         }
@@ -37,11 +42,14 @@ namespace GroveGames.DependencyInjection.Unity
         }
 
         private static Entry[] s_entries = Array.Empty<Entry>();
+        private static List<TaskCompletionSource<bool>> s_frameWaiters = new();
+        private static List<TaskCompletionSource<bool>> s_completingWaiters = new();
 
         public static void Install()
         {
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
+            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Initialization), typeof(ContainerInitialization), Initialization);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Update), typeof(ContainerUpdate), Update);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.FixedUpdate), typeof(ContainerFixedUpdate), FixedUpdate);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.PreLateUpdate), typeof(ContainerLateUpdate), LateUpdate);
@@ -51,9 +59,24 @@ namespace GroveGames.DependencyInjection.Unity
         public static void Uninstall()
         {
             s_entries = Array.Empty<Entry>();
+            var waiters = s_frameWaiters;
+            s_frameWaiters = new List<TaskCompletionSource<bool>>();
+
+            for (var i = 0; i < waiters.Count; i++)
+            {
+                waiters[i].TrySetCanceled();
+            }
+
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
             PlayerLoop.SetPlayerLoop(playerLoop);
+        }
+
+        public static Task NextFrameAsync()
+        {
+            var waiter = new TaskCompletionSource<bool>();
+            s_frameWaiters.Add(waiter);
+            return waiter.Task;
         }
 
         public static void Add(IContainer container)
@@ -100,6 +123,25 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             return -1;
+        }
+
+        private static void Initialization()
+        {
+            if (s_frameWaiters.Count == 0)
+            {
+                return;
+            }
+
+            var waiters = s_frameWaiters;
+            s_frameWaiters = s_completingWaiters;
+            s_completingWaiters = waiters;
+
+            for (var i = 0; i < waiters.Count; i++)
+            {
+                waiters[i].TrySetResult(true);
+            }
+
+            waiters.Clear();
         }
 
         private static void Update()
@@ -218,7 +260,7 @@ namespace GroveGames.DependencyInjection.Unity
             {
                 var system = systems[i];
 
-                if (system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerLateUpdate))
+                if (system.type == typeof(ContainerInitialization) || system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerLateUpdate))
                 {
                     continue;
                 }

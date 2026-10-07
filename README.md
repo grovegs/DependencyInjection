@@ -151,7 +151,7 @@ The root container is built before the first scene loads and initialized asynchr
 
 ### Scene Installers
 
-Add components derived from `SceneInstaller` to a scene. When the scene loads, a child container of the root is built from every installer in it, after the root finishes initializing. It is disposed as soon as the scene's installers are destroyed, so nothing updates against destroyed objects while the scene unloads.
+Add components derived from `SceneInstaller` to a scene. When the scene loads, a child container of the root is built from every installer in it, after the root finishes initializing. It is initialized at the start of the next frame, so objects created during initialization land in the scene that is active by then. It is disposed as soon as the scene's installers are destroyed, so nothing updates against destroyed objects while the scene unloads.
 
 ```csharp
 public sealed class BattleInstaller : SceneInstaller
