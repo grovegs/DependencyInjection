@@ -170,6 +170,17 @@ internal sealed class Container : IContainer
     {
         ArgumentNullException.ThrowIfNull(instance);
         ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+        if (IsOwned(instance))
+        {
+            return;
+        }
+
+        InjectInstance(instance);
+    }
+
+    internal void InjectInstance(object instance)
+    {
         var injector = _injectors.Get(instance.GetType());
 
         if (injector.IsEmpty)

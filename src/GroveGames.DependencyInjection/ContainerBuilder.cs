@@ -131,7 +131,7 @@ public sealed class ContainerBuilder : IContainerBuilder
 
                 if (instance is not null)
                 {
-                    container.Inject(instance);
+                    container.InjectInstance(instance);
                 }
             }
         }
