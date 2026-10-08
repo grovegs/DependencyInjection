@@ -20,23 +20,25 @@ namespace GroveGames.DependencyInjection.Unity
         {
         }
 
-        private struct ContainerLateUpdate
+        private struct ContainerPostUpdate
         {
         }
 
         private sealed class Entry
         {
             public readonly IContainer Container;
+            public readonly IReadOnlyList<IPreUpdatable> PreUpdatables;
             public readonly IReadOnlyList<IUpdatable> Updatables;
+            public readonly IReadOnlyList<IPostUpdatable> PostUpdatables;
             public readonly IReadOnlyList<IFixedUpdatable> FixedUpdatables;
-            public readonly IReadOnlyList<ILateUpdatable> LateUpdatables;
 
             public Entry(IContainer container)
             {
                 Container = container;
+                PreUpdatables = container.ResolveAll<IPreUpdatable>();
                 Updatables = container.ResolveAll<IUpdatable>();
+                PostUpdatables = container.ResolveAll<IPostUpdatable>();
                 FixedUpdatables = container.ResolveAll<IFixedUpdatable>();
-                LateUpdatables = container.ResolveAll<ILateUpdatable>();
             }
         }
 
@@ -49,7 +51,7 @@ namespace GroveGames.DependencyInjection.Unity
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Initialization), typeof(ContainerInitialization), Initialization);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Update), typeof(ContainerUpdate), Update);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.FixedUpdate), typeof(ContainerFixedUpdate), FixedUpdate);
-            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.PreLateUpdate), typeof(ContainerLateUpdate), LateUpdate);
+            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.PreLateUpdate), typeof(ContainerPostUpdate), PostUpdate);
             PlayerLoop.SetPlayerLoop(playerLoop);
         }
 
@@ -127,6 +129,26 @@ namespace GroveGames.DependencyInjection.Unity
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
+                var preUpdatables = entry.PreUpdatables;
+
+                for (var j = 0; j < preUpdatables.Count && !entry.Container.IsDisposed; j++)
+                {
+                    try
+                    {
+                        preUpdatables[j].PreUpdate(deltaTime);
+                    }
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
+                }
+            }
+
+            entries = s_entries;
+
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var entry = entries[i];
                 var updatables = entry.Updatables;
 
                 for (var j = 0; j < updatables.Count && !entry.Container.IsDisposed; j++)
@@ -167,7 +189,7 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
-        private static void LateUpdate()
+        private static void PostUpdate()
         {
             var deltaTime = Time.deltaTime;
             var entries = s_entries;
@@ -175,13 +197,13 @@ namespace GroveGames.DependencyInjection.Unity
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
-                var lateUpdatables = entry.LateUpdatables;
+                var postUpdatables = entry.PostUpdatables;
 
-                for (var j = 0; j < lateUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < postUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
-                        lateUpdatables[j].LateUpdate(deltaTime);
+                        postUpdatables[j].PostUpdate(deltaTime);
                     }
                     catch (Exception exception)
                     {
@@ -235,7 +257,7 @@ namespace GroveGames.DependencyInjection.Unity
             {
                 var system = systems[i];
 
-                if (system.type == typeof(ContainerInitialization) || system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerLateUpdate))
+                if (system.type == typeof(ContainerInitialization) || system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerPostUpdate))
                 {
                     continue;
                 }

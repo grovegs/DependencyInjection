@@ -168,7 +168,7 @@ public sealed class BattleInstaller : SceneInstaller
 }
 ```
 
-Singletons implementing `IUpdatable`, `IFixedUpdatable` or `ILateUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed.
+Singletons implementing `IPreUpdatable`, `IUpdatable`, `IPostUpdatable` or `IFixedUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed. Each frame every container runs `PreUpdate` before any container runs `Update`, and `PostUpdate` runs after all `MonoBehaviour.Update` calls.
 
 #### Loading Scenes
 

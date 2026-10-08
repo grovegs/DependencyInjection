@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 
 using NUnit.Framework;
 
@@ -26,7 +27,8 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
                 Assert.Greater(updatable.UpdateCount, 0);
                 Assert.Greater(updatable.FixedUpdateCount, 0);
-                Assert.Greater(updatable.LateUpdateCount, 0);
+                Assert.Greater(updatable.PreUpdateCount, 0);
+                Assert.Greater(updatable.PostUpdateCount, 0);
             }
             finally
             {
@@ -70,11 +72,84 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             ContainerPlayerLoop.Remove(container);
         }
 
-        private sealed class TestUpdatable : IUpdatable, IFixedUpdatable, ILateUpdatable
+        [UnityTest]
+        public IEnumerator Update_MultipleContainers_RunsEveryPreUpdateBeforeAnyUpdate()
+        {
+            var log = new List<string>();
+            var first = new ContainerBuilder();
+            first.AddSingleton(log);
+            first.AddSingleton<TestLoggingUpdatable>();
+            var firstContainer = first.Build();
+            var second = new ContainerBuilder();
+            second.AddSingleton(log);
+            second.AddSingleton<TestLoggingPreUpdatable>();
+            var secondContainer = second.Build();
+            ContainerPlayerLoop.Add(firstContainer);
+            ContainerPlayerLoop.Add(secondContainer);
+
+            try
+            {
+                yield return null;
+                yield return null;
+
+                var preUpdate = log.IndexOf("PreUpdate");
+                var update = log.IndexOf("Update");
+                var postUpdate = log.IndexOf("PostUpdate");
+
+                Assert.GreaterOrEqual(preUpdate, 0);
+                Assert.Less(preUpdate, update);
+                Assert.Less(update, postUpdate);
+            }
+            finally
+            {
+                ContainerPlayerLoop.Remove(firstContainer);
+                ContainerPlayerLoop.Remove(secondContainer);
+                firstContainer.Dispose();
+                secondContainer.Dispose();
+            }
+        }
+
+        private sealed class TestLoggingUpdatable : IUpdatable
+        {
+            private readonly List<string> _log;
+
+            public TestLoggingUpdatable(List<string> log)
+            {
+                _log = log;
+            }
+
+            public void Update(float deltaTime)
+            {
+                _log.Add("Update");
+            }
+        }
+
+        private sealed class TestLoggingPreUpdatable : IPreUpdatable, IPostUpdatable
+        {
+            private readonly List<string> _log;
+
+            public TestLoggingPreUpdatable(List<string> log)
+            {
+                _log = log;
+            }
+
+            public void PreUpdate(float deltaTime)
+            {
+                _log.Add("PreUpdate");
+            }
+
+            public void PostUpdate(float deltaTime)
+            {
+                _log.Add("PostUpdate");
+            }
+        }
+
+        private sealed class TestUpdatable : IPreUpdatable, IUpdatable, IPostUpdatable, IFixedUpdatable
         {
             public int UpdateCount { get; private set; }
             public int FixedUpdateCount { get; private set; }
-            public int LateUpdateCount { get; private set; }
+            public int PreUpdateCount { get; private set; }
+            public int PostUpdateCount { get; private set; }
 
             public void Update(float deltaTime)
             {
@@ -86,9 +161,14 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 FixedUpdateCount++;
             }
 
-            public void LateUpdate(float deltaTime)
+            public void PreUpdate(float deltaTime)
             {
-                LateUpdateCount++;
+                PreUpdateCount++;
+            }
+
+            public void PostUpdate(float deltaTime)
+            {
+                PostUpdateCount++;
             }
         }
     }
