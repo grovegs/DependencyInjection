@@ -82,6 +82,35 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public void Inject_RegisteredInstance_DoesNotInjectAgain()
+    {
+        var injectable = new TestCountingInjectable();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton(injectable);
+        using var container = builder.Build();
+
+        container.Inject(injectable);
+
+        Assert.Equal(1, injectable.InjectCount);
+    }
+
+    [Fact]
+    public void Inject_InstanceRegisteredInParent_DoesNotInjectAgain()
+    {
+        var injectable = new TestCountingInjectable();
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton(injectable);
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+
+        child.Inject(injectable);
+
+        Assert.Equal(1, injectable.InjectCount);
+    }
+
+    [Fact]
     public async Task InitializeAsync_AllPhases_RunsEachPhaseSyncThenAsync()
     {
         var log = new TestLog();
@@ -478,6 +507,17 @@ public sealed class ContainerTests
         public void Install(IContainerBuilder builder)
         {
             builder.AddSingleton<TestLog>();
+        }
+    }
+
+    private sealed class TestCountingInjectable
+    {
+        public int InjectCount { get; private set; }
+
+        [Inject]
+        public void Construct(TestLog log)
+        {
+            InjectCount++;
         }
     }
 

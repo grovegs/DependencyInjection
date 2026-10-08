@@ -99,6 +99,8 @@ public sealed class HealthBar
 container.Inject(healthBar);
 ```
 
+Instances passed to `AddSingleton(instance)` are injected once when the container is built. `Inject` does nothing for an instance that the container or a parent already manages, so injecting a whole scene never injects a registered instance twice.
+
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
@@ -252,7 +254,13 @@ public partial class GameRootInstaller : RootInstaller
 
 ### Scene Installers
 
-Add a node derived from `SceneInstaller` to a scene. A child container of the root is built when the node enters the tree and disposed when it exits.
+Add a node derived from `SceneInstaller` to a scene. The installer belongs to the scene of its owner, or to itself when it has no owner. When it enters the tree, before any node of the scene runs `_Ready`:
+
+- a child container of the root is built from every installer of that scene,
+- `[Inject]` methods are called on every node of the scene, except nodes of nested scenes with their own installers, which their own container injects,
+- the scene root's `ProcessMode` is set to `Disabled`.
+
+Once the root and the scene container finish initializing, the previous `ProcessMode` is restored, so `_Process`, `_PhysicsProcess` and input only start after every initializer is complete. `_Ready` still runs immediately, as Godot calls it when nodes enter the tree: dependencies are injected by then, but their initializers may still be running. If initialization fails, the error is pushed and processing starts anyway. The container is disposed when the scene root exits the tree.
 
 ```csharp
 public sealed partial class MainInstaller : SceneInstaller
@@ -272,7 +280,7 @@ Godot types live in the `GroveGames.DependencyInjection.Godot` namespace.
 
 - **`RootInstaller`**: Resource installer for the root container
 - **`SceneInstaller`**: Node installer for a scene container
-- **`ContainerBootstrapper`**: Autoload that builds containers and calls `IProcessable.Process` and `IPhysicsProcessable.PhysicsProcess` on their singletons from `_Process` and `_PhysicsProcess`
+- **`ContainerBootstrapper`**: Autoload that builds containers and calls `IProcessable.Process` and `IPhysicsProcessable.PhysicsProcess` on their singletons from `_Process` and `_PhysicsProcess`. Exposes `Root`, `TryGetContainer(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized, and `WhenSceneReadyAsync(Node)`, which completes with `true` once the scene containing the node is initialized
 - **`DependencyInjectionSettingsResource`**: Resource listing the root installers
 - **`InjectTree`** and **`Instantiate`**: Inject `[Inject]` methods on a node tree
 

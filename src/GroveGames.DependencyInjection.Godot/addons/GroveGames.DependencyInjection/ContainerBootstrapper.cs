@@ -8,8 +8,7 @@ namespace GroveGames.DependencyInjection.Godot;
 
 public sealed partial class ContainerBootstrapper : Node
 {
-    private static readonly Dictionary<SceneInstaller, IContainer> s_sceneContainers = new();
-    private static readonly HashSet<SceneInstaller> s_pendingInstallers = new();
+    private static readonly Dictionary<Node, SceneState> s_scenes = new();
     private static readonly List<ProcessEntry> s_processEntries = new();
     private static IContainer s_root;
     private static Task s_rootInitialization;
@@ -22,9 +21,54 @@ public sealed partial class ContainerBootstrapper : Node
         ProcessPhysicsPriority = int.MinValue;
     }
 
-    public static bool TryGetSceneContainer(SceneInstaller installer, out IContainer container)
+    public static bool TryGetContainer(Node node, out IContainer container)
     {
-        return s_sceneContainers.TryGetValue(installer, out container);
+        container = null;
+
+        if (node == null || !IsInstanceValid(node) || !node.IsInsideTree())
+        {
+            return false;
+        }
+
+        var state = FindScene(node);
+
+        if (state != null)
+        {
+            if (!IsReady(state))
+            {
+                return false;
+            }
+
+            container = state.Container;
+            return container != null;
+        }
+
+        var root = s_root;
+
+        if (root == null || !root.IsInitialized)
+        {
+            return false;
+        }
+
+        container = root;
+        return true;
+    }
+
+    public static Task<bool> WhenSceneReadyAsync(Node node)
+    {
+        if (node == null || !IsInstanceValid(node))
+        {
+            return Task.FromResult(false);
+        }
+
+        var state = FindScene(node);
+
+        if (state != null)
+        {
+            return state.Ready.Task;
+        }
+
+        return Task.FromResult(node.IsInsideTree());
     }
 
     public override void _EnterTree()
@@ -63,8 +107,13 @@ public sealed partial class ContainerBootstrapper : Node
     {
         GetTree().NodeAdded -= OnNodeAdded;
         s_processEntries.Clear();
-        s_sceneContainers.Clear();
-        s_pendingInstallers.Clear();
+
+        foreach (var state in s_scenes.Values)
+        {
+            state.Ready.TrySetResult(false);
+        }
+
+        s_scenes.Clear();
         s_rootInitialization = null;
         var root = s_root;
         s_root = null;
@@ -90,16 +139,16 @@ public sealed partial class ContainerBootstrapper : Node
         {
             var entry = s_processEntries[i];
 
-            try
+            for (var j = 0; j < entry.Processables.Count && !entry.Container.IsDisposed; j++)
             {
-                for (var j = 0; j < entry.Processables.Count && !entry.Container.IsDisposed; j++)
+                try
                 {
                     entry.Processables[j].Process(delta);
                 }
-            }
-            catch (Exception exception)
-            {
-                GD.PushError(exception.ToString());
+                catch (Exception exception)
+                {
+                    GD.PushError(exception.ToString());
+                }
             }
         }
     }
@@ -110,16 +159,16 @@ public sealed partial class ContainerBootstrapper : Node
         {
             var entry = s_processEntries[i];
 
-            try
+            for (var j = 0; j < entry.PhysicsProcessables.Count && !entry.Container.IsDisposed; j++)
             {
-                for (var j = 0; j < entry.PhysicsProcessables.Count && !entry.Container.IsDisposed; j++)
+                try
                 {
                     entry.PhysicsProcessables[j].PhysicsProcess(delta);
                 }
-            }
-            catch (Exception exception)
-            {
-                GD.PushError(exception.ToString());
+                catch (Exception exception)
+                {
+                    GD.PushError(exception.ToString());
+                }
             }
         }
     }
@@ -166,63 +215,127 @@ public sealed partial class ContainerBootstrapper : Node
 
     private static void OnNodeAdded(Node node)
     {
-        if (node is not SceneInstaller installer || s_sceneContainers.ContainsKey(installer) || !s_pendingInstallers.Add(installer))
+        if (node is not SceneInstaller installer)
         {
             return;
         }
 
-        installer.TreeExiting += () => OnInstallerExiting(installer);
-        _ = InitializeSceneAsync(installer);
+        var scope = GetScope(installer);
+
+        if (s_scenes.ContainsKey(scope))
+        {
+            return;
+        }
+
+        var state = new SceneState(scope);
+        state.Exiting = () => DisposeScene(state);
+        scope.TreeExiting += state.Exiting;
+        s_scenes.Add(scope, state);
+        scope.ProcessMode = ProcessModeEnum.Disabled;
+        _ = InitializeSceneAsync(state);
     }
 
-    private static async Task InitializeSceneAsync(SceneInstaller installer)
+    private static async Task InitializeSceneAsync(SceneState state)
     {
-        try
-        {
-            var rootInitialization = s_rootInitialization;
-
-            if (rootInitialization == null)
-            {
-                s_pendingInstallers.Remove(installer);
-                return;
-            }
-
-            await rootInitialization;
-        }
-        catch
-        {
-            s_pendingInstallers.Remove(installer);
-            return;
-        }
-
         var root = s_root;
+        var rootInitialization = s_rootInitialization;
 
-        if (!s_pendingInstallers.Remove(installer) || root == null || root.IsDisposed || !IsInstanceValid(installer) || !installer.IsInsideTree())
+        if (root == null || root.IsDisposed || rootInitialization == null)
         {
+            GD.PushError($"Scene '{state.Scope.Name}' was started without its container because the root container is not available.");
+            Complete(state, false);
             return;
         }
 
         try
         {
-            var container = root.CreateChild(installer);
-            s_sceneContainers[installer] = container;
-            await container.InitializeAsync();
-            AddProcessEntry(container);
-        }
-        catch (OperationCanceledException)
-        {
+            var installers = new List<SceneInstaller>();
+            var nestedScopes = new HashSet<Node>();
+            CollectInstallers(state.Scope, state.Scope, installers, nestedScopes);
+            nestedScopes.Remove(state.Scope);
+            var container = root.CreateChild(builder =>
+            {
+                for (var i = 0; i < installers.Count; i++)
+                {
+                    installers[i].Install(builder);
+                }
+            });
+
+            state.Container = container;
+            InjectScope(container, state.Scope, nestedScopes);
         }
         catch (Exception exception)
         {
             GD.PushError(exception.ToString());
+            GD.PushError($"Scene '{state.Scope.Name}' was started without its container.");
+            Complete(state, false);
+            return;
+        }
+
+        try
+        {
+            await rootInitialization;
+        }
+        catch
+        {
+            if (IsCurrent(state))
+            {
+                GD.PushError($"Scene '{state.Scope.Name}' was started without its container because the root container failed to initialize.");
+                Complete(state, false);
+            }
+
+            return;
+        }
+
+        if (!IsCurrent(state))
+        {
+            return;
+        }
+
+        try
+        {
+            await state.Container.InitializeAsync();
+
+            if (!IsCurrent(state))
+            {
+                return;
+            }
+
+            AddProcessEntry(state.Container);
+            Complete(state, true);
+        }
+        catch (Exception exception)
+        {
+            if (!IsCurrent(state))
+            {
+                return;
+            }
+
+            GD.PushError(exception.ToString());
+            GD.PushError($"Scene '{state.Scope.Name}' was started without a fully initialized container.");
+            Complete(state, false);
         }
     }
 
-    private static void OnInstallerExiting(SceneInstaller installer)
+    private static void DisposeScene(SceneState state)
     {
-        s_pendingInstallers.Remove(installer);
+        if (!IsCurrent(state))
+        {
+            return;
+        }
 
-        if (!s_sceneContainers.Remove(installer, out var container))
+        s_scenes.Remove(state.Scope);
+
+        if (IsInstanceValid(state.Scope))
+        {
+            state.Scope.TreeExiting -= state.Exiting;
+            state.Scope.ProcessMode = state.ProcessMode;
+        }
+
+        state.Ready.TrySetResult(false);
+        var container = state.Container;
+
+        if (container == null)
         {
             return;
         }
@@ -236,6 +349,101 @@ public sealed partial class ContainerBootstrapper : Node
         catch (Exception exception)
         {
             GD.PushError(exception.ToString());
+        }
+    }
+
+    private static void Complete(SceneState state, bool isReady)
+    {
+        if (IsInstanceValid(state.Scope))
+        {
+            state.Scope.ProcessMode = state.ProcessMode;
+        }
+
+        state.Ready.TrySetResult(isReady);
+    }
+
+    private static bool IsCurrent(SceneState state)
+    {
+        return s_scenes.TryGetValue(state.Scope, out var current) && ReferenceEquals(current, state);
+    }
+
+    private static bool IsReady(SceneState state)
+    {
+        var ready = state.Ready.Task;
+        return ready.IsCompleted && ready.Result;
+    }
+
+    private static SceneState FindScene(Node node)
+    {
+        for (var current = node; current != null; current = current.GetParent())
+        {
+            if (s_scenes.TryGetValue(current, out var state))
+            {
+                return state;
+            }
+        }
+
+        return null;
+    }
+
+    private static Node GetScope(SceneInstaller installer)
+    {
+        return installer.Owner ?? installer;
+    }
+
+    private static void CollectInstallers(Node node, Node scope, List<SceneInstaller> installers, HashSet<Node> nestedScopes)
+    {
+        if (node is SceneInstaller installer)
+        {
+            var installerScope = GetScope(installer);
+
+            if (installerScope == scope)
+            {
+                installers.Add(installer);
+            }
+            else
+            {
+                nestedScopes.Add(installerScope);
+            }
+        }
+
+        var children = node.GetChildren(true);
+
+        for (var i = 0; i < children.Count; i++)
+        {
+            CollectInstallers(children[i], scope, installers, nestedScopes);
+        }
+    }
+
+    private static void InjectScope(IContainer container, Node node, HashSet<Node> nestedScopes)
+    {
+        if (nestedScopes.Contains(node))
+        {
+            return;
+        }
+
+        container.Inject(node);
+        var children = node.GetChildren(true);
+
+        for (var i = 0; i < children.Count; i++)
+        {
+            InjectScope(container, children[i], nestedScopes);
+        }
+    }
+
+    private sealed class SceneState
+    {
+        public readonly Node Scope;
+        public readonly ProcessModeEnum ProcessMode;
+        public readonly TaskCompletionSource<bool> Ready;
+        public IContainer Container;
+        public Action Exiting;
+
+        public SceneState(Node scope)
+        {
+            Scope = scope;
+            ProcessMode = scope.ProcessMode;
+            Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
     }
 
