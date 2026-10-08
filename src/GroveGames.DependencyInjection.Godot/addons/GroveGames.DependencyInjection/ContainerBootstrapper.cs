@@ -74,20 +74,12 @@ public sealed partial class ContainerBootstrapper : Node
     public override void _EnterTree()
     {
         var builder = new ContainerBuilder();
-        var installers = DependencyInjectionSettingsResource.GetOrCreate().RootInstallers;
+        var installer = DependencyInjectionSettingsResource.GetOrCreate().RootInstaller;
 
         try
         {
-            for (var i = 0; i < installers.Count; i++)
+            if (installer != null)
             {
-                var installer = installers[i];
-
-                if (installer == null)
-                {
-                    GD.PushError($"Root installer at index {i} is missing.");
-                    continue;
-                }
-
                 installer.Install(builder);
             }
 

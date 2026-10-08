@@ -5,4 +5,4 @@
 
 [resource]
 script = ExtResource("1_settings")
-RootInstallers = [ExtResource("2_root")]
+RootInstaller = ExtResource("2_root")

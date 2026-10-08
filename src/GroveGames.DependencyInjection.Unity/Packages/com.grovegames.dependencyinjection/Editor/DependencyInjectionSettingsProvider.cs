@@ -44,7 +44,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor
                         }
                     });
 
-                    container.Add(new PropertyField(serializedObject.FindProperty("_rootInstallers"), "Root Installers"));
+                    container.Add(new PropertyField(serializedObject.FindProperty("_rootInstaller"), "Root Installer"));
 
                     rootElement.Add(container);
                     rootElement.Bind(serializedObject);

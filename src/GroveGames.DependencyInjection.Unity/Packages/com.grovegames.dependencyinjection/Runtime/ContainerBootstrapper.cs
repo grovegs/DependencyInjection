@@ -83,20 +83,12 @@ namespace GroveGames.DependencyInjection.Unity
             Shutdown();
 
             var builder = new ContainerBuilder();
-            var installers = DependencyInjectionSettings.GetOrCreate().RootInstallers;
+            var installer = DependencyInjectionSettings.GetOrCreate().RootInstaller;
 
             try
             {
-                for (var i = 0; i < installers.Length; i++)
+                if (installer != null)
                 {
-                    var installer = installers[i];
-
-                    if (installer == null)
-                    {
-                        Debug.LogError($"Root installer at index {i} is missing.");
-                        continue;
-                    }
-
                     installer.Install(builder);
                 }
 
