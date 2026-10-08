@@ -27,33 +27,42 @@ namespace GroveGames.DependencyInjection.Unity
         }
 
         private static readonly Dictionary<int, SceneState> s_scenes = new();
-        private static readonly Dictionary<IContainer, Scene> s_containerScenes = new();
         private static IContainer? s_root;
         private static Task? s_rootInitialization;
 
         public static IContainer? Root => s_root;
 
-        public static bool TryGetSceneContainer(Scene scene, out IContainer? container)
+        public static bool TryGetContainer(Scene scene, out IContainer? container)
         {
-            if (s_scenes.TryGetValue(scene.handle, out var state) && state.Container != null)
-            {
-                container = state.Container;
-                return true;
-            }
-
             container = null;
-            return false;
-        }
 
-        public static bool IsSceneReady(Scene scene)
-        {
-            if (!s_scenes.TryGetValue(scene.handle, out var state))
+            if (!scene.isLoaded)
             {
-                return scene.isLoaded;
+                return false;
             }
 
-            var ready = state.Ready.Task;
-            return ready.IsCompleted && ready.Result;
+            if (s_scenes.TryGetValue(scene.handle, out var state))
+            {
+                var ready = state.Ready.Task;
+
+                if (!ready.IsCompleted || !ready.Result)
+                {
+                    return false;
+                }
+
+                container = state.Container;
+                return container != null;
+            }
+
+            var root = s_root;
+
+            if (root == null || !root.IsInitialized)
+            {
+                return false;
+            }
+
+            container = root;
+            return true;
         }
 
         public static Task<bool> WhenSceneReadyAsync(Scene scene)
@@ -98,7 +107,6 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             ContainerPlayerLoop.Install();
-            SceneManager.sceneUnloaded += OnSceneUnloaded;
             Application.quitting += Shutdown;
             s_rootInitialization = InitializeRootAsync(s_root);
         }
@@ -190,8 +198,8 @@ namespace GroveGames.DependencyInjection.Unity
                     }
                 });
 
+                installers.Clear();
                 state.Container = container;
-                s_containerScenes[container] = state.Scene;
                 InjectScene(container, state.Scene);
                 await container.InitializeAsync();
 
@@ -231,19 +239,18 @@ namespace GroveGames.DependencyInjection.Unity
         {
             for (var container = resolver as IContainer; container != null; container = container.Parent)
             {
-                if (s_containerScenes.TryGetValue(container, out scene))
+                foreach (var state in s_scenes.Values)
                 {
-                    return true;
+                    if (ReferenceEquals(state.Container, container))
+                    {
+                        scene = state.Scene;
+                        return true;
+                    }
                 }
             }
 
             scene = default;
             return false;
-        }
-
-        private static void OnSceneUnloaded(Scene scene)
-        {
-            DisposeSceneContainer(scene);
         }
 
         internal static void DisposeSceneContainer(Scene scene)
@@ -261,7 +268,6 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            s_containerScenes.Remove(container);
             ContainerPlayerLoop.Remove(container);
 
             try
@@ -338,7 +344,6 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void Shutdown()
         {
-            SceneManager.sceneUnloaded -= OnSceneUnloaded;
             Application.quitting -= Shutdown;
             ContainerPlayerLoop.Uninstall();
 
@@ -348,7 +353,6 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             s_scenes.Clear();
-            s_containerScenes.Clear();
             s_rootInitialization = null;
             var root = s_root;
             s_root = null;

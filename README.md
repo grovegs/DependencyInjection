@@ -188,13 +188,26 @@ public async Task ChangeSceneAsync(string sceneName)
 
 Objects created through `Instantiate` by a scene container, or by a container created from it, are placed in that container's scene, whichever scene is active.
 
+#### Code Outside Containers
+
+Scene objects and objects created through `Instantiate` are injected automatically. For objects created elsewhere, such as by another package's `Object.Instantiate`, look up the container of their scene and inject them, or resolve from it directly. `TryGetContainer` returns the scene's container, or the root container for a scene without installers, and only once that container is initialized.
+
+```csharp
+if (ContainerBootstrapper.TryGetContainer(instance.scene, out var container))
+{
+    container!.InjectGameObject(instance);
+}
+```
+
+Code without a scene, such as a `ScriptableObject`, can use `ContainerBootstrapper.Root`.
+
 ### Unity Components
 
 Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 
 - **`RootInstaller`**: ScriptableObject installer for the root container
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
-- **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root`, `TryGetSceneContainer`, `IsSceneReady` and `WhenSceneReadyAsync`
+- **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root`, `TryGetContainer` and `WhenSceneReadyAsync`
 - **`DependencyInjectionSettings`**: ScriptableObject listing the root installers
 - **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy

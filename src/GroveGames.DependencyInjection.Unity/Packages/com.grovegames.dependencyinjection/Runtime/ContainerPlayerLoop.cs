@@ -112,16 +112,16 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var updatables = entry.Updatables;
 
-                try
+                for (var j = 0; j < updatables.Count && !entry.Container.IsDisposed; j++)
                 {
-                    for (var j = 0; j < updatables.Count && !entry.Container.IsDisposed; j++)
+                    try
                     {
                         updatables[j].Update(deltaTime);
                     }
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogException(exception);
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
                 }
             }
         }
@@ -136,16 +136,16 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var fixedUpdatables = entry.FixedUpdatables;
 
-                try
+                for (var j = 0; j < fixedUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
-                    for (var j = 0; j < fixedUpdatables.Count && !entry.Container.IsDisposed; j++)
+                    try
                     {
                         fixedUpdatables[j].FixedUpdate(deltaTime);
                     }
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogException(exception);
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
                 }
             }
         }
@@ -160,16 +160,16 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var lateUpdatables = entry.LateUpdatables;
 
-                try
+                for (var j = 0; j < lateUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
-                    for (var j = 0; j < lateUpdatables.Count && !entry.Container.IsDisposed; j++)
+                    try
                     {
                         lateUpdatables[j].LateUpdate(deltaTime);
                     }
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogException(exception);
+                    catch (Exception exception)
+                    {
+                        Debug.LogException(exception);
+                    }
                 }
             }
         }

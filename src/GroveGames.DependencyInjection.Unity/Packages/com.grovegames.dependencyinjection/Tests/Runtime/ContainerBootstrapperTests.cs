@@ -37,7 +37,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             yield return WaitFor(ready);
 
             Assert.IsTrue(ready.Result);
-            Assert.IsTrue(ContainerBootstrapper.TryGetSceneContainer(scene, out var container));
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
             Assert.IsTrue(container!.IsInitialized);
             Assert.IsTrue(installer.IsInstalled);
             Assert.AreSame(ContainerBootstrapper.Root, container.Parent);
@@ -46,7 +46,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             yield return SceneManager.UnloadSceneAsync(scene);
 
             Assert.IsTrue(container.IsDisposed);
-            Assert.IsFalse(ContainerBootstrapper.TryGetSceneContainer(scene, out _));
+            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
         }
 
         [UnityTest]
@@ -58,14 +58,15 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
             yield return WaitFor(ready);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetSceneContainer(scene, out var container));
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
 
             Object.Destroy(installer.gameObject);
             yield return null;
 
             Assert.IsTrue(container!.IsDisposed);
             Assert.IsTrue(scene.isLoaded);
-            Assert.IsFalse(ContainerBootstrapper.TryGetSceneContainer(scene, out _));
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var fallback));
+            Assert.AreSame(ContainerBootstrapper.Root, fallback);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -85,7 +86,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
             Assert.IsFalse(content.activeSelf);
             Assert.IsFalse(ready.IsCompleted);
-            Assert.IsFalse(ContainerBootstrapper.IsSceneReady(scene));
+            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
             Assert.IsNotNull(behaviour.Service);
 
             gate.Release();
@@ -94,7 +95,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             Assert.IsTrue(ready.Result);
             Assert.IsTrue(content.activeSelf);
             Assert.IsTrue(installer.gameObject.activeSelf);
-            Assert.IsTrue(ContainerBootstrapper.IsSceneReady(scene));
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out _));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -122,7 +123,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
             yield return WaitFor(ready);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetSceneContainer(scene, out var container));
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
             Assert.AreNotEqual(scene, SceneManager.GetActiveScene());
             Assert.AreEqual(scene, container!.Resolve<TestObjectCreator>().CreatedScene);
 
@@ -138,8 +139,25 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
             Assert.IsTrue(ready.IsCompleted);
             Assert.IsTrue(ready.Result);
-            Assert.IsFalse(ContainerBootstrapper.TryGetSceneContainer(scene, out _));
             SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator TryGetContainer_SceneWithoutInstaller_ReturnsInitializedRoot()
+        {
+            var root = ContainerBootstrapper.Root;
+
+            for (var i = 0; i < 100 && root != null && !root.IsInitialized; i++)
+            {
+                yield return null;
+            }
+
+            var scene = SceneManager.CreateScene(nameof(TryGetContainer_SceneWithoutInstaller_ReturnsInitializedRoot));
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreSame(root, container);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
         }
 
         private static T AddInstaller<T>(Scene scene, System.Action<T>? configure = null)
