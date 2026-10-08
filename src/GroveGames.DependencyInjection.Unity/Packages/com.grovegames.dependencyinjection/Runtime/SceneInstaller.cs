@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GroveGames.DependencyInjection.Unity
 {
-    [DefaultExecutionOrder(-10000)]
+    [DefaultExecutionOrder(int.MinValue)]
     public abstract class SceneInstaller : MonoBehaviour, IInstaller
     {
         public abstract void Install(IContainerBuilder builder);
