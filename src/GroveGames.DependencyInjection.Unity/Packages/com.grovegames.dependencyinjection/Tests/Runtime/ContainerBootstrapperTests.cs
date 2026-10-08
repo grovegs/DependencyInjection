@@ -115,6 +115,84 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
+        public IEnumerator SceneInstaller_SceneActivatedSameFrame_InitializesAsActiveScene()
+        {
+            var previousActiveScene = SceneManager.GetActiveScene();
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_SceneActivatedSameFrame_InitializesAsActiveScene));
+            AddInstaller<TestNewObjectSceneInstaller>(scene);
+
+            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
+
+            SceneManager.SetActiveScene(scene);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+            yield return WaitFor(ready);
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreEqual(scene, container!.Resolve<TestNewObjectCreator>().CreatedScene);
+
+            SceneManager.SetActiveScene(previousActiveScene);
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator WhenSceneReadyAsync_CalledBeforeActivation_InitializesAsActiveScene()
+        {
+            var previousActiveScene = SceneManager.GetActiveScene();
+            var scene = SceneManager.CreateScene(nameof(WhenSceneReadyAsync_CalledBeforeActivation_InitializesAsActiveScene));
+            AddInstaller<TestNewObjectSceneInstaller>(scene);
+
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+            Assert.IsFalse(ready.IsCompleted);
+
+            SceneManager.SetActiveScene(scene);
+            yield return WaitFor(ready);
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreEqual(scene, container!.Resolve<TestNewObjectCreator>().CreatedScene);
+
+            SceneManager.SetActiveScene(previousActiveScene);
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator SceneInstaller_SceneNeverActivated_InitializesOnNextFrame()
+        {
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_SceneNeverActivated_InitializesOnNextFrame));
+            AddInstaller<TestSceneInstaller>(scene);
+
+            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
+
+            for (var i = 0; i < 10 && !ContainerBootstrapper.TryGetContainer(scene, out _); i++)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreNotSame(ContainerBootstrapper.Root, container);
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator SceneInstaller_ActiveSceneAtAwake_InitializesImmediately()
+        {
+            var previousActiveScene = SceneManager.GetActiveScene();
+            yield return WaitForRoot();
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_ActiveSceneAtAwake_InitializesImmediately));
+            SceneManager.SetActiveScene(scene);
+
+            AddInstaller<TestSceneInstaller>(scene);
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreNotSame(ContainerBootstrapper.Root, container);
+
+            SceneManager.SetActiveScene(previousActiveScene);
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator Instantiate_FromSceneContainer_PlacesObjectInContainerScene()
         {
             var scene = SceneManager.CreateScene(nameof(Instantiate_FromSceneContainer_PlacesObjectInContainerScene));
@@ -172,6 +250,18 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             return installer;
         }
 
+        private static IEnumerator WaitForRoot()
+        {
+            var root = ContainerBootstrapper.Root;
+
+            for (var i = 0; i < 100 && root != null && !root.IsInitialized; i++)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(root != null && root.IsInitialized);
+        }
+
         private static IEnumerator WaitFor(Task task)
         {
             for (var i = 0; i < 100 && !task.IsCompleted; i++)
@@ -202,6 +292,24 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 builder.AddSingleton<TestService>();
                 builder.AddSingleton(Gate!);
                 builder.AddSingleton<TestGatedEntryPoint>();
+            }
+        }
+
+        private sealed class TestNewObjectSceneInstaller : SceneInstaller
+        {
+            public override void Install(IContainerBuilder builder)
+            {
+                builder.AddSingleton<TestNewObjectCreator>();
+            }
+        }
+
+        private sealed class TestNewObjectCreator : IInitializable
+        {
+            public Scene CreatedScene { get; private set; }
+
+            public void Initialize()
+            {
+                CreatedScene = new GameObject(nameof(TestNewObjectCreator)).scene;
             }
         }
 

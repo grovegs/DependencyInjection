@@ -16,6 +16,7 @@ namespace GroveGames.DependencyInjection.Unity
             public readonly List<GameObject> PausedRoots;
             public readonly TaskCompletionSource<bool> Ready;
             public IContainer? Container;
+            public bool IsStarted;
 
             public SceneState(Scene scene, List<SceneInstaller> installers, List<GameObject> pausedRoots)
             {
@@ -27,6 +28,7 @@ namespace GroveGames.DependencyInjection.Unity
         }
 
         private static readonly Dictionary<int, SceneState> s_scenes = new();
+        private static readonly List<SceneState> s_pendingScenes = new();
         private static IContainer? s_root;
         private static Task? s_rootInitialization;
 
@@ -107,6 +109,7 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             ContainerPlayerLoop.Install();
+            SceneManager.activeSceneChanged += OnActiveSceneChanged;
             Application.quitting += Shutdown;
             s_rootInitialization = InitializeRootAsync(s_root);
         }
@@ -145,6 +148,52 @@ namespace GroveGames.DependencyInjection.Unity
 
             var state = new SceneState(scene, installers, PauseScene(scene));
             s_scenes.Add(scene.handle, state);
+
+            if (scene == SceneManager.GetActiveScene())
+            {
+                Start(state);
+                return;
+            }
+
+            s_pendingScenes.Add(state);
+        }
+
+        internal static void StartPendingScenes()
+        {
+            if (s_pendingScenes.Count == 0)
+            {
+                return;
+            }
+
+            var pendingScenes = s_pendingScenes.ToArray();
+            s_pendingScenes.Clear();
+
+            for (var i = 0; i < pendingScenes.Length; i++)
+            {
+                if (IsCurrent(pendingScenes[i]))
+                {
+                    Start(pendingScenes[i]);
+                }
+            }
+        }
+
+        private static void OnActiveSceneChanged(Scene previous, Scene next)
+        {
+            if (s_scenes.TryGetValue(next.handle, out var state))
+            {
+                Start(state);
+            }
+        }
+
+        private static void Start(SceneState state)
+        {
+            if (state.IsStarted)
+            {
+                return;
+            }
+
+            state.IsStarted = true;
+            s_pendingScenes.Remove(state);
             _ = InitializeSceneAsync(state);
         }
 
@@ -344,7 +393,9 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void Shutdown()
         {
+            SceneManager.activeSceneChanged -= OnActiveSceneChanged;
             Application.quitting -= Shutdown;
+            s_pendingScenes.Clear();
             ContainerPlayerLoop.Uninstall();
 
             foreach (var state in s_scenes.Values)
