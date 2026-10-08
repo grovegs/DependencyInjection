@@ -71,7 +71,6 @@ namespace GroveGames.DependencyInjection.Unity
         {
             if (s_scenes.TryGetValue(scene.handle, out var state))
             {
-                Start(state);
                 return state.Ready.Task;
             }
 

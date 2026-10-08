@@ -136,6 +136,27 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
+        public IEnumerator WhenSceneReadyAsync_CalledBeforeActivation_InitializesAsActiveScene()
+        {
+            var previousActiveScene = SceneManager.GetActiveScene();
+            var scene = SceneManager.CreateScene(nameof(WhenSceneReadyAsync_CalledBeforeActivation_InitializesAsActiveScene));
+            AddInstaller<TestNewObjectSceneInstaller>(scene);
+
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+            Assert.IsFalse(ready.IsCompleted);
+
+            SceneManager.SetActiveScene(scene);
+            yield return WaitFor(ready);
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreEqual(scene, container!.Resolve<TestNewObjectCreator>().CreatedScene);
+
+            SceneManager.SetActiveScene(previousActiveScene);
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
         public IEnumerator SceneInstaller_SceneNeverActivated_InitializesOnNextFrame()
         {
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_SceneNeverActivated_InitializesOnNextFrame));
@@ -158,6 +179,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         public IEnumerator SceneInstaller_ActiveSceneAtAwake_InitializesImmediately()
         {
             var previousActiveScene = SceneManager.GetActiveScene();
+            yield return WaitForRoot();
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_ActiveSceneAtAwake_InitializesImmediately));
             SceneManager.SetActiveScene(scene);
 
@@ -226,6 +248,18 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             configure?.Invoke(installer);
             gameObject.SetActive(true);
             return installer;
+        }
+
+        private static IEnumerator WaitForRoot()
+        {
+            var root = ContainerBootstrapper.Root;
+
+            for (var i = 0; i < 100 && root != null && !root.IsInitialized; i++)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(root != null && root.IsInitialized);
         }
 
         private static IEnumerator WaitFor(Task task)

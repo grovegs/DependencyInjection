@@ -172,7 +172,7 @@ Singletons implementing `IUpdatable`, `IFixedUpdatable` or `ILateUpdatable` from
 
 #### Loading Scenes
 
-A scene that is already the active scene when its installer wakes up starts right away. Any other scene starts as soon as it becomes the active scene, when `WhenSceneReadyAsync` is called for it, or at the beginning of the next frame, whichever comes first. A loader that loads a scene additively and then makes it active therefore initializes its container with that scene active, so objects created during initialization, even with `new GameObject`, land in the new scene and not in the loading scene.
+A scene that is already the active scene when its installer wakes up starts right away. Any other scene starts as soon as it becomes the active scene, or at the beginning of the next frame, whichever comes first. Calling `WhenSceneReadyAsync` does not start it, so a loader may start waiting before making the scene active. A loader that loads a scene additively and then makes it active therefore initializes its container with that scene active, so objects created during initialization, even with `new GameObject`, land in the new scene and not in the loading scene.
 
 Scene loaders do not need to know about containers, but a loader that should keep its loading screen up until the new scene is ready can wait for it, after making the scene active. `WhenSceneReadyAsync` completes with `true` once the scene's container is initialized and its objects are reactivated, with `true` immediately for a loaded scene without installers, and with `false` if initialization failed or the scene was unloaded first.
 
