@@ -1,6 +1,6 @@
 {
   "name": "com.grovegames.dependencyinjection",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "displayName": "GroveGames.DependencyInjection",
   "description": "Lightweight dependency injection with lifecycle phases for .NET, Unity, and Godot",
   "unity": "2021.3",
