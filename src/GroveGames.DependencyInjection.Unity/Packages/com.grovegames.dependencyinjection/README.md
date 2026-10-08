@@ -66,6 +66,17 @@ A container never disposes or initializes an instance that it or a parent contai
 
 Each phase finishes before the next one starts: its sync methods run first, then its async methods are awaited one at a time. Entries run in registration order within a step. Every entry point is constructed, with its dependencies injected, before any phase runs, so a constructor only receives dependencies and must not use them. To use another service's initialized state, initialize in a later step than it: an `InitializeAsync` can rely on any `Initialize`, but an `Initialize` that needs an `InitializeAsync` result belongs in `PostInitialize`. Lifecycle interfaces are detected on singletons only.
 
+### Updates
+
+| Interface             | Method                                  |
+| --------------------- | --------------------------------------- |
+| `IPreFrameUpdatable`  | `void PreFrameUpdate(float deltaTime)`  |
+| `IFrameUpdatable`     | `void FrameUpdate(float deltaTime)`     |
+| `IPostFrameUpdatable` | `void PostFrameUpdate(float deltaTime)` |
+| `IPhysicsUpdatable`   | `void PhysicsUpdate(float deltaTime)`   |
+
+The core only declares these interfaces; the Unity and Godot packages call them on the singletons of every initialized container until it is disposed. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
+
 ### Child Containers
 
 ```csharp
@@ -168,7 +179,7 @@ public sealed class BattleInstaller : SceneInstaller
 }
 ```
 
-Singletons implementing `IPreFrameUpdatable`, `IFrameUpdatable`, `IPostFrameUpdatable` or `IPhysicsUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after all `MonoBehaviour.Update` calls, and `PhysicsUpdate` runs on the fixed timestep.
+The [update interfaces](#updates) are called from the player loop, so no `MonoBehaviour` lifecycle methods are needed: `PreFrameUpdate` and `FrameUpdate` at the start of `Update`, `PostFrameUpdate` after all `MonoBehaviour.Update` calls, and `PhysicsUpdate` on the fixed timestep.
 
 #### Loading Scenes
 
@@ -281,7 +292,7 @@ Godot types live in the `GroveGames.DependencyInjection.Godot` namespace.
 
 - **`RootInstaller`**: Resource installer for the root container
 - **`SceneInstaller`**: Node installer for a scene container
-- **`ContainerBootstrapper`**: Autoload that builds containers and calls `IProcessable.Process` and `IPhysicsProcessable.PhysicsProcess` on their singletons from `_Process` and `_PhysicsProcess`. Exposes `Root`, `TryGetContainer(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized, and `WhenSceneReadyAsync(Node)`, which completes with `true` once the scene containing the node is initialized
+- **`ContainerBootstrapper`**: Autoload that builds containers and calls the [update interfaces](#updates) on their singletons: `PreFrameUpdate` and `FrameUpdate` before any other node's `_Process`, `PostFrameUpdate` after every node's `_Process`, and `PhysicsUpdate` from `_PhysicsProcess`. Exposes `Root`, `TryGetContainer(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized, and `WhenSceneReadyAsync(Node)`, which completes with `true` once the scene containing the node is initialized
 - **`DependencyInjectionSettingsResource`**: Resource holding the root installer
 - **`InjectTree`** and **`Instantiate`**: Inject `[Inject]` methods on a node tree
 
