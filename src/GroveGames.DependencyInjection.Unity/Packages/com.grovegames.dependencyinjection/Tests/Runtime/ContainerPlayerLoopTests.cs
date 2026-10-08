@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 
 using NUnit.Framework;
 
@@ -24,9 +25,10 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 yield return new WaitForFixedUpdate();
                 yield return null;
 
-                Assert.Greater(updatable.UpdateCount, 0);
-                Assert.Greater(updatable.FixedUpdateCount, 0);
-                Assert.Greater(updatable.LateUpdateCount, 0);
+                Assert.Greater(updatable.FrameUpdateCount, 0);
+                Assert.Greater(updatable.PhysicsUpdateCount, 0);
+                Assert.Greater(updatable.PreFrameUpdateCount, 0);
+                Assert.Greater(updatable.PostFrameUpdateCount, 0);
             }
             finally
             {
@@ -46,11 +48,11 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             yield return null;
 
             ContainerPlayerLoop.Remove(container);
-            var updateCount = updatable.UpdateCount;
+            var updateCount = updatable.FrameUpdateCount;
             yield return null;
             yield return null;
 
-            Assert.AreEqual(updateCount, updatable.UpdateCount);
+            Assert.AreEqual(updateCount, updatable.FrameUpdateCount);
             container.Dispose();
         }
 
@@ -66,29 +68,107 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             ContainerPlayerLoop.Add(container);
             yield return null;
 
-            Assert.AreEqual(0, updatable.UpdateCount);
+            Assert.AreEqual(0, updatable.FrameUpdateCount);
             ContainerPlayerLoop.Remove(container);
         }
 
-        private sealed class TestUpdatable : IUpdatable, IFixedUpdatable, ILateUpdatable
+        [UnityTest]
+        public IEnumerator FrameUpdate_MultipleContainers_RunsEveryPreFrameUpdateBeforeAnyFrameUpdate()
         {
-            public int UpdateCount { get; private set; }
-            public int FixedUpdateCount { get; private set; }
-            public int LateUpdateCount { get; private set; }
+            var log = new List<string>();
+            var first = new ContainerBuilder();
+            first.AddSingleton(log);
+            first.AddSingleton<TestLoggingFrameUpdatable>();
+            var firstContainer = first.Build();
+            var second = new ContainerBuilder();
+            second.AddSingleton(log);
+            second.AddSingleton<TestLoggingPreFrameUpdatable>();
+            var secondContainer = second.Build();
+            ContainerPlayerLoop.Add(firstContainer);
+            ContainerPlayerLoop.Add(secondContainer);
 
-            public void Update(float deltaTime)
+            try
             {
-                UpdateCount++;
+                yield return null;
+                yield return null;
+
+                var preFrameUpdate = log.IndexOf("PreFrameUpdate");
+                var frameUpdate = log.IndexOf("FrameUpdate");
+                var postFrameUpdate = log.IndexOf("PostFrameUpdate");
+
+                Assert.GreaterOrEqual(preFrameUpdate, 0);
+                Assert.Less(preFrameUpdate, frameUpdate);
+                Assert.Less(frameUpdate, postFrameUpdate);
+            }
+            finally
+            {
+                ContainerPlayerLoop.Remove(firstContainer);
+                ContainerPlayerLoop.Remove(secondContainer);
+                firstContainer.Dispose();
+                secondContainer.Dispose();
+            }
+        }
+
+        private sealed class TestLoggingFrameUpdatable : IFrameUpdatable
+        {
+            private readonly List<string> _log;
+
+            public TestLoggingFrameUpdatable(List<string> log)
+            {
+                _log = log;
             }
 
-            public void FixedUpdate(float deltaTime)
+            public void FrameUpdate(float deltaTime)
             {
-                FixedUpdateCount++;
+                _log.Add("FrameUpdate");
+            }
+        }
+
+        private sealed class TestLoggingPreFrameUpdatable : IPreFrameUpdatable, IPostFrameUpdatable
+        {
+            private readonly List<string> _log;
+
+            public TestLoggingPreFrameUpdatable(List<string> log)
+            {
+                _log = log;
             }
 
-            public void LateUpdate(float deltaTime)
+            public void PreFrameUpdate(float deltaTime)
             {
-                LateUpdateCount++;
+                _log.Add("PreFrameUpdate");
+            }
+
+            public void PostFrameUpdate(float deltaTime)
+            {
+                _log.Add("PostFrameUpdate");
+            }
+        }
+
+        private sealed class TestUpdatable : IPreFrameUpdatable, IFrameUpdatable, IPostFrameUpdatable, IPhysicsUpdatable
+        {
+            public int FrameUpdateCount { get; private set; }
+            public int PhysicsUpdateCount { get; private set; }
+            public int PreFrameUpdateCount { get; private set; }
+            public int PostFrameUpdateCount { get; private set; }
+
+            public void FrameUpdate(float deltaTime)
+            {
+                FrameUpdateCount++;
+            }
+
+            public void PhysicsUpdate(float deltaTime)
+            {
+                PhysicsUpdateCount++;
+            }
+
+            public void PreFrameUpdate(float deltaTime)
+            {
+                PreFrameUpdateCount++;
+            }
+
+            public void PostFrameUpdate(float deltaTime)
+            {
+                PostFrameUpdateCount++;
             }
         }
     }

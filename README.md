@@ -127,9 +127,9 @@ There are two installation steps required to use it in Unity.
     -nullable:enable
     ```
 
-### Root Installers
+### Root Installer
 
-Derive from `RootInstaller` and list the assets in Edit → Project Settings → GroveGames → Dependency Injection. Settings are stored as a ScriptableObject in `Assets/Settings/DependencyInjectionSettings.asset` and added to preloaded assets.
+Derive from `RootInstaller`, create an asset for it and assign it in Edit → Project Settings → GroveGames → Dependency Injection. A project has one root installer; register everything that lives for the whole application in it. Settings are stored as a ScriptableObject in `Assets/Settings/DependencyInjectionSettings.asset` and added to preloaded assets.
 
 ```csharp
 using GroveGames.DependencyInjection;
@@ -168,7 +168,7 @@ public sealed class BattleInstaller : SceneInstaller
 }
 ```
 
-Singletons implementing `IUpdatable`, `IFixedUpdatable` or `ILateUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed.
+Singletons implementing `IPreFrameUpdatable`, `IFrameUpdatable`, `IPostFrameUpdatable` or `IPhysicsUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after all `MonoBehaviour.Update` calls, and `PhysicsUpdate` runs on the fixed timestep.
 
 #### Loading Scenes
 
@@ -211,7 +211,7 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 - **`RootInstaller`**: ScriptableObject installer for the root container
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
 - **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root`, `TryGetContainer` and `WhenSceneReadyAsync`
-- **`DependencyInjectionSettings`**: ScriptableObject listing the root installers
+- **`DependencyInjectionSettings`**: ScriptableObject holding the root installer
 - **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
@@ -234,9 +234,9 @@ res://
 └── ...
 ```
 
-### Root Installers
+### Root Installer
 
-Derive from `RootInstaller`, create a resource for it and add it to a `DependencyInjectionSettingsResource`. The settings resource path is stored in project settings under `grove_games/dependency_injection/settings_resource`.
+Derive from `RootInstaller`, create a resource for it and assign it as the `RootInstaller` of a `DependencyInjectionSettingsResource`. A project has one root installer. The settings resource path is stored in project settings under `grove_games/dependency_injection/settings_resource`.
 
 ```csharp
 using Godot;
@@ -282,7 +282,7 @@ Godot types live in the `GroveGames.DependencyInjection.Godot` namespace.
 - **`RootInstaller`**: Resource installer for the root container
 - **`SceneInstaller`**: Node installer for a scene container
 - **`ContainerBootstrapper`**: Autoload that builds containers and calls `IProcessable.Process` and `IPhysicsProcessable.PhysicsProcess` on their singletons from `_Process` and `_PhysicsProcess`. Exposes `Root`, `TryGetContainer(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized, and `WhenSceneReadyAsync(Node)`, which completes with `true` once the scene containing the node is initialized
-- **`DependencyInjectionSettingsResource`**: Resource listing the root installers
+- **`DependencyInjectionSettingsResource`**: Resource holding the root installer
 - **`InjectTree`** and **`Instantiate`**: Inject `[Inject]` methods on a node tree
 
 ## Performance

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Sandbox
 {
-    public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IUpdatable
+    public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IFrameUpdatable
     {
         private readonly Greeter _greeter;
         private int _frameCount;
@@ -29,7 +29,7 @@ namespace Sandbox
             Debug.Log(_greeter.Greet("root"));
         }
 
-        public void Update(float deltaTime)
+        public void FrameUpdate(float deltaTime)
         {
             if (++_frameCount == 10)
             {

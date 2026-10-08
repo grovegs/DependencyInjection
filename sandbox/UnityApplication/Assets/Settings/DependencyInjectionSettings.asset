@@ -12,5 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1cde8b5c0775404c8b5421b97498475d, type: 3}
   m_Name: DependencyInjectionSettings
   m_EditorClassIdentifier: GroveGames.DependencyInjection.Unity::GroveGames.DependencyInjection.Unity.DependencyInjectionSettings
-  _rootInstallers:
-  - {fileID: 11400000, guid: b571a743c90ed44fb97397b753c4e4ae, type: 2}
+  _rootInstaller: {fileID: 11400000, guid: b571a743c90ed44fb97397b753c4e4ae, type: 2}

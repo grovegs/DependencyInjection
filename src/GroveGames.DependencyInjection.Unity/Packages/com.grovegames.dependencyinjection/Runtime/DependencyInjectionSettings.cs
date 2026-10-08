@@ -11,9 +11,9 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static DependencyInjectionSettings? s_loaded;
 
-        [SerializeField] private RootInstaller[] _rootInstallers = System.Array.Empty<RootInstaller>();
+        [SerializeField] private RootInstaller? _rootInstaller;
 
-        public RootInstaller[] RootInstallers => _rootInstallers;
+        public RootInstaller? RootInstaller => _rootInstaller;
 
         private void OnEnable()
         {
