@@ -8,6 +8,10 @@ namespace GroveGames.DependencyInjection.Unity
 {
     internal static class ContainerPlayerLoop
     {
+        private struct ContainerInitialization
+        {
+        }
+
         private struct ContainerUpdate
         {
         }
@@ -42,6 +46,7 @@ namespace GroveGames.DependencyInjection.Unity
         {
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
+            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Initialization), typeof(ContainerInitialization), Initialization);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Update), typeof(ContainerUpdate), Update);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.FixedUpdate), typeof(ContainerFixedUpdate), FixedUpdate);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.PreLateUpdate), typeof(ContainerLateUpdate), LateUpdate);
@@ -100,6 +105,18 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             return -1;
+        }
+
+        private static void Initialization()
+        {
+            try
+            {
+                ContainerBootstrapper.StartPendingScenes();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
         }
 
         private static void Update()
@@ -218,7 +235,7 @@ namespace GroveGames.DependencyInjection.Unity
             {
                 var system = systems[i];
 
-                if (system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerLateUpdate))
+                if (system.type == typeof(ContainerInitialization) || system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerLateUpdate))
                 {
                     continue;
                 }
