@@ -12,33 +12,33 @@ namespace GroveGames.DependencyInjection.Unity
         {
         }
 
-        private struct ContainerUpdate
+        private struct ContainerFrameUpdate
         {
         }
 
-        private struct ContainerFixedUpdate
+        private struct ContainerPhysicsUpdate
         {
         }
 
-        private struct ContainerPostUpdate
+        private struct ContainerPostFrameUpdate
         {
         }
 
         private sealed class Entry
         {
             public readonly IContainer Container;
-            public readonly IReadOnlyList<IPreUpdatable> PreUpdatables;
-            public readonly IReadOnlyList<IUpdatable> Updatables;
-            public readonly IReadOnlyList<IPostUpdatable> PostUpdatables;
-            public readonly IReadOnlyList<IFixedUpdatable> FixedUpdatables;
+            public readonly IReadOnlyList<IPreFrameUpdatable> PreFrameUpdatables;
+            public readonly IReadOnlyList<IFrameUpdatable> FrameUpdatables;
+            public readonly IReadOnlyList<IPostFrameUpdatable> PostFrameUpdatables;
+            public readonly IReadOnlyList<IPhysicsUpdatable> PhysicsUpdatables;
 
             public Entry(IContainer container)
             {
                 Container = container;
-                PreUpdatables = container.ResolveAll<IPreUpdatable>();
-                Updatables = container.ResolveAll<IUpdatable>();
-                PostUpdatables = container.ResolveAll<IPostUpdatable>();
-                FixedUpdatables = container.ResolveAll<IFixedUpdatable>();
+                PreFrameUpdatables = container.ResolveAll<IPreFrameUpdatable>();
+                FrameUpdatables = container.ResolveAll<IFrameUpdatable>();
+                PostFrameUpdatables = container.ResolveAll<IPostFrameUpdatable>();
+                PhysicsUpdatables = container.ResolveAll<IPhysicsUpdatable>();
             }
         }
 
@@ -49,9 +49,9 @@ namespace GroveGames.DependencyInjection.Unity
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Initialization), typeof(ContainerInitialization), Initialization);
-            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Update), typeof(ContainerUpdate), Update);
-            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.FixedUpdate), typeof(ContainerFixedUpdate), FixedUpdate);
-            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.PreLateUpdate), typeof(ContainerPostUpdate), PostUpdate);
+            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Update), typeof(ContainerFrameUpdate), FrameUpdate);
+            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.FixedUpdate), typeof(ContainerPhysicsUpdate), PhysicsUpdate);
+            AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.PreLateUpdate), typeof(ContainerPostFrameUpdate), PostFrameUpdate);
             PlayerLoop.SetPlayerLoop(playerLoop);
         }
 
@@ -121,7 +121,7 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
-        private static void Update()
+        private static void FrameUpdate()
         {
             var deltaTime = Time.deltaTime;
             var entries = s_entries;
@@ -129,13 +129,13 @@ namespace GroveGames.DependencyInjection.Unity
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
-                var preUpdatables = entry.PreUpdatables;
+                var preFrameUpdatables = entry.PreFrameUpdatables;
 
-                for (var j = 0; j < preUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < preFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
-                        preUpdatables[j].PreUpdate(deltaTime);
+                        preFrameUpdatables[j].PreFrameUpdate(deltaTime);
                     }
                     catch (Exception exception)
                     {
@@ -149,13 +149,13 @@ namespace GroveGames.DependencyInjection.Unity
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
-                var updatables = entry.Updatables;
+                var frameUpdatables = entry.FrameUpdatables;
 
-                for (var j = 0; j < updatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < frameUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
-                        updatables[j].Update(deltaTime);
+                        frameUpdatables[j].FrameUpdate(deltaTime);
                     }
                     catch (Exception exception)
                     {
@@ -165,7 +165,7 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
-        private static void FixedUpdate()
+        private static void PhysicsUpdate()
         {
             var deltaTime = Time.fixedDeltaTime;
             var entries = s_entries;
@@ -173,13 +173,13 @@ namespace GroveGames.DependencyInjection.Unity
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
-                var fixedUpdatables = entry.FixedUpdatables;
+                var physicsUpdatables = entry.PhysicsUpdatables;
 
-                for (var j = 0; j < fixedUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < physicsUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
-                        fixedUpdatables[j].FixedUpdate(deltaTime);
+                        physicsUpdatables[j].PhysicsUpdate(deltaTime);
                     }
                     catch (Exception exception)
                     {
@@ -189,7 +189,7 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
-        private static void PostUpdate()
+        private static void PostFrameUpdate()
         {
             var deltaTime = Time.deltaTime;
             var entries = s_entries;
@@ -197,13 +197,13 @@ namespace GroveGames.DependencyInjection.Unity
             for (var i = 0; i < entries.Length; i++)
             {
                 var entry = entries[i];
-                var postUpdatables = entry.PostUpdatables;
+                var postFrameUpdatables = entry.PostFrameUpdatables;
 
-                for (var j = 0; j < postUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < postFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
-                        postUpdatables[j].PostUpdate(deltaTime);
+                        postFrameUpdatables[j].PostFrameUpdate(deltaTime);
                     }
                     catch (Exception exception)
                     {
@@ -257,7 +257,7 @@ namespace GroveGames.DependencyInjection.Unity
             {
                 var system = systems[i];
 
-                if (system.type == typeof(ContainerInitialization) || system.type == typeof(ContainerUpdate) || system.type == typeof(ContainerFixedUpdate) || system.type == typeof(ContainerPostUpdate))
+                if (system.type == typeof(ContainerInitialization) || system.type == typeof(ContainerFrameUpdate) || system.type == typeof(ContainerPhysicsUpdate) || system.type == typeof(ContainerPostFrameUpdate))
                 {
                     continue;
                 }

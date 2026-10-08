@@ -25,10 +25,10 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 yield return new WaitForFixedUpdate();
                 yield return null;
 
-                Assert.Greater(updatable.UpdateCount, 0);
-                Assert.Greater(updatable.FixedUpdateCount, 0);
-                Assert.Greater(updatable.PreUpdateCount, 0);
-                Assert.Greater(updatable.PostUpdateCount, 0);
+                Assert.Greater(updatable.FrameUpdateCount, 0);
+                Assert.Greater(updatable.PhysicsUpdateCount, 0);
+                Assert.Greater(updatable.PreFrameUpdateCount, 0);
+                Assert.Greater(updatable.PostFrameUpdateCount, 0);
             }
             finally
             {
@@ -48,11 +48,11 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             yield return null;
 
             ContainerPlayerLoop.Remove(container);
-            var updateCount = updatable.UpdateCount;
+            var updateCount = updatable.FrameUpdateCount;
             yield return null;
             yield return null;
 
-            Assert.AreEqual(updateCount, updatable.UpdateCount);
+            Assert.AreEqual(updateCount, updatable.FrameUpdateCount);
             container.Dispose();
         }
 
@@ -68,21 +68,21 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             ContainerPlayerLoop.Add(container);
             yield return null;
 
-            Assert.AreEqual(0, updatable.UpdateCount);
+            Assert.AreEqual(0, updatable.FrameUpdateCount);
             ContainerPlayerLoop.Remove(container);
         }
 
         [UnityTest]
-        public IEnumerator Update_MultipleContainers_RunsEveryPreUpdateBeforeAnyUpdate()
+        public IEnumerator FrameUpdate_MultipleContainers_RunsEveryPreFrameUpdateBeforeAnyFrameUpdate()
         {
             var log = new List<string>();
             var first = new ContainerBuilder();
             first.AddSingleton(log);
-            first.AddSingleton<TestLoggingUpdatable>();
+            first.AddSingleton<TestLoggingFrameUpdatable>();
             var firstContainer = first.Build();
             var second = new ContainerBuilder();
             second.AddSingleton(log);
-            second.AddSingleton<TestLoggingPreUpdatable>();
+            second.AddSingleton<TestLoggingPreFrameUpdatable>();
             var secondContainer = second.Build();
             ContainerPlayerLoop.Add(firstContainer);
             ContainerPlayerLoop.Add(secondContainer);
@@ -92,13 +92,13 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 yield return null;
                 yield return null;
 
-                var preUpdate = log.IndexOf("PreUpdate");
-                var update = log.IndexOf("Update");
-                var postUpdate = log.IndexOf("PostUpdate");
+                var preFrameUpdate = log.IndexOf("PreFrameUpdate");
+                var frameUpdate = log.IndexOf("FrameUpdate");
+                var postFrameUpdate = log.IndexOf("PostFrameUpdate");
 
-                Assert.GreaterOrEqual(preUpdate, 0);
-                Assert.Less(preUpdate, update);
-                Assert.Less(update, postUpdate);
+                Assert.GreaterOrEqual(preFrameUpdate, 0);
+                Assert.Less(preFrameUpdate, frameUpdate);
+                Assert.Less(frameUpdate, postFrameUpdate);
             }
             finally
             {
@@ -109,66 +109,66 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             }
         }
 
-        private sealed class TestLoggingUpdatable : IUpdatable
+        private sealed class TestLoggingFrameUpdatable : IFrameUpdatable
         {
             private readonly List<string> _log;
 
-            public TestLoggingUpdatable(List<string> log)
+            public TestLoggingFrameUpdatable(List<string> log)
             {
                 _log = log;
             }
 
-            public void Update(float deltaTime)
+            public void FrameUpdate(float deltaTime)
             {
-                _log.Add("Update");
+                _log.Add("FrameUpdate");
             }
         }
 
-        private sealed class TestLoggingPreUpdatable : IPreUpdatable, IPostUpdatable
+        private sealed class TestLoggingPreFrameUpdatable : IPreFrameUpdatable, IPostFrameUpdatable
         {
             private readonly List<string> _log;
 
-            public TestLoggingPreUpdatable(List<string> log)
+            public TestLoggingPreFrameUpdatable(List<string> log)
             {
                 _log = log;
             }
 
-            public void PreUpdate(float deltaTime)
+            public void PreFrameUpdate(float deltaTime)
             {
-                _log.Add("PreUpdate");
+                _log.Add("PreFrameUpdate");
             }
 
-            public void PostUpdate(float deltaTime)
+            public void PostFrameUpdate(float deltaTime)
             {
-                _log.Add("PostUpdate");
+                _log.Add("PostFrameUpdate");
             }
         }
 
-        private sealed class TestUpdatable : IPreUpdatable, IUpdatable, IPostUpdatable, IFixedUpdatable
+        private sealed class TestUpdatable : IPreFrameUpdatable, IFrameUpdatable, IPostFrameUpdatable, IPhysicsUpdatable
         {
-            public int UpdateCount { get; private set; }
-            public int FixedUpdateCount { get; private set; }
-            public int PreUpdateCount { get; private set; }
-            public int PostUpdateCount { get; private set; }
+            public int FrameUpdateCount { get; private set; }
+            public int PhysicsUpdateCount { get; private set; }
+            public int PreFrameUpdateCount { get; private set; }
+            public int PostFrameUpdateCount { get; private set; }
 
-            public void Update(float deltaTime)
+            public void FrameUpdate(float deltaTime)
             {
-                UpdateCount++;
+                FrameUpdateCount++;
             }
 
-            public void FixedUpdate(float deltaTime)
+            public void PhysicsUpdate(float deltaTime)
             {
-                FixedUpdateCount++;
+                PhysicsUpdateCount++;
             }
 
-            public void PreUpdate(float deltaTime)
+            public void PreFrameUpdate(float deltaTime)
             {
-                PreUpdateCount++;
+                PreFrameUpdateCount++;
             }
 
-            public void PostUpdate(float deltaTime)
+            public void PostFrameUpdate(float deltaTime)
             {
-                PostUpdateCount++;
+                PostFrameUpdateCount++;
             }
         }
     }
