@@ -93,7 +93,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor
             return settings;
         }
 
-        private static void AddToPreloadedAssets(DependencyInjectionSettings settings)
+        internal static void AddToPreloadedAssets(DependencyInjectionSettings settings)
         {
             var preloadedAssets = new List<Object>(PlayerSettings.GetPreloadedAssets());
 
