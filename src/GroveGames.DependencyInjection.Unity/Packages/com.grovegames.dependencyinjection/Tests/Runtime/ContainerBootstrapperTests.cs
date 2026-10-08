@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Threading;
+using System.Threading.Tasks;
 
 using NUnit.Framework;
 
@@ -26,24 +28,16 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
-        public IEnumerator OnSceneLoaded_SceneWithInstaller_CreatesAndDisposesSceneContainer()
+        public IEnumerator SceneInstaller_Awake_CreatesAndDisposesSceneContainer()
         {
-            var scene = SceneManager.CreateScene(nameof(OnSceneLoaded_SceneWithInstaller_CreatesAndDisposesSceneContainer));
-            var gameObject = new GameObject(nameof(TestSceneInstaller));
-            SceneManager.MoveGameObjectToScene(gameObject, scene);
-            var installer = gameObject.AddComponent<TestSceneInstaller>();
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_Awake_CreatesAndDisposesSceneContainer));
+            var installer = AddInstaller<TestSceneInstaller>(scene);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
 
-            ContainerBootstrapper.OnSceneLoaded(scene, LoadSceneMode.Additive);
+            yield return WaitFor(ready);
 
-            IContainer? container = null;
-
-            for (var i = 0; i < 100 && (container == null || !container.IsInitialized); i++)
-            {
-                ContainerBootstrapper.TryGetSceneContainer(scene, out container);
-                yield return null;
-            }
-
-            Assert.IsNotNull(container);
+            Assert.IsTrue(ready.Result);
+            Assert.IsTrue(ContainerBootstrapper.TryGetSceneContainer(scene, out var container));
             Assert.IsTrue(container!.IsInitialized);
             Assert.IsTrue(installer.IsInstalled);
             Assert.AreSame(ContainerBootstrapper.Root, container.Parent);
@@ -59,23 +53,14 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         public IEnumerator SceneInstaller_Destroyed_DisposesSceneContainerBeforeSceneUnloads()
         {
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_Destroyed_DisposesSceneContainerBeforeSceneUnloads));
-            var gameObject = new GameObject(nameof(TestSceneInstaller));
-            SceneManager.MoveGameObjectToScene(gameObject, scene);
-            gameObject.AddComponent<TestSceneInstaller>();
+            var installer = AddInstaller<TestSceneInstaller>(scene);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
 
-            ContainerBootstrapper.OnSceneLoaded(scene, LoadSceneMode.Additive);
+            yield return WaitFor(ready);
 
-            IContainer? container = null;
+            Assert.IsTrue(ContainerBootstrapper.TryGetSceneContainer(scene, out var container));
 
-            for (var i = 0; i < 100 && (container == null || !container.IsInitialized); i++)
-            {
-                ContainerBootstrapper.TryGetSceneContainer(scene, out container);
-                yield return null;
-            }
-
-            Assert.IsNotNull(container);
-
-            Object.Destroy(gameObject);
+            Object.Destroy(installer.gameObject);
             yield return null;
 
             Assert.IsTrue(container!.IsDisposed);
@@ -86,41 +71,97 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
-        public IEnumerator OnSceneLoaded_SceneActivatedSameFrame_InitializesInActiveScene()
+        public IEnumerator SceneInstaller_Awake_PausesSceneUntilAllInitializersComplete()
         {
-            var previousActiveScene = SceneManager.GetActiveScene();
-            var scene = SceneManager.CreateScene(nameof(OnSceneLoaded_SceneActivatedSameFrame_InitializesInActiveScene));
-            var gameObject = new GameObject(nameof(TestCreatingSceneInstaller));
-            SceneManager.MoveGameObjectToScene(gameObject, scene);
-            gameObject.AddComponent<TestCreatingSceneInstaller>();
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_Awake_PausesSceneUntilAllInitializersComplete));
+            var content = new GameObject("Content");
+            SceneManager.MoveGameObjectToScene(content, scene);
+            var behaviour = content.AddComponent<TestBehaviour>();
+            var gate = new TestGate();
+            var installer = AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.Gate = gate);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
 
-            ContainerBootstrapper.OnSceneLoaded(scene, LoadSceneMode.Additive);
-            SceneManager.SetActiveScene(scene);
+            yield return null;
 
-            IContainer? container = null;
+            Assert.IsFalse(content.activeSelf);
+            Assert.IsFalse(ready.IsCompleted);
+            Assert.IsFalse(ContainerBootstrapper.IsSceneReady(scene));
+            Assert.IsNotNull(behaviour.Service);
 
-            for (var i = 0; i < 100 && (container == null || !container.IsInitialized); i++)
-            {
-                ContainerBootstrapper.TryGetSceneContainer(scene, out container);
-                yield return null;
-            }
+            gate.Release();
+            yield return WaitFor(ready);
 
-            Assert.IsNotNull(container);
+            Assert.IsTrue(ready.Result);
+            Assert.IsTrue(content.activeSelf);
+            Assert.IsTrue(installer.gameObject.activeSelf);
+            Assert.IsTrue(ContainerBootstrapper.IsSceneReady(scene));
+
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+
+        [UnityTest]
+        public IEnumerator SceneInstaller_UnloadedWhilePaused_CompletesNotReady()
+        {
+            var scene = SceneManager.CreateScene(nameof(SceneInstaller_UnloadedWhilePaused_CompletesNotReady));
+            AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.Gate = new TestGate());
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+            yield return null;
+            yield return SceneManager.UnloadSceneAsync(scene);
+
+            Assert.IsTrue(ready.IsCompleted);
+            Assert.IsFalse(ready.Result);
+        }
+
+        [UnityTest]
+        public IEnumerator Instantiate_FromSceneContainer_PlacesObjectInContainerScene()
+        {
+            var scene = SceneManager.CreateScene(nameof(Instantiate_FromSceneContainer_PlacesObjectInContainerScene));
+            AddInstaller<TestCreatingSceneInstaller>(scene);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+            yield return WaitFor(ready);
+
+            Assert.IsTrue(ContainerBootstrapper.TryGetSceneContainer(scene, out var container));
+            Assert.AreNotEqual(scene, SceneManager.GetActiveScene());
             Assert.AreEqual(scene, container!.Resolve<TestObjectCreator>().CreatedScene);
 
-            SceneManager.SetActiveScene(previousActiveScene);
             yield return SceneManager.UnloadSceneAsync(scene);
         }
 
         [Test]
-        public void OnSceneLoaded_SceneWithoutInstaller_CreatesNoContainer()
+        public void WhenSceneReadyAsync_SceneWithoutInstaller_ReturnsLoaded()
         {
-            var scene = SceneManager.CreateScene(nameof(OnSceneLoaded_SceneWithoutInstaller_CreatesNoContainer));
+            var scene = SceneManager.CreateScene(nameof(WhenSceneReadyAsync_SceneWithoutInstaller_ReturnsLoaded));
 
-            ContainerBootstrapper.OnSceneLoaded(scene, LoadSceneMode.Additive);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
 
+            Assert.IsTrue(ready.IsCompleted);
+            Assert.IsTrue(ready.Result);
             Assert.IsFalse(ContainerBootstrapper.TryGetSceneContainer(scene, out _));
             SceneManager.UnloadSceneAsync(scene);
+        }
+
+        private static T AddInstaller<T>(Scene scene, System.Action<T>? configure = null)
+            where T : SceneInstaller
+        {
+            var gameObject = new GameObject(typeof(T).Name);
+            gameObject.SetActive(false);
+            SceneManager.MoveGameObjectToScene(gameObject, scene);
+            var installer = gameObject.AddComponent<T>();
+            configure?.Invoke(installer);
+            gameObject.SetActive(true);
+            return installer;
+        }
+
+        private static IEnumerator WaitFor(Task task)
+        {
+            for (var i = 0; i < 100 && !task.IsCompleted; i++)
+            {
+                yield return null;
+            }
+
+            Assert.IsTrue(task.IsCompleted);
         }
 
         private sealed class TestSceneInstaller : SceneInstaller
@@ -134,8 +175,16 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             }
         }
 
-        private sealed class TestService
+        private sealed class TestGatedSceneInstaller : SceneInstaller
         {
+            public TestGate? Gate { get; set; }
+
+            public override void Install(IContainerBuilder builder)
+            {
+                builder.AddSingleton<TestService>();
+                builder.AddSingleton(Gate!);
+                builder.AddSingleton<TestGatedEntryPoint>();
+            }
         }
 
         private sealed class TestCreatingSceneInstaller : SceneInstaller
@@ -146,13 +195,72 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             }
         }
 
+        private sealed class TestService
+        {
+        }
+
+        private sealed class TestBehaviour : MonoBehaviour
+        {
+            public TestService? Service { get; private set; }
+
+            [Inject]
+            public void Construct(TestService service)
+            {
+                Service = service;
+            }
+        }
+
+        private sealed class TestMarker : MonoBehaviour
+        {
+        }
+
+        private sealed class TestGate
+        {
+            private readonly TaskCompletionSource<bool> _source;
+
+            public TestGate()
+            {
+                _source = new TaskCompletionSource<bool>();
+            }
+
+            public Task Task => _source.Task;
+
+            public void Release()
+            {
+                _source.TrySetResult(true);
+            }
+        }
+
+        private sealed class TestGatedEntryPoint : IAsyncInitializable
+        {
+            private readonly TestGate _gate;
+
+            public TestGatedEntryPoint(TestGate gate)
+            {
+                _gate = gate;
+            }
+
+            public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+            {
+                await Task.WhenAny(_gate.Task, Task.Delay(Timeout.Infinite, cancellationToken));
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
         private sealed class TestObjectCreator : IInitializable
         {
+            private readonly IObjectResolver _resolver;
+
+            public TestObjectCreator(IObjectResolver resolver)
+            {
+                _resolver = resolver;
+            }
+
             public Scene CreatedScene { get; private set; }
 
             public void Initialize()
             {
-                CreatedScene = new GameObject(nameof(TestObjectCreator)).scene;
+                CreatedScene = _resolver.Instantiate<TestMarker>().gameObject.scene;
             }
         }
     }

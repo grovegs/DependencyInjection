@@ -249,7 +249,16 @@ internal sealed class Container : IContainer
         {
             using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCancellation.Token);
             var token = cancellation.Token;
+            token.ThrowIfCancellationRequested();
             var instances = ResolveEntryPoints();
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IPreInitializable initializable)
+                {
+                    initializable.PreInitialize();
+                }
+            }
 
             for (var i = 0; i < instances.Length; i++)
             {
@@ -257,6 +266,14 @@ internal sealed class Container : IContainer
                 {
                     await initializable.PreInitializeAsync(token);
                     token.ThrowIfCancellationRequested();
+                }
+            }
+
+            for (var i = 0; i < instances.Length; i++)
+            {
+                if (instances[i] is IInitializable initializable)
+                {
+                    initializable.Initialize();
                 }
             }
 
@@ -271,36 +288,18 @@ internal sealed class Container : IContainer
 
             for (var i = 0; i < instances.Length; i++)
             {
+                if (instances[i] is IPostInitializable initializable)
+                {
+                    initializable.PostInitialize();
+                }
+            }
+
+            for (var i = 0; i < instances.Length; i++)
+            {
                 if (instances[i] is IAsyncPostInitializable initializable)
                 {
                     await initializable.PostInitializeAsync(token);
                     token.ThrowIfCancellationRequested();
-                }
-            }
-
-            token.ThrowIfCancellationRequested();
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IPreInitializable initializable)
-                {
-                    initializable.PreInitialize();
-                }
-            }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IInitializable initializable)
-                {
-                    initializable.Initialize();
-                }
-            }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IPostInitializable initializable)
-                {
-                    initializable.PostInitialize();
                 }
             }
 
