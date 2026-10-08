@@ -4,9 +4,8 @@ using System.Threading.Tasks;
 using Godot;
 
 using GroveGames.DependencyInjection;
-using GroveGames.DependencyInjection.Godot;
 
-public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IProcessable
+public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IFrameUpdatable
 {
     private readonly ISingleton _singleton;
     private int _frameCount;
@@ -27,7 +26,7 @@ public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IProce
         GD.Print("Root initialized.");
     }
 
-    public void Process(double delta)
+    public void FrameUpdate(float deltaTime)
     {
         if (++_frameCount == 10)
         {

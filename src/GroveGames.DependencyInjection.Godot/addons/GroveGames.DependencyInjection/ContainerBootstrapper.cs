@@ -73,6 +73,7 @@ public sealed partial class ContainerBootstrapper : Node
 
     public override void _EnterTree()
     {
+        AddChild(new PostFrameUpdater());
         var builder = new ContainerBuilder();
         var installer = DependencyInjectionSettingsResource.GetOrCreate().RootInstaller;
 
@@ -127,15 +128,34 @@ public sealed partial class ContainerBootstrapper : Node
 
     public override void _Process(double delta)
     {
+        var deltaTime = (float)delta;
+
         for (var i = 0; i < s_processEntries.Count; i++)
         {
             var entry = s_processEntries[i];
 
-            for (var j = 0; j < entry.Processables.Count && !entry.Container.IsDisposed; j++)
+            for (var j = 0; j < entry.PreFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
             {
                 try
                 {
-                    entry.Processables[j].Process(delta);
+                    entry.PreFrameUpdatables[j].PreFrameUpdate(deltaTime);
+                }
+                catch (Exception exception)
+                {
+                    GD.PushError(exception.ToString());
+                }
+            }
+        }
+
+        for (var i = 0; i < s_processEntries.Count; i++)
+        {
+            var entry = s_processEntries[i];
+
+            for (var j = 0; j < entry.FrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+            {
+                try
+                {
+                    entry.FrameUpdatables[j].FrameUpdate(deltaTime);
                 }
                 catch (Exception exception)
                 {
@@ -147,15 +167,37 @@ public sealed partial class ContainerBootstrapper : Node
 
     public override void _PhysicsProcess(double delta)
     {
+        var deltaTime = (float)delta;
+
         for (var i = 0; i < s_processEntries.Count; i++)
         {
             var entry = s_processEntries[i];
 
-            for (var j = 0; j < entry.PhysicsProcessables.Count && !entry.Container.IsDisposed; j++)
+            for (var j = 0; j < entry.PhysicsUpdatables.Count && !entry.Container.IsDisposed; j++)
             {
                 try
                 {
-                    entry.PhysicsProcessables[j].PhysicsProcess(delta);
+                    entry.PhysicsUpdatables[j].PhysicsUpdate(deltaTime);
+                }
+                catch (Exception exception)
+                {
+                    GD.PushError(exception.ToString());
+                }
+            }
+        }
+    }
+
+    private static void PostFrameUpdate(float deltaTime)
+    {
+        for (var i = 0; i < s_processEntries.Count; i++)
+        {
+            var entry = s_processEntries[i];
+
+            for (var j = 0; j < entry.PostFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+            {
+                try
+                {
+                    entry.PostFrameUpdatables[j].PostFrameUpdate(deltaTime);
                 }
                 catch (Exception exception)
                 {
@@ -442,14 +484,31 @@ public sealed partial class ContainerBootstrapper : Node
     private sealed class ProcessEntry
     {
         public readonly IContainer Container;
-        public readonly IReadOnlyList<IProcessable> Processables;
-        public readonly IReadOnlyList<IPhysicsProcessable> PhysicsProcessables;
+        public readonly IReadOnlyList<IPreFrameUpdatable> PreFrameUpdatables;
+        public readonly IReadOnlyList<IFrameUpdatable> FrameUpdatables;
+        public readonly IReadOnlyList<IPostFrameUpdatable> PostFrameUpdatables;
+        public readonly IReadOnlyList<IPhysicsUpdatable> PhysicsUpdatables;
 
         public ProcessEntry(IContainer container)
         {
             Container = container;
-            Processables = container.ResolveAll<IProcessable>();
-            PhysicsProcessables = container.ResolveAll<IPhysicsProcessable>();
+            PreFrameUpdatables = container.ResolveAll<IPreFrameUpdatable>();
+            FrameUpdatables = container.ResolveAll<IFrameUpdatable>();
+            PostFrameUpdatables = container.ResolveAll<IPostFrameUpdatable>();
+            PhysicsUpdatables = container.ResolveAll<IPhysicsUpdatable>();
+        }
+    }
+
+    private sealed partial class PostFrameUpdater : Node
+    {
+        public PostFrameUpdater()
+        {
+            ProcessPriority = int.MaxValue;
+        }
+
+        public override void _Process(double delta)
+        {
+            PostFrameUpdate((float)delta);
         }
     }
 }
