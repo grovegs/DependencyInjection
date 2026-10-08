@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Pool;
+using UnityEngine.SceneManagement;
 
 using Object = UnityEngine.Object;
 
@@ -74,12 +75,27 @@ namespace GroveGames.DependencyInjection.Unity
         {
             resolver.AddDisposable(new GameObjectLifetime(gameObject));
             resolver.InjectGameObject(gameObject);
-            gameObject.transform.SetParent(parent, false);
 
-            if (parent == null && Application.isPlaying)
+            if (parent != null || !Application.isPlaying)
+            {
+                gameObject.transform.SetParent(parent, false);
+                return;
+            }
+
+            var isActive = gameObject.activeSelf;
+            gameObject.SetActive(false);
+            gameObject.transform.SetParent(null, false);
+
+            if (ContainerBootstrapper.TryGetScene(resolver, out var scene) && scene.isLoaded)
+            {
+                SceneManager.MoveGameObjectToScene(gameObject, scene);
+            }
+            else
             {
                 Object.DontDestroyOnLoad(gameObject);
             }
+
+            gameObject.SetActive(isActive);
         }
     }
 }

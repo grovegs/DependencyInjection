@@ -82,7 +82,7 @@ public sealed class ContainerTests
     }
 
     [Fact]
-    public async Task InitializeAsync_AllPhases_RunsAsyncPhasesBeforeSyncPhases()
+    public async Task InitializeAsync_AllPhases_RunsEachPhaseSyncThenAsync()
     {
         var log = new TestLog();
         var builder = new ContainerBuilder();
@@ -92,7 +92,7 @@ public sealed class ContainerTests
 
         await container.InitializeAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(["AsyncPreInitialize", "AsyncInitialize", "AsyncPostInitialize", "PreInitialize", "Initialize", "PostInitialize"], log.Entries);
+        Assert.Equal(["PreInitialize", "AsyncPreInitialize", "Initialize", "AsyncInitialize", "PostInitialize", "AsyncPostInitialize"], log.Entries);
         Assert.True(container.IsInitialized);
     }
 
@@ -108,7 +108,20 @@ public sealed class ContainerTests
 
         await container.InitializeAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(["A.InitializeAsync", "B.InitializeAsync", "A.Initialize", "B.Initialize"], log.Entries);
+        Assert.Equal(["A.Initialize", "B.Initialize", "A.InitializeAsync", "B.InitializeAsync"], log.Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_AsyncInitializerRegisteredBeforeItsSyncDependency_SeesDependencyInitialized()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestConsumer>();
+        builder.AddSingleton<TestSettings>();
+        using var container = builder.Build();
+
+        await container.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(container.Resolve<TestConsumer>().SawLoadedSettings);
     }
 
     [Fact]
@@ -193,7 +206,7 @@ public sealed class ContainerTests
     }
 
     [Fact]
-    public async Task InitializeAsync_DisposedDuringAsyncPhase_SkipsSyncPhases()
+    public async Task InitializeAsync_DisposedDuringAsyncPhase_SkipsLaterPhases()
     {
         var log = new TestLog();
         var gate = new TaskCompletionSource<bool>();
@@ -209,7 +222,7 @@ public sealed class ContainerTests
         var exception = await Record.ExceptionAsync(() => initialization);
 
         Assert.IsAssignableFrom<OperationCanceledException>(exception);
-        Assert.DoesNotContain("Initialize", log.Entries);
+        Assert.DoesNotContain("PostInitialize", log.Entries);
         Assert.False(container.IsInitialized);
     }
 
@@ -227,7 +240,7 @@ public sealed class ContainerTests
         var exception = await Record.ExceptionAsync(() => container.InitializeAsync(cancellation.Token).AsTask());
 
         Assert.IsAssignableFrom<OperationCanceledException>(exception);
-        Assert.DoesNotContain("Initialize", log.Entries);
+        Assert.Empty(log.Entries);
     }
 
     [Fact]
@@ -546,6 +559,34 @@ public sealed class ContainerTests
         }
     }
 
+    private sealed class TestSettings : IInitializable
+    {
+        public bool IsLoaded { get; private set; }
+
+        public void Initialize()
+        {
+            IsLoaded = true;
+        }
+    }
+
+    private sealed class TestConsumer : IAsyncInitializable
+    {
+        private readonly TestSettings _settings;
+
+        public TestConsumer(TestSettings settings)
+        {
+            _settings = settings;
+        }
+
+        public bool SawLoadedSettings { get; private set; }
+
+        public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+            SawLoadedSettings = _settings.IsLoaded;
+        }
+    }
+
     private sealed class TestInitializable : IInitializable
     {
         private readonly TestLog _log;
@@ -561,7 +602,7 @@ public sealed class ContainerTests
         }
     }
 
-    private sealed class TestBlockingEntryPoint : IAsyncInitializable, IInitializable
+    private sealed class TestBlockingEntryPoint : IAsyncInitializable, IPostInitializable
     {
         private readonly TestLog _log;
         private readonly TaskCompletionSource<bool> _gate;
@@ -577,9 +618,9 @@ public sealed class ContainerTests
             await _gate.Task;
         }
 
-        public void Initialize()
+        public void PostInitialize()
         {
-            _log.Entries.Add("Initialize");
+            _log.Entries.Add("PostInitialize");
         }
     }
 

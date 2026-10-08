@@ -12,7 +12,7 @@ A lightweight dependency injection framework for .NET, Unity, and Godot with bui
 ## Features
 
 - **Build-Time Validation**: Missing registrations, duplicate service types and circular dependencies fail when the container is built, not during gameplay
-- **Lifecycle Phases**: Async and sync pre-initialize, initialize and post-initialize phases; Unity and Godot add per-frame updates
+- **Lifecycle Phases**: Sync and async pre-initialize, initialize and post-initialize phases; Unity and Godot add per-frame updates
 - **Automatic Detection**: Lifecycle interfaces and `IDisposable` are picked up from the implementation; there is nothing extra to register
 - **Scoped Containers**: Child containers per scene that resolve from their parent and are disposed with the scene
 - **Low Overhead**: Constructors are discovered once at build time and singleton resolves do not allocate
@@ -57,14 +57,14 @@ A container never disposes or initializes an instance that it or a parent contai
 
 | Order | Interface                 | Method                                             |
 | ----- | ------------------------- | -------------------------------------------------- |
-| 1     | `IAsyncPreInitializable`  | `ValueTask PreInitializeAsync(CancellationToken)`  |
-| 2     | `IAsyncInitializable`     | `ValueTask InitializeAsync(CancellationToken)`     |
-| 3     | `IAsyncPostInitializable` | `ValueTask PostInitializeAsync(CancellationToken)` |
-| 4     | `IPreInitializable`       | `void PreInitialize()`                             |
-| 5     | `IInitializable`          | `void Initialize()`                                |
-| 6     | `IPostInitializable`      | `void PostInitialize()`                            |
+| 1     | `IPreInitializable`       | `void PreInitialize()`                             |
+| 2     | `IAsyncPreInitializable`  | `ValueTask PreInitializeAsync(CancellationToken)`  |
+| 3     | `IInitializable`          | `void Initialize()`                                |
+| 4     | `IAsyncInitializable`     | `ValueTask InitializeAsync(CancellationToken)`     |
+| 5     | `IPostInitializable`      | `void PostInitialize()`                            |
+| 6     | `IAsyncPostInitializable` | `ValueTask PostInitializeAsync(CancellationToken)` |
 
-Every async phase is awaited before any sync phase runs, and entries run in registration order within a phase. Lifecycle interfaces are detected on singletons only.
+Each phase finishes before the next one starts: its sync methods run first, then its async methods are awaited one at a time. Entries run in registration order within a step. Every entry point is constructed, with its dependencies injected, before any phase runs, so a constructor only receives dependencies and must not use them. To use another service's initialized state, initialize in a later step than it: an `InitializeAsync` can rely on any `Initialize`, but an `Initialize` that needs an `InitializeAsync` result belongs in `PostInitialize`. Lifecycle interfaces are detected on singletons only.
 
 ### Child Containers
 
@@ -151,7 +151,7 @@ The root container is built before the first scene loads and initialized asynchr
 
 ### Scene Installers
 
-Add components derived from `SceneInstaller` to a scene. When the scene loads, a child container of the root is built from every installer in it, after the root finishes initializing. It is initialized at the start of the next frame, so objects created during initialization land in the scene that is active by then. It is disposed as soon as the scene's installers are destroyed, so nothing updates against destroyed objects while the scene unloads.
+Add components derived from `SceneInstaller` to an active root GameObject of a scene. In the first installer's `Awake`, which runs at execution order `int.MinValue` before other scripts, every active root GameObject of the scene is deactivated so no other `Awake`, `OnEnable` or `Start` runs yet. After the root finishes initializing, a child container of the root is built from every installer in the scene, `[Inject]` methods are called on every `MonoBehaviour` of the scene, and the container is fully initialized. Only then are the root GameObjects reactivated, so scene scripts start with their dependencies injected and every initializer complete. If initialization fails, the error is logged and the scene is started anyway. The container is disposed as soon as the scene's installers are destroyed, so nothing updates against destroyed objects while the scene unloads. Subclasses that override `Awake` or `OnDestroy` must call the base method. Scripts that another package or Project Settings → Script Execution Order places at `int.MinValue` too may run first; they are not injected and do not wait for initialization.
 
 ```csharp
 public sealed class BattleInstaller : SceneInstaller
@@ -168,15 +168,35 @@ public sealed class BattleInstaller : SceneInstaller
 
 Singletons implementing `IUpdatable`, `IFixedUpdatable` or `ILateUpdatable` from `GroveGames.DependencyInjection.Unity` are updated from the player loop once their container is initialized, and stop when it is disposed, so no `MonoBehaviour` lifecycle methods are needed.
 
+#### Loading Scenes
+
+Scene loaders do not need to know about containers, but a loader that should keep its loading screen up until the new scene is ready can wait for it. `WhenSceneReadyAsync` completes with `true` once the scene's container is initialized and its objects are reactivated, with `true` immediately for a loaded scene without installers, and with `false` if initialization failed or the scene was unloaded first.
+
+```csharp
+public async Task ChangeSceneAsync(string sceneName)
+{
+    var previous = SceneManager.GetActiveScene();
+    await SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+    var scene = SceneManager.GetSceneByName(sceneName);
+
+    await ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+    SceneManager.SetActiveScene(scene);
+    await SceneManager.UnloadSceneAsync(previous);
+}
+```
+
+Objects created through `Instantiate` by a scene container, or by a container created from it, are placed in that container's scene, whichever scene is active.
+
 ### Unity Components
 
 Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 
 - **`RootInstaller`**: ScriptableObject installer for the root container
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
-- **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root` and `TryGetSceneContainer`
+- **`ContainerBootstrapper`**: Builds the root and scene containers and exposes `Root`, `TryGetSceneContainer`, `IsSceneReady` and `WhenSceneReadyAsync`
 - **`DependencyInjectionSettings`**: ScriptableObject listing the root installers
-- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject: it is kept across scene loads and destroyed when the container is disposed, after the component itself
+- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
 ## Godot

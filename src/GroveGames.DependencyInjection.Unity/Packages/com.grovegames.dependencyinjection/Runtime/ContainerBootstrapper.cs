@@ -9,8 +9,25 @@ namespace GroveGames.DependencyInjection.Unity
 {
     public static class ContainerBootstrapper
     {
-        private static readonly Dictionary<int, IContainer> s_sceneContainers = new();
-        private static readonly HashSet<int> s_pendingScenes = new();
+        private sealed class SceneState
+        {
+            public readonly Scene Scene;
+            public readonly List<SceneInstaller> Installers;
+            public readonly List<GameObject> PausedRoots;
+            public readonly TaskCompletionSource<bool> Ready;
+            public IContainer? Container;
+
+            public SceneState(Scene scene, List<SceneInstaller> installers, List<GameObject> pausedRoots)
+            {
+                Scene = scene;
+                Installers = installers;
+                PausedRoots = pausedRoots;
+                Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+        }
+
+        private static readonly Dictionary<int, SceneState> s_scenes = new();
+        private static readonly Dictionary<IContainer, Scene> s_containerScenes = new();
         private static IContainer? s_root;
         private static Task? s_rootInitialization;
 
@@ -18,7 +35,35 @@ namespace GroveGames.DependencyInjection.Unity
 
         public static bool TryGetSceneContainer(Scene scene, out IContainer? container)
         {
-            return s_sceneContainers.TryGetValue(scene.handle, out container);
+            if (s_scenes.TryGetValue(scene.handle, out var state) && state.Container != null)
+            {
+                container = state.Container;
+                return true;
+            }
+
+            container = null;
+            return false;
+        }
+
+        public static bool IsSceneReady(Scene scene)
+        {
+            if (!s_scenes.TryGetValue(scene.handle, out var state))
+            {
+                return scene.isLoaded;
+            }
+
+            var ready = state.Ready.Task;
+            return ready.IsCompleted && ready.Result;
+        }
+
+        public static Task<bool> WhenSceneReadyAsync(Scene scene)
+        {
+            if (s_scenes.TryGetValue(scene.handle, out var state))
+            {
+                return state.Ready.Task;
+            }
+
+            return Task.FromResult(scene.isLoaded);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -53,7 +98,6 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             ContainerPlayerLoop.Install();
-            SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
             Application.quitting += Shutdown;
             s_rootInitialization = InitializeRootAsync(s_root);
@@ -77,9 +121,9 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
-        internal static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        internal static void InitializeScene(Scene scene)
         {
-            if (s_sceneContainers.ContainsKey(scene.handle) || s_pendingScenes.Contains(scene.handle))
+            if (!scene.IsValid() || s_scenes.ContainsKey(scene.handle))
             {
                 return;
             }
@@ -91,39 +135,53 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            s_pendingScenes.Add(scene.handle);
-            _ = InitializeSceneAsync(scene, installers);
+            var state = new SceneState(scene, installers, PauseScene(scene));
+            s_scenes.Add(scene.handle, state);
+            _ = InitializeSceneAsync(state);
         }
 
-        private static async Task InitializeSceneAsync(Scene scene, List<SceneInstaller> installers)
+        private static async Task InitializeSceneAsync(SceneState state)
         {
+            var rootInitialization = s_rootInitialization;
+
+            if (rootInitialization == null)
+            {
+                Debug.LogError($"Scene '{state.Scene.name}' was started without its container because the root container is not available.");
+                Complete(state, false);
+                return;
+            }
+
             try
             {
-                var rootInitialization = s_rootInitialization;
-
-                if (rootInitialization == null)
-                {
-                    s_pendingScenes.Remove(scene.handle);
-                    return;
-                }
-
                 await rootInitialization;
             }
             catch
             {
-                s_pendingScenes.Remove(scene.handle);
+                if (IsCurrent(state))
+                {
+                    Debug.LogError($"Scene '{state.Scene.name}' was started without its container because the root container failed to initialize.");
+                    Complete(state, false);
+                }
+
+                return;
+            }
+
+            if (!IsCurrent(state))
+            {
                 return;
             }
 
             var root = s_root;
 
-            if (!s_pendingScenes.Remove(scene.handle) || root == null || root.IsDisposed || !scene.isLoaded)
+            if (root == null || root.IsDisposed || !state.Scene.isLoaded)
             {
+                Complete(state, false);
                 return;
             }
 
             try
             {
+                var installers = state.Installers;
                 var container = root.CreateChild(builder =>
                 {
                     for (var i = 0; i < installers.Count; i++)
@@ -132,24 +190,55 @@ namespace GroveGames.DependencyInjection.Unity
                     }
                 });
 
-                s_sceneContainers[scene.handle] = container;
-                await ContainerPlayerLoop.NextFrameAsync();
+                state.Container = container;
+                s_containerScenes[container] = state.Scene;
+                InjectScene(container, state.Scene);
+                await container.InitializeAsync();
 
-                if (container.IsDisposed)
+                if (!IsCurrent(state))
                 {
                     return;
                 }
 
-                await container.InitializeAsync();
                 ContainerPlayerLoop.Add(container);
-            }
-            catch (OperationCanceledException)
-            {
+                Complete(state, true);
             }
             catch (Exception exception)
             {
+                if (!IsCurrent(state))
+                {
+                    return;
+                }
+
                 Debug.LogException(exception);
+                Debug.LogError($"Scene '{state.Scene.name}' was started without a fully initialized container.");
+                Complete(state, false);
             }
+        }
+
+        private static bool IsCurrent(SceneState state)
+        {
+            return s_scenes.TryGetValue(state.Scene.handle, out var current) && ReferenceEquals(current, state);
+        }
+
+        private static void Complete(SceneState state, bool isReady)
+        {
+            ResumeScene(state.PausedRoots);
+            state.Ready.TrySetResult(isReady);
+        }
+
+        internal static bool TryGetScene(IObjectResolver resolver, out Scene scene)
+        {
+            for (var container = resolver as IContainer; container != null; container = container.Parent)
+            {
+                if (s_containerScenes.TryGetValue(container, out scene))
+                {
+                    return true;
+                }
+            }
+
+            scene = default;
+            return false;
         }
 
         private static void OnSceneUnloaded(Scene scene)
@@ -159,13 +248,20 @@ namespace GroveGames.DependencyInjection.Unity
 
         internal static void DisposeSceneContainer(Scene scene)
         {
-            s_pendingScenes.Remove(scene.handle);
-
-            if (!s_sceneContainers.Remove(scene.handle, out var container))
+            if (!s_scenes.Remove(scene.handle, out var state))
             {
                 return;
             }
 
+            state.Ready.TrySetResult(false);
+            var container = state.Container;
+
+            if (container == null)
+            {
+                return;
+            }
+
+            s_containerScenes.Remove(container);
             ContainerPlayerLoop.Remove(container);
 
             try
@@ -175,6 +271,52 @@ namespace GroveGames.DependencyInjection.Unity
             catch (Exception exception)
             {
                 Debug.LogException(exception);
+            }
+        }
+
+        private static List<GameObject> PauseScene(Scene scene)
+        {
+            var rootObjects = new List<GameObject>();
+            var pausedRoots = new List<GameObject>();
+            scene.GetRootGameObjects(rootObjects);
+
+            for (var i = 0; i < rootObjects.Count; i++)
+            {
+                var rootObject = rootObjects[i];
+
+                if (rootObject.activeSelf)
+                {
+                    pausedRoots.Add(rootObject);
+                    rootObject.SetActive(false);
+                }
+            }
+
+            return pausedRoots;
+        }
+
+        private static void ResumeScene(List<GameObject> pausedRoots)
+        {
+            for (var i = 0; i < pausedRoots.Count; i++)
+            {
+                var rootObject = pausedRoots[i];
+
+                if (rootObject != null)
+                {
+                    rootObject.SetActive(true);
+                }
+            }
+
+            pausedRoots.Clear();
+        }
+
+        private static void InjectScene(IContainer container, Scene scene)
+        {
+            var rootObjects = new List<GameObject>();
+            scene.GetRootGameObjects(rootObjects);
+
+            for (var i = 0; i < rootObjects.Count; i++)
+            {
+                container.InjectGameObject(rootObjects[i]);
             }
         }
 
@@ -196,12 +338,17 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void Shutdown()
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
             Application.quitting -= Shutdown;
             ContainerPlayerLoop.Uninstall();
-            s_sceneContainers.Clear();
-            s_pendingScenes.Clear();
+
+            foreach (var state in s_scenes.Values)
+            {
+                state.Ready.TrySetResult(false);
+            }
+
+            s_scenes.Clear();
+            s_containerScenes.Clear();
             s_rootInitialization = null;
             var root = s_root;
             s_root = null;
