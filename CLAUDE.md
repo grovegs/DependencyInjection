@@ -71,11 +71,11 @@ dotnet pack -c Release
 
 **Unity Settings:**
 
-- Use ScriptableObject for project-wide settings (stored in Assets/Settings/)
-- Use EditorBuildSettings.AddConfigObject() for runtime access
+- Use a ScriptableObject for project-wide settings, stored at `Assets/Settings/Resources/GroveGames/<Name>Settings.asset`
+- `GetOrCreate()` loads it with `Resources.Load`, so it ships with every build profile; `Resources` is only for each package's single settings asset, never for content
+- An editor helper creates the asset when the settings page opens; there is no build step
 - Settings provider in Editor/ folder using UI Toolkit (PropertyField, VisualElement)
 - No singletons - settings accessed via GetOrCreate()
-- No Resources.Load() - EditorBuildSettings.TryGetConfigObject() for runtime
 - Factory accepts settings instance for DI-friendly architecture
 
 **Unity C# Configuration:**

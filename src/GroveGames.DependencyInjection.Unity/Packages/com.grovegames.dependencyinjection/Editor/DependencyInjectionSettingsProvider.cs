@@ -1,9 +1,6 @@
 using System.Collections.Generic;
-using System.IO;
-
 using UnityEditor;
 using UnityEditor.UIElements;
-
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,8 +8,6 @@ namespace GroveGames.DependencyInjection.Unity.Editor
 {
     internal static class DependencyInjectionSettingsProvider
     {
-        private const string AssetPath = "Assets/Settings/DependencyInjectionSettings.asset";
-
         [SettingsProvider]
         public static SettingsProvider CreateProvider()
         {
@@ -21,7 +16,8 @@ namespace GroveGames.DependencyInjection.Unity.Editor
                 label = "Dependency Injection",
                 activateHandler = (searchContext, rootElement) =>
                 {
-                    var serializedObject = new SerializedObject(GetOrCreateSettings());
+                    var settings = DependencyInjectionSettingsAsset.GetOrCreate();
+                    var serializedObject = new SerializedObject(settings);
 
                     var container = new VisualElement
                     {
@@ -44,6 +40,15 @@ namespace GroveGames.DependencyInjection.Unity.Editor
                         }
                     });
 
+                    var assetField = new ObjectField("Settings Asset")
+                    {
+                        objectType = typeof(DependencyInjectionSettings),
+                        value = settings,
+                        style = { marginBottom = 10 }
+                    };
+                    assetField.SetEnabled(false);
+                    container.Add(assetField);
+
                     container.Add(new PropertyField(serializedObject.FindProperty("_rootInstaller"), "Root Installer"));
 
                     rootElement.Add(container);
@@ -51,60 +56,6 @@ namespace GroveGames.DependencyInjection.Unity.Editor
                 },
                 keywords = new HashSet<string>(new[] { "Dependency", "Injection", "Container", "Installer", "Grove Games" })
             };
-        }
-
-        private static DependencyInjectionSettings GetOrCreateSettings()
-        {
-            if (!EditorBuildSettings.TryGetConfigObject<DependencyInjectionSettings>(DependencyInjectionSettings.GetConfigName(), out var settings) || settings == null)
-            {
-                settings = FindSettings() ?? CreateSettings();
-                EditorBuildSettings.AddConfigObject(DependencyInjectionSettings.GetConfigName(), settings, true);
-            }
-
-            AddToPreloadedAssets(settings);
-            return settings;
-        }
-
-        private static DependencyInjectionSettings? FindSettings()
-        {
-            var guids = AssetDatabase.FindAssets($"t:{nameof(DependencyInjectionSettings)}");
-
-            for (var i = 0; i < guids.Length; i++)
-            {
-                var settings = AssetDatabase.LoadAssetAtPath<DependencyInjectionSettings>(AssetDatabase.GUIDToAssetPath(guids[i]));
-
-                if (settings != null)
-                {
-                    return settings;
-                }
-            }
-
-            return null;
-        }
-
-        private static DependencyInjectionSettings CreateSettings()
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(AssetPath)!);
-            AssetDatabase.Refresh();
-
-            var settings = ScriptableObject.CreateInstance<DependencyInjectionSettings>();
-            AssetDatabase.CreateAsset(settings, AssetDatabase.GenerateUniqueAssetPath(AssetPath));
-            AssetDatabase.SaveAssets();
-            return settings;
-        }
-
-        internal static void AddToPreloadedAssets(DependencyInjectionSettings settings)
-        {
-            var preloadedAssets = new List<Object>(PlayerSettings.GetPreloadedAssets());
-
-            if (preloadedAssets.Contains(settings))
-            {
-                return;
-            }
-
-            preloadedAssets.RemoveAll(asset => asset is DependencyInjectionSettings);
-            preloadedAssets.Add(settings);
-            PlayerSettings.SetPreloadedAssets(preloadedAssets.ToArray());
         }
     }
 }
