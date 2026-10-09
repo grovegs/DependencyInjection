@@ -222,7 +222,7 @@ namespace GroveGames.DependencyInjection.Unity
 
             var root = s_root;
 
-            if (root == null || root.IsDisposed || !state.Scene.isLoaded)
+            if (root == null || root.IsDisposed || !state.Scene.IsValid())
             {
                 Complete(state, false);
                 return;

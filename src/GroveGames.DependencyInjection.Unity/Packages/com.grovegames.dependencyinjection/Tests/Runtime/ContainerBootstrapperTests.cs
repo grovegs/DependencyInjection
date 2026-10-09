@@ -12,6 +12,8 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 {
     public sealed class ContainerBootstrapperTests
     {
+        private const string TestLoadedScenePath = "Packages/com.grovegames.dependencyinjection/Tests/Runtime/Fixtures/TestLoadedScene.unity";
+
         [UnityTest]
         public IEnumerator Root_PlayMode_IsBuiltAndInitialized()
         {
@@ -191,6 +193,31 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             SceneManager.SetActiveScene(previousActiveScene);
             yield return SceneManager.UnloadSceneAsync(scene);
         }
+
+#if UNITY_EDITOR
+        [UnityTest]
+        public IEnumerator SceneInstaller_SceneLoadedAsActiveScene_InitializesSceneContainer()
+        {
+            yield return WaitForRoot();
+            var parameters = new LoadSceneParameters(LoadSceneMode.Single);
+
+            yield return UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(TestLoadedScenePath, parameters);
+
+            var scene = SceneManager.GetSceneByPath(TestLoadedScenePath);
+            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+
+            yield return WaitFor(ready);
+
+            Assert.IsTrue(ready.Result);
+            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.AreNotSame(ContainerBootstrapper.Root, container);
+            Assert.IsNotNull(container!.Resolve<TestLoadedSceneService>());
+
+            var emptyScene = SceneManager.CreateScene(nameof(SceneInstaller_SceneLoadedAsActiveScene_InitializesSceneContainer));
+            SceneManager.SetActiveScene(emptyScene);
+            yield return SceneManager.UnloadSceneAsync(scene);
+        }
+#endif
 
         [UnityTest]
         public IEnumerator Instantiate_FromSceneContainer_PlacesObjectInContainerScene()
