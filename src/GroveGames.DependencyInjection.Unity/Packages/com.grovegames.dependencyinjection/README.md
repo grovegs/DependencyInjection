@@ -140,7 +140,7 @@ There are two installation steps required to use it in Unity.
 
 ### Root Installer
 
-Derive from `RootInstaller`, create an asset for it and assign it in Edit → Project Settings → GroveGames → Dependency Injection. A project has one root installer; register everything that lives for the whole application in it. Settings are stored as a ScriptableObject in `Assets/Settings/DependencyInjectionSettings.asset` and added to preloaded assets.
+Derive from `RootInstaller`, create an asset for it and assign it in Edit → Project Settings → GroveGames → Dependency Injection. A project has one root installer; register everything that lives for the whole application in it. Settings are stored as a ScriptableObject in `Assets/Settings/Resources/GroveGames/DependencyInjectionSettings.asset` and loaded with `Resources.Load`, so every build profile ships them.
 
 ```csharp
 using GroveGames.DependencyInjection;

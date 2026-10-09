@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.6.8</Version>
+    <Version>0.7.0</Version>
     <PackageId>$(AssemblyName)</PackageId>
     <PackageProjectUrl>https://github.com/grovegs/DependencyInjection</PackageProjectUrl>
     <RepositoryUrl>https://github.com/grovegs/DependencyInjection</RepositoryUrl>
