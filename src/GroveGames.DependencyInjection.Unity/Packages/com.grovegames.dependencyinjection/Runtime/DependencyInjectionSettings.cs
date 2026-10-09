@@ -1,43 +1,19 @@
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace GroveGames.DependencyInjection.Unity
 {
     public sealed class DependencyInjectionSettings : ScriptableObject
     {
-        private const string ConfigName = "com.grovegames.dependencyinjection.settings";
-
-        private static DependencyInjectionSettings? s_loaded;
+        public const string ResourcePath = "GroveGames/DependencyInjectionSettings";
 
         [SerializeField] private RootInstaller? _rootInstaller;
 
         public RootInstaller? RootInstaller => _rootInstaller;
 
-        private void OnEnable()
-        {
-            s_loaded = this;
-        }
-
         public static DependencyInjectionSettings GetOrCreate()
         {
-#if UNITY_EDITOR
-            if (EditorBuildSettings.TryGetConfigObject<DependencyInjectionSettings>(ConfigName, out var settings) && settings != null)
-            {
-                return settings;
-            }
-#else
-            if (s_loaded != null)
-            {
-                return s_loaded;
-            }
-#endif
-            var defaultSettings = CreateInstance<DependencyInjectionSettings>();
-            defaultSettings.name = ConfigName;
-            return defaultSettings;
+            var settings = Resources.Load<DependencyInjectionSettings>(ResourcePath);
+            return settings != null ? settings : CreateInstance<DependencyInjectionSettings>();
         }
-
-        public static string GetConfigName() => ConfigName;
     }
 }

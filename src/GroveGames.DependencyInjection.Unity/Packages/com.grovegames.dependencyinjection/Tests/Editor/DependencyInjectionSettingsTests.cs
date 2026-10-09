@@ -13,11 +13,11 @@ namespace GroveGames.DependencyInjection.Unity.Editor.Tests
         }
 
         [Test]
-        public void GetConfigName_ReturnsPackageScopedName()
+        public void GetOrCreate_SettingsAsset_IsLoadedFromResources()
         {
-            var configName = DependencyInjectionSettings.GetConfigName();
+            var asset = DependencyInjectionSettingsAsset.GetOrCreate();
 
-            Assert.AreEqual("com.grovegames.dependencyinjection.settings", configName);
+            Assert.AreSame(asset, DependencyInjectionSettings.GetOrCreate());
         }
     }
 }
