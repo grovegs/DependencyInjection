@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../GroveGames.DependencyInjection.SourceGenerator/GroveGames.DependencyInjection.SourceGenerator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
-    <None Include="../GroveGames.DependencyInjection.SourceGenerator/bin/$(Configuration)/netstandard2.0/GroveGames.DependencyInjection.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <ProjectReference Include="../GroveGames.DependencyInjection.Generator/GroveGames.DependencyInjection.Generator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="../GroveGames.DependencyInjection.Generator/bin/$(Configuration)/netstandard2.0/GroveGames.DependencyInjection.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 </Project>

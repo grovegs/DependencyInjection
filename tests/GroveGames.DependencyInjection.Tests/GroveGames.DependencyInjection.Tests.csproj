@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/GroveGames.DependencyInjection/GroveGames.DependencyInjection.csproj" />
-    <ProjectReference Include="../../src/GroveGames.DependencyInjection.SourceGenerator/GroveGames.DependencyInjection.SourceGenerator.csproj" OutputItemType="Analyzer" />
+    <ProjectReference Include="../../src/GroveGames.DependencyInjection.Generator/GroveGames.DependencyInjection.Generator.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup Condition="Exists('xunit.runner.json')">

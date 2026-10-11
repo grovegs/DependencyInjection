@@ -2,7 +2,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace GroveGames.DependencyInjection.SourceGenerator;
+namespace GroveGames.DependencyInjection.Generator;
 
 internal static class TypeAnalyzer
 {

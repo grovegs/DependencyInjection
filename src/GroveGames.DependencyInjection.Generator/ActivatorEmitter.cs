@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Text;
 
-namespace GroveGames.DependencyInjection.SourceGenerator;
+namespace GroveGames.DependencyInjection.Generator;
 
 internal static class ActivatorEmitter
 {
@@ -26,7 +26,7 @@ internal static class ActivatorEmitter
         builder.Append("namespace ").AppendLine(Namespace);
         builder.AppendLine("{");
         builder.AppendLine("    [global::GroveGames.DependencyInjection.Scripting.Preserve]");
-        builder.AppendLine("    [global::System.CodeDom.Compiler.GeneratedCode(\"GroveGames.DependencyInjection.SourceGenerator\", \"1.0.0\")]");
+        builder.AppendLine("    [global::System.CodeDom.Compiler.GeneratedCode(\"GroveGames.DependencyInjection.Generator\", \"1.0.0\")]");
         builder.Append("    internal sealed class ").Append(providerName).Append(" : global::").Append(Namespace).AppendLine(".IGeneratedActivatorProvider");
         builder.AppendLine("    {");
         builder.Append("        public void Register(global::").Append(Namespace).AppendLine(".GeneratedActivatorRegistry registry)");

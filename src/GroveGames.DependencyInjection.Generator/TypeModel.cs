@@ -1,4 +1,4 @@
-﻿namespace GroveGames.DependencyInjection.SourceGenerator;
+﻿namespace GroveGames.DependencyInjection.Generator;
 
 internal sealed class TypeModel : IEquatable<TypeModel>
 {

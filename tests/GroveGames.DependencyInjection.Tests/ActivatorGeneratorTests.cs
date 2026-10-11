@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 
 using GroveGames.DependencyInjection.Generated;
-using GroveGames.DependencyInjection.SourceGenerator;
+using GroveGames.DependencyInjection.Generator;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

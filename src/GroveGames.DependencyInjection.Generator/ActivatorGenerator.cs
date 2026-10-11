@@ -3,7 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace GroveGames.DependencyInjection.SourceGenerator;
+namespace GroveGames.DependencyInjection.Generator;
 
 [Generator(LanguageNames.CSharp)]
 public sealed class ActivatorGenerator : IIncrementalGenerator

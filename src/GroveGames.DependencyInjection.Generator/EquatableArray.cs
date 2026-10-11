@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace GroveGames.DependencyInjection.SourceGenerator;
+namespace GroveGames.DependencyInjection.Generator;
 
 internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnumerable<T>
     where T : IEquatable<T>

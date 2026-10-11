@@ -145,7 +145,7 @@ There are two installation steps required to use it in Unity.
     -nullable:enable
     ```
 
-The NuGet package also contains the [source generator](#source-generation). Unity runs it only when `GroveGames.DependencyInjection.SourceGenerator.dll` under `Assets/Packages` has the `RoslynAnalyzer` asset label; add the label in the Inspector if NuGetForUnity did not. Without it everything still works through reflection.
+The NuGet package also contains the [source generator](#source-generation). Unity runs it only when `GroveGames.DependencyInjection.Generator.dll` under `Assets/Packages` has the `RoslynAnalyzer` asset label; add the label in the Inspector if NuGetForUnity did not. Without it everything still works through reflection.
 
 ### Root Installer
 
