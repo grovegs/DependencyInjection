@@ -226,7 +226,9 @@ public sealed class ContainerBuilderTests
     public void Build_AbstractType_ThrowsArgumentException()
     {
         var builder = new ContainerBuilder();
+#pragma warning disable GGDI001
         builder.AddSingleton(typeof(ITestService), typeof(ITestService));
+#pragma warning restore GGDI001
 
         var exception = Record.Exception(() => builder.Build());
 
