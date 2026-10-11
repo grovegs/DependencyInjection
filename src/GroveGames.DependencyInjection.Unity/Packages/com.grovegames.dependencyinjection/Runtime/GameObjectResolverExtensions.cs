@@ -86,7 +86,7 @@ namespace GroveGames.DependencyInjection.Unity
             gameObject.SetActive(false);
             gameObject.transform.SetParent(null, false);
 
-            if (ContainerBootstrapper.TryGetScene(resolver, out var scene) && scene.isLoaded)
+            if (ContainerRegistry.TryGetScene(resolver, out var scene) && scene.isLoaded)
             {
                 SceneManager.MoveGameObjectToScene(gameObject, scene);
             }
