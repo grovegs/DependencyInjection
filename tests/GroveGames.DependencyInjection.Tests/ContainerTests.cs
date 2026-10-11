@@ -122,7 +122,6 @@ public sealed class ContainerTests
         await container.InitializeAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(["PreInitialize", "AsyncPreInitialize", "Initialize", "AsyncInitialize", "PostInitialize", "AsyncPostInitialize"], log.Entries);
-        Assert.True(container.IsInitialized);
     }
 
     [Fact]
@@ -252,7 +251,6 @@ public sealed class ContainerTests
 
         Assert.IsAssignableFrom<OperationCanceledException>(exception);
         Assert.DoesNotContain("PostInitialize", log.Entries);
-        Assert.False(container.IsInitialized);
     }
 
     [Fact]

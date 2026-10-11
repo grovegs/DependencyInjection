@@ -183,9 +183,9 @@ The [update interfaces](#updates) are called from the player loop, so no `MonoBe
 
 #### Loading Scenes
 
-A scene that is already the active scene when its installer wakes up starts right away. Any other scene starts as soon as it becomes the active scene, or at the beginning of the next frame, whichever comes first. Calling `ContainerRegistry.WhenReadyAsync` does not start it, so a loader may start waiting before making the scene active. A loader that loads a scene additively and then makes it active therefore initializes its container with that scene active, so objects created during initialization, even with `new GameObject`, land in the new scene and not in the loading scene.
+A scene that is already the active scene when its installer wakes up starts right away. Any other scene starts as soon as it becomes the active scene, or at the beginning of the next frame, whichever comes first. Calling `ContainerBootstrapper.WhenSceneReadyAsync` does not start it, so a loader may start waiting before making the scene active. A loader that loads a scene additively and then makes it active therefore initializes its container with that scene active, so objects created during initialization, even with `new GameObject`, land in the new scene and not in the loading scene.
 
-Scene loaders do not need to know about containers, but a loader that should keep its loading screen up until the new scene is ready can wait for it, after making the scene active. `ContainerRegistry.WhenReadyAsync` completes with `true` once the scene's container is initialized and its objects are reactivated, with `true` immediately for a loaded scene without installers, and with `false` if initialization failed or the scene was unloaded first.
+Scene loaders do not need to know about containers, but a loader that should keep its loading screen up until the new scene is ready can wait for it, after making the scene active. `ContainerBootstrapper.WhenSceneReadyAsync` completes with `true` once the scene's container is initialized and its objects are reactivated, with `true` immediately for a loaded scene without installers, and with `false` if initialization failed or the scene was unloaded first.
 
 ```csharp
 public async Task ChangeSceneAsync(string sceneName)
@@ -195,7 +195,7 @@ public async Task ChangeSceneAsync(string sceneName)
     var scene = SceneManager.GetSceneByName(sceneName);
 
     SceneManager.SetActiveScene(scene);
-    await ContainerRegistry.WhenReadyAsync(scene);
+    await ContainerBootstrapper.WhenSceneReadyAsync(scene);
     await SceneManager.UnloadSceneAsync(previous);
 }
 ```
@@ -221,7 +221,8 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 
 - **`RootInstaller`**: ScriptableObject installer for the root container
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
-- **`ContainerRegistry`**: Looks up initialized containers: `Root`, `TryGet(Scene)` and `WhenReadyAsync(Scene)`. Containers are returned as `IObjectResolver`, so they cannot be disposed from outside
+- **`ContainerBootstrapper`**: Builds and initializes the root and scene containers. `WhenSceneReadyAsync(Scene)` waits for a scene's container
+- **`ContainerRegistry`**: Finds initialized containers: `Root` and `TryGet(Scene)`. Containers are returned as `IObjectResolver`, so they cannot be disposed from outside
 - **`DependencyInjectionSettings`**: ScriptableObject holding the root installer
 - **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
@@ -292,8 +293,8 @@ Godot types live in the `GroveGames.DependencyInjection.Godot` namespace.
 
 - **`RootInstaller`**: Resource installer for the root container
 - **`SceneInstaller`**: Node installer for a scene container
-- **`ContainerBootstrapper`**: Autoload that builds containers and calls the [update interfaces](#updates) on their singletons: `PreFrameUpdate` and `FrameUpdate` before any other node's `_Process`, `PostFrameUpdate` after every node's `_Process`, and `PhysicsUpdate` from `_PhysicsProcess`
-- **`ContainerRegistry`**: Looks up initialized containers: `Root`, which is `null` until the root container is initialized, `TryGet(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized, and `WhenReadyAsync(Node)`, which completes with `true` once the scene containing the node is initialized
+- **`ContainerBootstrapper`**: Autoload that builds containers and calls the [update interfaces](#updates) on their singletons: `PreFrameUpdate` and `FrameUpdate` before any other node's `_Process`, `PostFrameUpdate` after every node's `_Process`, and `PhysicsUpdate` from `_PhysicsProcess`. `WhenSceneReadyAsync(Node)` completes with `true` once the scene containing the node is initialized
+- **`ContainerRegistry`**: Finds initialized containers: `Root`, which is `null` until the root container is initialized, and `TryGet(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized
 - **`DependencyInjectionSettingsResource`**: Resource holding the root installer
 - **`InjectTree`** and **`Instantiate`**: Inject `[Inject]` methods on a node tree
 

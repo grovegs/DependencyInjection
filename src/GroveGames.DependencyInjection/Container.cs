@@ -21,7 +21,6 @@ internal sealed class Container : IContainer
     private bool _isDisposed;
 
     public IContainer? Parent => _parent;
-    public bool IsInitialized => _isInitialized;
     public bool IsDisposed => _isDisposed;
     internal InjectorCache Injectors => _injectors;
 

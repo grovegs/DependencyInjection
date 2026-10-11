@@ -19,6 +19,23 @@ public sealed partial class ContainerBootstrapper : Node
         ProcessPhysicsPriority = int.MinValue;
     }
 
+    public static Task<bool> WhenSceneReadyAsync(Node node)
+    {
+        if (node == null || !IsInstanceValid(node))
+        {
+            return Task.FromResult(false);
+        }
+
+        var state = FindScene(node);
+
+        if (state != null)
+        {
+            return state.Ready.Task;
+        }
+
+        return Task.FromResult(node.IsInsideTree());
+    }
+
     public override void _EnterTree()
     {
         AddChild(new PostFrameUpdater());
@@ -48,8 +65,14 @@ public sealed partial class ContainerBootstrapper : Node
     {
         GetTree().NodeAdded -= OnNodeAdded;
         s_processEntries.Clear();
-        ContainerRegistry.Clear();
+
+        foreach (var state in s_scenes.Values)
+        {
+            state.Ready.TrySetResult(false);
+        }
+
         s_scenes.Clear();
+        ContainerRegistry.Clear();
         s_rootInitialization = null;
         var root = s_root;
         s_root = null;
@@ -245,7 +268,6 @@ public sealed partial class ContainerBootstrapper : Node
             });
 
             state.Container = container;
-            ContainerRegistry.SetSceneContainer(state.Scope, container);
             InjectScope(container, state.Scope, nestedScopes);
         }
         catch (Exception exception)
@@ -286,6 +308,7 @@ public sealed partial class ContainerBootstrapper : Node
             }
 
             AddProcessEntry(state.Container);
+            ContainerRegistry.SetSceneContainer(state.Scope, state.Container);
             Complete(state, true);
         }
         catch (Exception exception)
@@ -309,6 +332,7 @@ public sealed partial class ContainerBootstrapper : Node
         }
 
         s_scenes.Remove(state.Scope);
+        ContainerRegistry.RemoveScene(state.Scope);
 
         if (IsInstanceValid(state.Scope))
         {
@@ -316,7 +340,7 @@ public sealed partial class ContainerBootstrapper : Node
             state.Scope.ProcessMode = state.ProcessMode;
         }
 
-        ContainerRegistry.RemoveScene(state.Scope, out _);
+        state.Ready.TrySetResult(false);
         var container = state.Container;
 
         if (container == null)
@@ -343,12 +367,25 @@ public sealed partial class ContainerBootstrapper : Node
             state.Scope.ProcessMode = state.ProcessMode;
         }
 
-        ContainerRegistry.CompleteScene(state.Scope, isReady);
+        state.Ready.TrySetResult(isReady);
     }
 
     private static bool IsCurrent(SceneState state)
     {
         return s_scenes.TryGetValue(state.Scope, out var current) && ReferenceEquals(current, state);
+    }
+
+    private static SceneState FindScene(Node node)
+    {
+        for (var current = node; current != null; current = current.GetParent())
+        {
+            if (s_scenes.TryGetValue(current, out var state))
+            {
+                return state;
+            }
+        }
+
+        return null;
     }
 
     private static Node GetScope(SceneInstaller installer)
@@ -400,6 +437,7 @@ public sealed partial class ContainerBootstrapper : Node
     {
         public readonly Node Scope;
         public readonly ProcessModeEnum ProcessMode;
+        public readonly TaskCompletionSource<bool> Ready;
         public IContainer Container;
         public Action Exiting;
 
@@ -407,6 +445,7 @@ public sealed partial class ContainerBootstrapper : Node
         {
             Scope = scope;
             ProcessMode = scope.ProcessMode;
+            Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
     }
 
