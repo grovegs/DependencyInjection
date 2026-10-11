@@ -93,6 +93,25 @@ public sealed class GeneratedActivatorsTests
         Assert.Single(methods!);
     }
 
+    [Fact]
+    public void Inject_GeneratedInjectMethodRepeated_DoesNotAllocate()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestDependency>();
+        using var container = builder.Build();
+        var injectable = new TestInjectable();
+        container.Inject(injectable);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        for (var i = 0; i < 100; i++)
+        {
+            container.Inject(injectable);
+        }
+
+        Assert.Equal(before, GC.GetAllocatedBytesForCurrentThread());
+    }
+
     internal sealed class TestDependency
     {
     }

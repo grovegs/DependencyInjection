@@ -87,8 +87,11 @@ public sealed class ContainerBuilder : IContainerBuilder
         _isBuilt = true;
         var container = new Container(_parent, _parent?.Injectors ?? new InjectorCache());
         var self = new InstanceBinding(container);
-        container.AddBinding(typeof(IObjectResolver), self);
-        container.AddBinding(typeof(IContainer), self);
+        var bindingsByType = new Dictionary<Type, Binding>(_registrations.Count + 2)
+        {
+            [typeof(IObjectResolver)] = self,
+            [typeof(IContainer)] = self
+        };
         var bindings = new Binding[_registrations.Count];
         var singletonTypes = new List<Type>();
         var singletonBindings = new List<Binding>();
@@ -98,7 +101,11 @@ public sealed class ContainerBuilder : IContainerBuilder
             var registration = _registrations[i];
             var binding = CreateBinding(registration, container);
             bindings[i] = binding;
-            container.AddBinding(registration.ServiceType, binding);
+
+            if (!bindingsByType.TryAdd(registration.ServiceType, binding))
+            {
+                throw new InvalidOperationException($"{registration.ServiceType} is already registered.");
+            }
 
             if (registration.Instance is not null)
             {
@@ -111,6 +118,8 @@ public sealed class ContainerBuilder : IContainerBuilder
                 singletonBindings.Add(binding);
             }
         }
+
+        container.SetBindings(bindingsByType);
 
         for (var i = 0; i < bindings.Length; i++)
         {
