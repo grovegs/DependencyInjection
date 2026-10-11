@@ -46,7 +46,7 @@ internal static class TypeAnalyzer
         return false;
     }
 
-    private static EquatableArray<string>? AnalyzeConstructor(INamedTypeSymbol type, Compilation compilation)
+    public static IMethodSymbol? SelectConstructor(INamedTypeSymbol type)
     {
         IMethodSymbol? selected = null;
 
@@ -69,7 +69,39 @@ internal static class TypeAnalyzer
             }
         }
 
-        return selected is null ? null : GetParameterTypes(selected, compilation);
+        return selected;
+    }
+
+    public static bool HasRefParameter(IMethodSymbol method)
+    {
+        foreach (var parameter in method.Parameters)
+        {
+            if (parameter.RefKind != RefKind.None)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static bool HasInjectAttribute(ISymbol symbol)
+    {
+        foreach (var attribute in symbol.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() == InjectAttributeName)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static EquatableArray<string>? AnalyzeConstructor(INamedTypeSymbol type, Compilation compilation)
+    {
+        var constructor = SelectConstructor(type);
+        return constructor is null ? null : GetParameterTypes(constructor, compilation);
     }
 
     private static EquatableArray<MethodModel> AnalyzeInjectMethods(INamedTypeSymbol type, Compilation compilation)
@@ -121,19 +153,6 @@ internal static class TypeAnalyzer
         for (var current = method; current is not null; current = current.OverriddenMethod)
         {
             if (HasInjectAttribute(current))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool HasInjectAttribute(ISymbol symbol)
-    {
-        foreach (var attribute in symbol.GetAttributes())
-        {
-            if (attribute.AttributeClass?.ToDisplayString() == InjectAttributeName)
             {
                 return true;
             }

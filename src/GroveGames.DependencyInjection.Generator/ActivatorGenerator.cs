@@ -9,9 +9,6 @@ namespace GroveGames.DependencyInjection.Generator;
 public sealed class ActivatorGenerator : IIncrementalGenerator
 {
     private const string ProviderInterfaceName = "GroveGames.DependencyInjection.Generated.IGeneratedActivatorProvider";
-    private const string BuilderExtensionsName = "GroveGames.DependencyInjection.ContainerBuilderExtensions";
-    private const string BuilderInterfaceName = "GroveGames.DependencyInjection.IContainerBuilder";
-    private const string BuilderName = "GroveGames.DependencyInjection.ContainerBuilder";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -72,24 +69,18 @@ public sealed class ActivatorGenerator : IIncrementalGenerator
             return null;
         }
 
-        var definition = method.ReducedFrom ?? method;
-        var containingType = definition.ContainingType?.ToDisplayString();
         ITypeSymbol? implementationType = null;
+        var kind = RegistrationMethods.Classify(method);
 
-        if (containingType == BuilderExtensionsName)
+        if (kind == RegistrationKind.Generic)
         {
-            if (definition.Parameters.Length == 1 && method.TypeArguments.Length > 0)
-            {
-                implementationType = method.TypeArguments[method.TypeArguments.Length - 1];
-            }
+            implementationType = method.TypeArguments[method.TypeArguments.Length - 1];
         }
-        else if (containingType is BuilderInterfaceName or BuilderName)
+        else if (kind == RegistrationKind.TypeOf)
         {
             var arguments = invocation.ArgumentList.Arguments;
 
-            if (method.Parameters.Length == 2
-                && method.Parameters[1].Type.ToDisplayString() == "System.Type"
-                && arguments.Count == 2
+            if (arguments.Count == 2
                 && arguments[1].NameColon is null
                 && arguments[1].Expression is TypeOfExpressionSyntax typeOf)
             {

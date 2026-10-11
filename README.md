@@ -119,6 +119,28 @@ The package includes a source generator that runs in every project referencing i
 
 Anything the generator cannot call directly still works through reflection: private types and types nested in them, types registered only from an assembly other than the one that defines them, and registrations inside generic methods such as `AddSingleton<T>()` with a type parameter. On IL2CPP with a high managed stripping level, preserve those types with `[Preserve]` or a `link.xml`. `[Inject]` constructors and methods never need it, because `InjectAttribute` derives from a `PreserveAttribute`, which Unity's linker keeps.
 
+### Analyzers
+
+The package also reports mistakes the compiler can already see, instead of leaving them to fail when the container is built or to be skipped silently:
+
+| ID      | Severity | Reported for                                                                                               |
+| ------- | -------- | ---------------------------------------------------------------------------------------------------------- |
+| GGDI001 | Error    | An abstract class or interface registered as an implementation                                             |
+| GGDI002 | Error    | A registered implementation without a public constructor                                                   |
+| GGDI003 | Warning  | An `[Inject]` constructor or method that is never called because it is not public, is static or is generic |
+| GGDI004 | Error    | A constructor or `[Inject]` method with a `ref`, `in` or `out` parameter                                   |
+| GGDI005 | Warning  | More than one `[Inject]` constructor on a type                                                             |
+| GGDI006 | Disabled | A registered type that is constructed through reflection instead of generated code                         |
+
+GGDI006 lists the types that the [source generator](#source-generation) cannot cover, which are the ones to preserve for IL2CPP code stripping. Turn it on in `.editorconfig`:
+
+```ini
+[*.cs]
+dotnet_diagnostic.GGDI006.severity = suggestion
+```
+
+Missing registrations and circular dependencies are only known once installers are combined at runtime, so they are still reported when the container is built.
+
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
