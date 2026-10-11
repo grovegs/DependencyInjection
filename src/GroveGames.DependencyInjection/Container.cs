@@ -1,6 +1,4 @@
-﻿#if NET8_0_OR_GREATER
-using System.Collections.Frozen;
-#endif
+﻿using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 
 using GroveGames.DependencyInjection.Registration;
@@ -12,11 +10,7 @@ internal sealed class Container : IContainer
 {
     private readonly Container? _parent;
     private readonly InjectorCache _injectors;
-#if NET8_0_OR_GREATER
     private FrozenDictionary<Type, Binding> _bindings;
-#else
-    private Dictionary<Type, Binding> _bindings;
-#endif
     private readonly List<IDisposable> _disposables;
     private readonly HashSet<object> _owned;
     private readonly CancellationTokenSource _disposeCancellation;
@@ -35,11 +29,7 @@ internal sealed class Container : IContainer
     {
         _parent = parent;
         _injectors = injectors;
-#if NET8_0_OR_GREATER
         _bindings = FrozenDictionary<Type, Binding>.Empty;
-#else
-        _bindings = [];
-#endif
         _disposables = [];
         _owned = new HashSet<object>(ReferenceEqualityComparer.Instance);
         _disposeCancellation = new CancellationTokenSource();
@@ -50,11 +40,7 @@ internal sealed class Container : IContainer
 
     internal void SetBindings(Dictionary<Type, Binding> bindings)
     {
-#if NET8_0_OR_GREATER
         _bindings = bindings.ToFrozenDictionary();
-#else
-        _bindings = bindings;
-#endif
     }
 
     internal void SetSingletons(Type[] implementationTypes, Binding[] bindings)
@@ -374,11 +360,7 @@ internal sealed class Container : IContainer
 
         _disposables.Clear();
         _owned.Clear();
-#if NET8_0_OR_GREATER
         _bindings = FrozenDictionary<Type, Binding>.Empty;
-#else
-        _bindings.Clear();
-#endif
         _parent?.RemoveChild(this);
 
         if (exceptions is not null)
