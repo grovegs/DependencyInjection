@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="src\GroveGames.DependencyInjection\GroveGames.DependencyInjection.csproj" />
+  <Project Path="src\GroveGames.DependencyInjection.SourceGenerator\GroveGames.DependencyInjection.SourceGenerator.csproj" />
   <Project Path="tests\GroveGames.DependencyInjection.Tests\GroveGames.DependencyInjection.Tests.csproj" />
 </Solution>
