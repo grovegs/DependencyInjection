@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 
 using GroveGames.DependencyInjection.Registration;
 using GroveGames.DependencyInjection.Resolution;
@@ -9,7 +10,7 @@ internal sealed class Container : IContainer
 {
     private readonly Container? _parent;
     private readonly InjectorCache _injectors;
-    private readonly Dictionary<Type, Binding> _bindings;
+    private FrozenDictionary<Type, Binding> _bindings;
     private readonly List<IDisposable> _disposables;
     private readonly HashSet<object> _owned;
     private readonly CancellationTokenSource _disposeCancellation;
@@ -28,7 +29,7 @@ internal sealed class Container : IContainer
     {
         _parent = parent;
         _injectors = injectors;
-        _bindings = [];
+        _bindings = FrozenDictionary<Type, Binding>.Empty;
         _disposables = [];
         _owned = new HashSet<object>(ReferenceEqualityComparer.Instance);
         _disposeCancellation = new CancellationTokenSource();
@@ -37,14 +38,9 @@ internal sealed class Container : IContainer
         _children = [];
     }
 
-    internal void AddBinding(Type serviceType, Binding binding)
+    internal void SetBindings(Dictionary<Type, Binding> bindings)
     {
-        if (_bindings.ContainsKey(serviceType))
-        {
-            throw new InvalidOperationException($"{serviceType} is already registered.");
-        }
-
-        _bindings.Add(serviceType, binding);
+        _bindings = bindings.ToFrozenDictionary();
     }
 
     internal void SetSingletons(Type[] implementationTypes, Binding[] bindings)
@@ -169,13 +165,14 @@ internal sealed class Container : IContainer
     {
         ArgumentNullException.ThrowIfNull(instance);
         ObjectDisposedException.ThrowIf(_isDisposed, this);
+        var injector = _injectors.Get(instance.GetType());
 
-        if (IsOwned(instance))
+        if (injector.IsEmpty || IsOwned(instance))
         {
             return;
         }
 
-        InjectInstance(instance);
+        injector.Inject(instance, this);
     }
 
     internal void InjectInstance(object instance)
@@ -363,7 +360,7 @@ internal sealed class Container : IContainer
 
         _disposables.Clear();
         _owned.Clear();
-        _bindings.Clear();
+        _bindings = FrozenDictionary<Type, Binding>.Empty;
         _parent?.RemoveChild(this);
 
         if (exceptions is not null)

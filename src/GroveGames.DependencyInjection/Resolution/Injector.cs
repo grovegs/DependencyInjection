@@ -10,6 +10,8 @@ internal sealed class Injector
 {
     private readonly Type[][] _parameterTypes;
     private readonly Action<object, object?[]>[] _methods;
+    private readonly object?[][] _arguments;
+    private bool _isInjecting;
 
     public bool IsEmpty => _methods.Length == 0;
 
@@ -17,6 +19,12 @@ internal sealed class Injector
     {
         _parameterTypes = parameterTypes;
         _methods = methods;
+        _arguments = new object?[parameterTypes.Length][];
+
+        for (var i = 0; i < parameterTypes.Length; i++)
+        {
+            _arguments[i] = new object?[parameterTypes[i].Length];
+        }
     }
 
     public static Injector Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
@@ -62,17 +70,34 @@ internal sealed class Injector
 
     public void Inject(object instance, IObjectResolver resolver)
     {
-        for (var i = 0; i < _methods.Length; i++)
+        var isReentrant = _isInjecting;
+        _isInjecting = true;
+
+        try
         {
-            var parameterTypes = _parameterTypes[i];
-            var arguments = new object?[parameterTypes.Length];
-
-            for (var j = 0; j < parameterTypes.Length; j++)
+            for (var i = 0; i < _methods.Length; i++)
             {
-                arguments[j] = resolver.Resolve(parameterTypes[j]);
-            }
+                var parameterTypes = _parameterTypes[i];
+                var arguments = isReentrant ? new object?[parameterTypes.Length] : _arguments[i];
 
-            _methods[i].Invoke(instance, arguments);
+                try
+                {
+                    for (var j = 0; j < parameterTypes.Length; j++)
+                    {
+                        arguments[j] = resolver.Resolve(parameterTypes[j]);
+                    }
+
+                    _methods[i].Invoke(instance, arguments);
+                }
+                finally
+                {
+                    Array.Clear(arguments, 0, arguments.Length);
+                }
+            }
+        }
+        finally
+        {
+            _isInjecting = isReentrant;
         }
     }
 

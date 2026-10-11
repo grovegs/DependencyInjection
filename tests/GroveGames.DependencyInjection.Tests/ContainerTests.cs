@@ -82,6 +82,35 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public void Inject_SameInstanceTwice_InjectsEachTime()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var container = builder.Build();
+        var injectable = new TestCountingInjectable();
+
+        container.Inject(injectable);
+        container.Inject(injectable);
+
+        Assert.Equal(2, injectable.InjectCount);
+    }
+
+    [Fact]
+    public void Inject_InjectFromInjectMethod_InjectsBothInstances()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var container = builder.Build();
+        var inner = new TestReentrantInjectable(null);
+        var outer = new TestReentrantInjectable(inner);
+
+        container.Inject(outer);
+
+        Assert.Same(container.Resolve<TestLog>(), outer.Log);
+        Assert.Same(container.Resolve<TestLog>(), inner.Log);
+    }
+
+    [Fact]
     public void Inject_RegisteredInstance_DoesNotInjectAgain()
     {
         var injectable = new TestCountingInjectable();
@@ -516,6 +545,29 @@ public sealed class ContainerTests
         public void Construct(TestLog log)
         {
             InjectCount++;
+        }
+    }
+
+    private sealed class TestReentrantInjectable
+    {
+        private readonly TestReentrantInjectable? _inner;
+
+        public TestLog? Log { get; private set; }
+
+        public TestReentrantInjectable(TestReentrantInjectable? inner)
+        {
+            _inner = inner;
+        }
+
+        [Inject]
+        public void Construct(IObjectResolver resolver, TestLog log)
+        {
+            if (_inner is not null)
+            {
+                resolver.Inject(_inner);
+            }
+
+            Log = log;
         }
     }
 
