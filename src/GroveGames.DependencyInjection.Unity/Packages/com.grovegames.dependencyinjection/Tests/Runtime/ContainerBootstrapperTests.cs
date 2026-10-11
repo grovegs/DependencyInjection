@@ -15,17 +15,16 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         private const string TestLoadedScenePath = "Packages/com.grovegames.dependencyinjection/Tests/Runtime/Fixtures/TestLoadedScene.unity";
 
         [UnityTest]
-        public IEnumerator Root_PlayMode_IsBuiltAndInitialized()
+        public IEnumerator Root_PlayMode_IsSetOnceInitialized()
         {
-            var root = ContainerBootstrapper.Root;
-
-            Assert.IsNotNull(root);
-
-            for (var i = 0; i < 100 && !root!.IsInitialized; i++)
+            for (var i = 0; i < 100 && ContainerRegistry.Root == null; i++)
             {
                 yield return null;
             }
 
+            var root = ContainerRegistry.Root as IContainer;
+
+            Assert.IsNotNull(root);
             Assert.IsTrue(root!.IsInitialized);
         }
 
@@ -34,21 +33,22 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         {
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_Awake_CreatesAndDisposesSceneContainer));
             var installer = AddInstaller<TestSceneInstaller>(scene);
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return WaitFor(ready);
 
             Assert.IsTrue(ready.Result);
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
-            Assert.IsTrue(container!.IsInitialized);
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var resolver));
+            var container = (IContainer)resolver!;
+            Assert.IsTrue(container.IsInitialized);
             Assert.IsTrue(installer.IsInstalled);
-            Assert.AreSame(ContainerBootstrapper.Root, container.Parent);
+            Assert.AreSame(ContainerRegistry.Root, container.Parent);
             Assert.IsNotNull(container.Resolve<TestService>());
 
             yield return SceneManager.UnloadSceneAsync(scene);
 
             Assert.IsTrue(container.IsDisposed);
-            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
+            Assert.IsFalse(ContainerRegistry.TryGet(scene, out _));
         }
 
         [UnityTest]
@@ -56,19 +56,20 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         {
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_Destroyed_DisposesSceneContainerBeforeSceneUnloads));
             var installer = AddInstaller<TestSceneInstaller>(scene);
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return WaitFor(ready);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var resolver));
+            var container = (IContainer)resolver!;
 
             Object.Destroy(installer.gameObject);
             yield return null;
 
-            Assert.IsTrue(container!.IsDisposed);
+            Assert.IsTrue(container.IsDisposed);
             Assert.IsTrue(scene.isLoaded);
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var fallback));
-            Assert.AreSame(ContainerBootstrapper.Root, fallback);
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var fallback));
+            Assert.AreSame(ContainerRegistry.Root, fallback);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -82,13 +83,13 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             var behaviour = content.AddComponent<TestBehaviour>();
             var gate = new TestGate();
             var installer = AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.Gate = gate);
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return null;
 
             Assert.IsFalse(content.activeSelf);
             Assert.IsFalse(ready.IsCompleted);
-            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
+            Assert.IsFalse(ContainerRegistry.TryGet(scene, out _));
             Assert.IsNotNull(behaviour.Service);
 
             gate.Release();
@@ -97,7 +98,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             Assert.IsTrue(ready.Result);
             Assert.IsTrue(content.activeSelf);
             Assert.IsTrue(installer.gameObject.activeSelf);
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out _));
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out _));
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -107,7 +108,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         {
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_UnloadedWhilePaused_CompletesNotReady));
             AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.Gate = new TestGate());
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return null;
             yield return SceneManager.UnloadSceneAsync(scene);
@@ -123,14 +124,14 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_SceneActivatedSameFrame_InitializesAsActiveScene));
             AddInstaller<TestNewObjectSceneInstaller>(scene);
 
-            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
+            Assert.IsFalse(ContainerRegistry.TryGet(scene, out _));
 
             SceneManager.SetActiveScene(scene);
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return WaitFor(ready);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var container));
             Assert.AreEqual(scene, container!.Resolve<TestNewObjectCreator>().CreatedScene);
 
             SceneManager.SetActiveScene(previousActiveScene);
@@ -138,20 +139,20 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
-        public IEnumerator WhenSceneReadyAsync_CalledBeforeActivation_InitializesAsActiveScene()
+        public IEnumerator WhenReadyAsync_CalledBeforeActivation_InitializesAsActiveScene()
         {
             var previousActiveScene = SceneManager.GetActiveScene();
-            var scene = SceneManager.CreateScene(nameof(WhenSceneReadyAsync_CalledBeforeActivation_InitializesAsActiveScene));
+            var scene = SceneManager.CreateScene(nameof(WhenReadyAsync_CalledBeforeActivation_InitializesAsActiveScene));
             AddInstaller<TestNewObjectSceneInstaller>(scene);
 
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             Assert.IsFalse(ready.IsCompleted);
 
             SceneManager.SetActiveScene(scene);
             yield return WaitFor(ready);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var container));
             Assert.AreEqual(scene, container!.Resolve<TestNewObjectCreator>().CreatedScene);
 
             SceneManager.SetActiveScene(previousActiveScene);
@@ -164,15 +165,15 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_SceneNeverActivated_InitializesOnNextFrame));
             AddInstaller<TestSceneInstaller>(scene);
 
-            Assert.IsFalse(ContainerBootstrapper.TryGetContainer(scene, out _));
+            Assert.IsFalse(ContainerRegistry.TryGet(scene, out _));
 
-            for (var i = 0; i < 10 && !ContainerBootstrapper.TryGetContainer(scene, out _); i++)
+            for (var i = 0; i < 10 && !ContainerRegistry.TryGet(scene, out _); i++)
             {
                 yield return null;
             }
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
-            Assert.AreNotSame(ContainerBootstrapper.Root, container);
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var container));
+            Assert.AreNotSame(ContainerRegistry.Root, container);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -187,8 +188,8 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
             AddInstaller<TestSceneInstaller>(scene);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
-            Assert.AreNotSame(ContainerBootstrapper.Root, container);
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var container));
+            Assert.AreNotSame(ContainerRegistry.Root, container);
 
             SceneManager.SetActiveScene(previousActiveScene);
             yield return SceneManager.UnloadSceneAsync(scene);
@@ -204,13 +205,13 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             yield return UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(TestLoadedScenePath, parameters);
 
             var scene = SceneManager.GetSceneByPath(TestLoadedScenePath);
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return WaitFor(ready);
 
             Assert.IsTrue(ready.Result);
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
-            Assert.AreNotSame(ContainerBootstrapper.Root, container);
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var container));
+            Assert.AreNotSame(ContainerRegistry.Root, container);
             Assert.IsNotNull(container!.Resolve<TestLoadedSceneService>());
 
             var emptyScene = SceneManager.CreateScene(nameof(SceneInstaller_SceneLoadedAsActiveScene_InitializesSceneContainer));
@@ -224,11 +225,11 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         {
             var scene = SceneManager.CreateScene(nameof(Instantiate_FromSceneContainer_PlacesObjectInContainerScene));
             AddInstaller<TestCreatingSceneInstaller>(scene);
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             yield return WaitFor(ready);
 
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var container));
             Assert.AreNotEqual(scene, SceneManager.GetActiveScene());
             Assert.AreEqual(scene, container!.Resolve<TestObjectCreator>().CreatedScene);
 
@@ -236,11 +237,11 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [Test]
-        public void WhenSceneReadyAsync_SceneWithoutInstaller_ReturnsLoaded()
+        public void WhenReadyAsync_SceneWithoutInstaller_ReturnsLoaded()
         {
-            var scene = SceneManager.CreateScene(nameof(WhenSceneReadyAsync_SceneWithoutInstaller_ReturnsLoaded));
+            var scene = SceneManager.CreateScene(nameof(WhenReadyAsync_SceneWithoutInstaller_ReturnsLoaded));
 
-            var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
+            var ready = ContainerRegistry.WhenReadyAsync(scene);
 
             Assert.IsTrue(ready.IsCompleted);
             Assert.IsTrue(ready.Result);
@@ -248,19 +249,13 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
-        public IEnumerator TryGetContainer_SceneWithoutInstaller_ReturnsInitializedRoot()
+        public IEnumerator TryGet_SceneWithoutInstaller_ReturnsRoot()
         {
-            var root = ContainerBootstrapper.Root;
+            yield return WaitForRoot();
+            var scene = SceneManager.CreateScene(nameof(TryGet_SceneWithoutInstaller_ReturnsRoot));
 
-            for (var i = 0; i < 100 && root != null && !root.IsInitialized; i++)
-            {
-                yield return null;
-            }
-
-            var scene = SceneManager.CreateScene(nameof(TryGetContainer_SceneWithoutInstaller_ReturnsInitializedRoot));
-
-            Assert.IsTrue(ContainerBootstrapper.TryGetContainer(scene, out var container));
-            Assert.AreSame(root, container);
+            Assert.IsTrue(ContainerRegistry.TryGet(scene, out var resolver));
+            Assert.AreSame(ContainerRegistry.Root, resolver);
 
             yield return SceneManager.UnloadSceneAsync(scene);
         }
@@ -279,14 +274,12 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private static IEnumerator WaitForRoot()
         {
-            var root = ContainerBootstrapper.Root;
-
-            for (var i = 0; i < 100 && root != null && !root.IsInitialized; i++)
+            for (var i = 0; i < 100 && ContainerRegistry.Root == null; i++)
             {
                 yield return null;
             }
 
-            Assert.IsTrue(root != null && root.IsInitialized);
+            Assert.IsNotNull(ContainerRegistry.Root);
         }
 
         private static IEnumerator WaitFor(Task task)

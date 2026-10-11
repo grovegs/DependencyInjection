@@ -13,62 +13,10 @@ public sealed partial class ContainerBootstrapper : Node
     private static IContainer s_root;
     private static Task s_rootInitialization;
 
-    public static IContainer Root => s_root;
-
     public ContainerBootstrapper()
     {
         ProcessPriority = int.MinValue;
         ProcessPhysicsPriority = int.MinValue;
-    }
-
-    public static bool TryGetContainer(Node node, out IContainer container)
-    {
-        container = null;
-
-        if (node == null || !IsInstanceValid(node) || !node.IsInsideTree())
-        {
-            return false;
-        }
-
-        var state = FindScene(node);
-
-        if (state != null)
-        {
-            if (!IsReady(state))
-            {
-                return false;
-            }
-
-            container = state.Container;
-            return container != null;
-        }
-
-        var root = s_root;
-
-        if (root == null || !root.IsInitialized)
-        {
-            return false;
-        }
-
-        container = root;
-        return true;
-    }
-
-    public static Task<bool> WhenSceneReadyAsync(Node node)
-    {
-        if (node == null || !IsInstanceValid(node))
-        {
-            return Task.FromResult(false);
-        }
-
-        var state = FindScene(node);
-
-        if (state != null)
-        {
-            return state.Ready.Task;
-        }
-
-        return Task.FromResult(node.IsInsideTree());
     }
 
     public override void _EnterTree()
@@ -100,12 +48,7 @@ public sealed partial class ContainerBootstrapper : Node
     {
         GetTree().NodeAdded -= OnNodeAdded;
         s_processEntries.Clear();
-
-        foreach (var state in s_scenes.Values)
-        {
-            state.Ready.TrySetResult(false);
-        }
-
+        ContainerRegistry.Clear();
         s_scenes.Clear();
         s_rootInitialization = null;
         var root = s_root;
@@ -235,6 +178,11 @@ public sealed partial class ContainerBootstrapper : Node
         {
             await root.InitializeAsync();
             AddProcessEntry(root);
+
+            if (ReferenceEquals(s_root, root))
+            {
+                ContainerRegistry.SetRoot(root);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -265,6 +213,7 @@ public sealed partial class ContainerBootstrapper : Node
         state.Exiting = () => DisposeScene(state);
         scope.TreeExiting += state.Exiting;
         s_scenes.Add(scope, state);
+        ContainerRegistry.AddScene(scope);
         scope.ProcessMode = ProcessModeEnum.Disabled;
         _ = InitializeSceneAsync(state);
     }
@@ -296,6 +245,7 @@ public sealed partial class ContainerBootstrapper : Node
             });
 
             state.Container = container;
+            ContainerRegistry.SetSceneContainer(state.Scope, container);
             InjectScope(container, state.Scope, nestedScopes);
         }
         catch (Exception exception)
@@ -366,7 +316,7 @@ public sealed partial class ContainerBootstrapper : Node
             state.Scope.ProcessMode = state.ProcessMode;
         }
 
-        state.Ready.TrySetResult(false);
+        ContainerRegistry.RemoveScene(state.Scope, out _);
         var container = state.Container;
 
         if (container == null)
@@ -393,31 +343,12 @@ public sealed partial class ContainerBootstrapper : Node
             state.Scope.ProcessMode = state.ProcessMode;
         }
 
-        state.Ready.TrySetResult(isReady);
+        ContainerRegistry.CompleteScene(state.Scope, isReady);
     }
 
     private static bool IsCurrent(SceneState state)
     {
         return s_scenes.TryGetValue(state.Scope, out var current) && ReferenceEquals(current, state);
-    }
-
-    private static bool IsReady(SceneState state)
-    {
-        var ready = state.Ready.Task;
-        return ready.IsCompleted && ready.Result;
-    }
-
-    private static SceneState FindScene(Node node)
-    {
-        for (var current = node; current != null; current = current.GetParent())
-        {
-            if (s_scenes.TryGetValue(current, out var state))
-            {
-                return state;
-            }
-        }
-
-        return null;
     }
 
     private static Node GetScope(SceneInstaller installer)
@@ -469,7 +400,6 @@ public sealed partial class ContainerBootstrapper : Node
     {
         public readonly Node Scope;
         public readonly ProcessModeEnum ProcessMode;
-        public readonly TaskCompletionSource<bool> Ready;
         public IContainer Container;
         public Action Exiting;
 
@@ -477,7 +407,6 @@ public sealed partial class ContainerBootstrapper : Node
         {
             Scope = scope;
             ProcessMode = scope.ProcessMode;
-            Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
     }
 
