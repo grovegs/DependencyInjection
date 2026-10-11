@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\GroveGames.DependencyInjection\GroveGames.DependencyInjection.csproj" />
+    <ProjectReference Include="..\..\src\GroveGames.DependencyInjection.Generator\GroveGames.DependencyInjection.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

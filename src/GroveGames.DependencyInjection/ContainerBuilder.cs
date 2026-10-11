@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
+using GroveGames.DependencyInjection.Generated;
 using GroveGames.DependencyInjection.Registration;
 using GroveGames.DependencyInjection.Resolution;
 
@@ -113,7 +114,7 @@ public sealed class ContainerBuilder : IContainerBuilder
 
         for (var i = 0; i < bindings.Length; i++)
         {
-            if (bindings[i].Activator is ConstructorActivator activator)
+            if (bindings[i].Activator is DependentActivator activator)
             {
                 activator.Link(container);
             }
@@ -173,13 +174,23 @@ public sealed class ContainerBuilder : IContainerBuilder
             return new InstanceBinding(registration.Instance);
         }
 
-        InstanceActivator activator = registration.Factory is not null
+        var activator = registration.Factory is not null
             ? new FactoryActivator(registration.ImplementationType, registration.Factory, container)
-            : new ConstructorActivator(registration.ImplementationType);
+            : CreateConstructorActivator(registration.ImplementationType);
 
         return registration.Lifetime == Lifetime.Singleton
             ? new SingletonBinding(activator, container)
             : new TransientBinding(activator, container);
+    }
+
+    private static InstanceActivator CreateConstructorActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
+    {
+        if (GeneratedActivators.TryGetConstructor(implementationType, out var constructor))
+        {
+            return new GeneratedActivator(implementationType, constructor);
+        }
+
+        return new ConstructorActivator(implementationType);
     }
 
     private static void DetectCircularDependencies(Binding[] bindings)

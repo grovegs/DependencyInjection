@@ -16,6 +16,7 @@ A lightweight dependency injection framework for .NET, Unity, and Godot with bui
 - **Automatic Detection**: Lifecycle interfaces and `IDisposable` are picked up from the implementation; there is nothing extra to register
 - **Scoped Containers**: Child containers per scene that resolve from their parent and are disposed with the scene
 - **Low Overhead**: Constructors are discovered once at build time and singleton resolves do not allocate
+- **Source Generated**: Registered constructors and `[Inject]` methods are called through generated code instead of reflection, so IL2CPP code stripping and Native AOT trimming keep them
 - **Native AOT Compatible**: Trimming and AOT analyzers enabled on .NET 8 and later
 - **Unity Integration**: Available as a Unity package
 - **Godot Integration**: Available as a Godot addon
@@ -112,6 +113,12 @@ container.Inject(healthBar);
 
 Instances passed to `AddSingleton(instance)` are injected once when the container is built. `Inject` does nothing for an instance that the container or a parent already manages, so injecting a whole scene never injects a registered instance twice.
 
+### Source Generation
+
+The package includes a source generator that runs in every project referencing it, with nothing to configure. For each type registered with `AddSingleton<T>()`, `AddTransient<T>()`, their two type argument forms or `typeof(...)`, and for each class with `[Inject]` methods, it generates code that calls the constructor and the methods directly. The container picks the generated code up when it is built.
+
+Anything the generator cannot call directly still works through reflection: private types and types nested in them, types registered only from an assembly other than the one that defines them, and registrations inside generic methods such as `AddSingleton<T>()` with a type parameter. On IL2CPP with a high managed stripping level, preserve those types with `[Preserve]` or a `link.xml`. `[Inject]` constructors and methods never need it, because `InjectAttribute` derives from a `PreserveAttribute`, which Unity's linker keeps.
+
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
@@ -137,6 +144,8 @@ There are two installation steps required to use it in Unity.
     -langversion:10
     -nullable:enable
     ```
+
+The NuGet package also contains the [source generator](#source-generation). Unity runs it only when `GroveGames.DependencyInjection.Generator.dll` under `Assets/Packages` has the `RoslynAnalyzer` asset label; add the label in the Inspector if NuGetForUnity did not. Without it everything still works through reflection.
 
 ### Root Installer
 
@@ -309,7 +318,7 @@ Measured with BenchmarkDotNet on .NET 10 against Microsoft.Extensions.Dependency
 | Factory resolve           | 9.6 ns     | 8.3 ns    | 24 B / 24 B                        |
 | Build, 4 registrations    | 906 ns     | 783 ns    | 2736 B / 5664 B                    |
 
-Constructors are invoked through reflection so the same code runs on IL2CPP, where runtime code generation is not available.
+These numbers were measured before constructors were source generated; run `sandbox/DotnetBenchmark` for current results. Generated code is plain C#, so the same code runs on IL2CPP and Native AOT, where runtime code generation is not available.
 
 ---
 

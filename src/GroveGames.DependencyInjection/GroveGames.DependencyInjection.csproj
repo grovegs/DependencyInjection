@@ -16,4 +16,9 @@
     <Deterministic>true</Deterministic>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../GroveGames.DependencyInjection.Generator/GroveGames.DependencyInjection.Generator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="../GroveGames.DependencyInjection.Generator/bin/$(Configuration)/netstandard2.0/GroveGames.DependencyInjection.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
 </Project>
