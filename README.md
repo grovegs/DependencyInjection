@@ -258,6 +258,10 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 - **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
+### Code Stripping
+
+`[Inject]` methods are only called through reflection, so the editor adds every `[Inject]` method to the linker's preserve list when a player is built. They survive managed code stripping at every level without a `link.xml` or `[Preserve]` in game code.
+
 ## Godot
 
 Install via NuGet:
