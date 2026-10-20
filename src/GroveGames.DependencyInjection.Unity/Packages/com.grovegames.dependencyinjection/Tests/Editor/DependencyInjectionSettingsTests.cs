@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEditor;
 
 namespace GroveGames.DependencyInjection.Unity.Editor.Tests
 {
@@ -13,11 +14,23 @@ namespace GroveGames.DependencyInjection.Unity.Editor.Tests
         }
 
         [Test]
-        public void GetOrCreate_SettingsAsset_IsLoadedFromResources()
+        public void GetOrCreate_SettingsAsset_IsReturnedAtRuntime()
         {
             var asset = DependencyInjectionSettingsAsset.GetOrCreate();
 
-            Assert.AreSame(asset, DependencyInjectionSettings.GetOrCreate());
+            var settings = DependencyInjectionSettings.GetOrCreate();
+
+            Assert.AreSame(asset, settings);
+        }
+
+        [Test]
+        public void GetOrCreate_SettingsAsset_IsPreloaded()
+        {
+            var asset = DependencyInjectionSettingsAsset.GetOrCreate();
+
+            var preloaded = PlayerSettings.GetPreloadedAssets();
+
+            Assert.Contains(asset, preloaded);
         }
     }
 }
