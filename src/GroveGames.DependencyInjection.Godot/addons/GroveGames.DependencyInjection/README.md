@@ -171,7 +171,7 @@ The NuGet package also contains the [source generator](#source-generation). Unit
 
 ### Root Installer
 
-Derive from `RootInstaller`, create an asset for it and assign it in Edit → Project Settings → GroveGames → Dependency Injection. A project has one root installer; register everything that lives for the whole application in it. Settings are stored as a ScriptableObject in `Assets/Settings/Resources/GroveGames/DependencyInjectionSettings.asset` and loaded with `Resources.Load`, so every build profile ships them.
+Derive from `RootInstaller`, create an asset for it and assign it in Edit → Project Settings → GroveGames → Dependency Injection. A project has one root installer; register everything that lives for the whole application in it. Settings are stored as a ScriptableObject in `Assets/Settings/GroveGames/DependencyInjectionSettings.asset` and registered as a preloaded asset in Player Settings, so every build profile ships them. An asset left in the old `Assets/Settings/Resources/GroveGames/` folder is moved there automatically.
 
 ```csharp
 using GroveGames.DependencyInjection;
@@ -257,6 +257,10 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 - **`DependencyInjectionSettings`**: ScriptableObject holding the root installer
 - **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
+
+### Code Stripping
+
+`[Inject]` methods are only called through reflection, so the editor adds every `[Inject]` method to the linker's preserve list when a player is built. They survive managed code stripping at every level without a `link.xml` or `[Preserve]` in game code.
 
 ## Godot
 
