@@ -11,19 +11,24 @@ namespace GroveGames.DependencyInjection.Unity
     {
         private sealed class SceneState
         {
-            public readonly Scene Scene;
-            public readonly List<SceneInstaller> Installers;
-            public readonly List<GameObject> PausedRoots;
-            public readonly TaskCompletionSource<bool> Ready;
+            private readonly Scene _scene;
+            private readonly List<SceneInstaller> _installers;
+            private readonly List<GameObject> _pausedRoots;
+            private readonly TaskCompletionSource<bool> _ready;
+
+            public Scene Scene => _scene;
+            public List<SceneInstaller> Installers => _installers;
+            public List<GameObject> PausedRoots => _pausedRoots;
+            public TaskCompletionSource<bool> Ready => _ready;
             public IContainer? Container;
             public bool IsStarted;
 
             public SceneState(Scene scene, List<SceneInstaller> installers, List<GameObject> pausedRoots)
             {
-                Scene = scene;
-                Installers = installers;
-                PausedRoots = pausedRoots;
-                Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _scene = scene;
+                _installers = installers;
+                _pausedRoots = pausedRoots;
+                _ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
 

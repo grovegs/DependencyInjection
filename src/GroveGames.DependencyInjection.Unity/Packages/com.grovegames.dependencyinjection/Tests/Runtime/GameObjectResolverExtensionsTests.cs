@@ -186,37 +186,44 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private sealed class TestAwakeBehaviour : MonoBehaviour
         {
-            public TestService? Service { get; private set; }
-            public bool WasInjectedBeforeAwake { get; private set; }
-            public string? AwakeSceneName { get; private set; }
+            private TestService? _service;
+            private bool _wasInjectedBeforeAwake;
+            private string? _awakeSceneName;
+
+            public TestService? Service => _service;
+            public bool WasInjectedBeforeAwake => _wasInjectedBeforeAwake;
+            public string? AwakeSceneName => _awakeSceneName;
 
             [Inject]
             public void Construct(TestService service)
             {
-                Service = service;
+                _service = service;
             }
 
             private void Awake()
             {
-                WasInjectedBeforeAwake = Service != null;
-                AwakeSceneName = gameObject.scene.name;
+                _wasInjectedBeforeAwake = Service != null;
+                _awakeSceneName = gameObject.scene.name;
             }
         }
 
         private sealed class TestBehaviour : MonoBehaviour, IDisposable
         {
-            public TestService? Service { get; private set; }
-            public bool IsDisposed { get; private set; }
+            private TestService? _service;
+            private bool _isDisposed;
+
+            public TestService? Service => _service;
+            public bool IsDisposed => _isDisposed;
 
             [Inject]
             public void Construct(TestService service)
             {
-                Service = service;
+                _service = service;
             }
 
             public void Dispose()
             {
-                IsDisposed = true;
+                _isDisposed = true;
             }
         }
     }

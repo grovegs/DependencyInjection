@@ -146,29 +146,34 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private sealed class TestUpdatable : IPreFrameUpdatable, IFrameUpdatable, IPostFrameUpdatable, IPhysicsUpdatable
         {
-            public int FrameUpdateCount { get; private set; }
-            public int PhysicsUpdateCount { get; private set; }
-            public int PreFrameUpdateCount { get; private set; }
-            public int PostFrameUpdateCount { get; private set; }
+            private int _frameUpdateCount;
+            private int _physicsUpdateCount;
+            private int _preFrameUpdateCount;
+            private int _postFrameUpdateCount;
+
+            public int FrameUpdateCount => _frameUpdateCount;
+            public int PhysicsUpdateCount => _physicsUpdateCount;
+            public int PreFrameUpdateCount => _preFrameUpdateCount;
+            public int PostFrameUpdateCount => _postFrameUpdateCount;
 
             public void FrameUpdate(float deltaTime)
             {
-                FrameUpdateCount++;
+                _frameUpdateCount++;
             }
 
             public void PhysicsUpdate(float deltaTime)
             {
-                PhysicsUpdateCount++;
+                _physicsUpdateCount++;
             }
 
             public void PreFrameUpdate(float deltaTime)
             {
-                PreFrameUpdateCount++;
+                _preFrameUpdateCount++;
             }
 
             public void PostFrameUpdate(float deltaTime)
             {
-                PostFrameUpdateCount++;
+                _postFrameUpdateCount++;
             }
         }
     }

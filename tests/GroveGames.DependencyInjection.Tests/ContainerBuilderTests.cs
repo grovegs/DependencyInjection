@@ -315,21 +315,25 @@ public sealed class ContainerBuilderTests
 
     private readonly struct TestSettings
     {
-        public int Value { get; }
+        private readonly int _value;
+
+        public int Value => _value;
 
         public TestSettings(int value)
         {
-            Value = value;
+            _value = value;
         }
     }
 
     private sealed class TestSettingsConsumer
     {
-        public TestSettings Settings { get; }
+        private readonly TestSettings _settings;
+
+        public TestSettings Settings => _settings;
 
         public TestSettingsConsumer(TestSettings settings)
         {
-            Settings = settings;
+            _settings = settings;
         }
     }
 
@@ -343,11 +347,13 @@ public sealed class ContainerBuilderTests
 
     private sealed class TestConsumer
     {
-        public TestService Service { get; }
+        private readonly TestService _service;
+
+        public TestService Service => _service;
 
         public TestConsumer(TestService service)
         {
-            Service = service;
+            _service = service;
         }
     }
 
@@ -367,7 +373,9 @@ public sealed class ContainerBuilderTests
 
     private sealed class TestMultipleConstructors
     {
-        public TestService? Service { get; }
+        private readonly TestService? _service;
+
+        public TestService? Service => _service;
 
         public TestMultipleConstructors()
         {
@@ -375,18 +383,20 @@ public sealed class ContainerBuilderTests
 
         public TestMultipleConstructors(TestService service)
         {
-            Service = service;
+            _service = service;
         }
     }
 
     private sealed class TestMarkedConstructor
     {
-        public bool UsedMarkedConstructor { get; }
+        private readonly bool _usedMarkedConstructor;
+
+        public bool UsedMarkedConstructor => _usedMarkedConstructor;
 
         [Inject]
         public TestMarkedConstructor()
         {
-            UsedMarkedConstructor = true;
+            _usedMarkedConstructor = true;
         }
 
         public TestMarkedConstructor(TestService service)
@@ -404,12 +414,14 @@ public sealed class ContainerBuilderTests
 
     private sealed class TestInjectable
     {
-        public TestService? Service { get; private set; }
+        private TestService? _service;
+
+        public TestService? Service => _service;
 
         [Inject]
         public void Construct(TestService service)
         {
-            Service = service;
+            _service = service;
         }
     }
 }
