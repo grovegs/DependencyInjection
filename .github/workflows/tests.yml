@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   tests:
-    uses: grovegs/workflows/.github/workflows/package-tests.yml@v1.4.1
+    uses: grovegs/workflows/.github/workflows/package-tests.yml@v1.4.2
     with:
       dotnet-project: tests/GroveGames.DependencyInjection.Tests
       global-json-file: global.json
