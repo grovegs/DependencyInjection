@@ -78,7 +78,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             SceneManager.MoveGameObjectToScene(content, scene);
             var behaviour = content.AddComponent<TestBehaviour>();
             var gate = new TestGate();
-            var installer = AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.Gate = gate);
+            var installer = AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.SetGate(gate));
             var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
 
             yield return null;
@@ -103,7 +103,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         public IEnumerator SceneInstaller_UnloadedWhilePaused_CompletesNotReady()
         {
             var scene = SceneManager.CreateScene(nameof(SceneInstaller_UnloadedWhilePaused_CompletesNotReady));
-            AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.Gate = new TestGate());
+            AddInstaller<TestGatedSceneInstaller>(scene, gatedInstaller => gatedInstaller.SetGate(new TestGate()));
             var ready = ContainerBootstrapper.WhenSceneReadyAsync(scene);
 
             yield return null;
@@ -290,18 +290,27 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private sealed class TestSceneInstaller : SceneInstaller
         {
-            public bool IsInstalled { get; private set; }
+            private bool _isInstalled;
+
+            public bool IsInstalled => _isInstalled;
 
             public override void Install(IContainerBuilder builder)
             {
                 builder.AddSingleton<TestService>();
-                IsInstalled = true;
+                _isInstalled = true;
             }
         }
 
         private sealed class TestGatedSceneInstaller : SceneInstaller
         {
-            public TestGate? Gate { get; set; }
+            private TestGate? _gate;
+
+            public TestGate? Gate => _gate;
+
+            public void SetGate(TestGate? value)
+            {
+                _gate = value;
+            }
 
             public override void Install(IContainerBuilder builder)
             {
@@ -321,11 +330,13 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private sealed class TestNewObjectCreator : IInitializable
         {
-            public Scene CreatedScene { get; private set; }
+            private Scene _createdScene;
+
+            public Scene CreatedScene => _createdScene;
 
             public void Initialize()
             {
-                CreatedScene = new GameObject(nameof(TestNewObjectCreator)).scene;
+                _createdScene = new GameObject(nameof(TestNewObjectCreator)).scene;
             }
         }
 
@@ -343,12 +354,14 @@ namespace GroveGames.DependencyInjection.Unity.Tests
 
         private sealed class TestBehaviour : MonoBehaviour
         {
-            public TestService? Service { get; private set; }
+            private TestService? _service;
+
+            public TestService? Service => _service;
 
             [Inject]
             public void Construct(TestService service)
             {
-                Service = service;
+                _service = service;
             }
         }
 
@@ -392,17 +405,18 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         private sealed class TestObjectCreator : IInitializable
         {
             private readonly IObjectResolver _resolver;
+            private Scene _createdScene;
 
             public TestObjectCreator(IObjectResolver resolver)
             {
                 _resolver = resolver;
             }
 
-            public Scene CreatedScene { get; private set; }
+            public Scene CreatedScene => _createdScene;
 
             public void Initialize()
             {
-                CreatedScene = _resolver.Instantiate<TestMarker>().gameObject.scene;
+                _createdScene = _resolver.Instantiate<TestMarker>().gameObject.scene;
             }
         }
     }

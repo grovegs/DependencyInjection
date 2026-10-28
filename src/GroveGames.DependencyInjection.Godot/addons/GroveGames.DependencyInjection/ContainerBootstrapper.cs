@@ -435,35 +435,45 @@ public sealed partial class ContainerBootstrapper : Node
 
     private sealed class SceneState
     {
-        public readonly Node Scope;
-        public readonly ProcessModeEnum ProcessMode;
-        public readonly TaskCompletionSource<bool> Ready;
+        private readonly Node _scope;
+        private readonly ProcessModeEnum _processMode;
+        private readonly TaskCompletionSource<bool> _ready;
+
+        public Node Scope => _scope;
+        public ProcessModeEnum ProcessMode => _processMode;
+        public TaskCompletionSource<bool> Ready => _ready;
         public IContainer Container;
         public Action Exiting;
 
         public SceneState(Node scope)
         {
-            Scope = scope;
-            ProcessMode = scope.ProcessMode;
-            Ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _scope = scope;
+            _processMode = scope.ProcessMode;
+            _ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
     }
 
     private sealed class ProcessEntry
     {
-        public readonly IContainer Container;
-        public readonly IReadOnlyList<IPreFrameUpdatable> PreFrameUpdatables;
-        public readonly IReadOnlyList<IFrameUpdatable> FrameUpdatables;
-        public readonly IReadOnlyList<IPostFrameUpdatable> PostFrameUpdatables;
-        public readonly IReadOnlyList<IPhysicsUpdatable> PhysicsUpdatables;
+        private readonly IContainer _container;
+        private readonly IReadOnlyList<IPreFrameUpdatable> _preFrameUpdatables;
+        private readonly IReadOnlyList<IFrameUpdatable> _frameUpdatables;
+        private readonly IReadOnlyList<IPostFrameUpdatable> _postFrameUpdatables;
+        private readonly IReadOnlyList<IPhysicsUpdatable> _physicsUpdatables;
+
+        public IContainer Container => _container;
+        public IReadOnlyList<IPreFrameUpdatable> PreFrameUpdatables => _preFrameUpdatables;
+        public IReadOnlyList<IFrameUpdatable> FrameUpdatables => _frameUpdatables;
+        public IReadOnlyList<IPostFrameUpdatable> PostFrameUpdatables => _postFrameUpdatables;
+        public IReadOnlyList<IPhysicsUpdatable> PhysicsUpdatables => _physicsUpdatables;
 
         public ProcessEntry(IContainer container)
         {
-            Container = container;
-            PreFrameUpdatables = container.ResolveAll<IPreFrameUpdatable>();
-            FrameUpdatables = container.ResolveAll<IFrameUpdatable>();
-            PostFrameUpdatables = container.ResolveAll<IPostFrameUpdatable>();
-            PhysicsUpdatables = container.ResolveAll<IPhysicsUpdatable>();
+            _container = container;
+            _preFrameUpdatables = container.ResolveAll<IPreFrameUpdatable>();
+            _frameUpdatables = container.ResolveAll<IFrameUpdatable>();
+            _postFrameUpdatables = container.ResolveAll<IPostFrameUpdatable>();
+            _physicsUpdatables = container.ResolveAll<IPhysicsUpdatable>();
         }
     }
 

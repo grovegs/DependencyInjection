@@ -310,22 +310,26 @@ public sealed class ActivatorGeneratorTests
 
             public sealed class Service
             {
-                public Dependency Dependency { get; }
+                private readonly Dependency _dependency;
+
+                public Dependency Dependency => _dependency;
 
                 public Service(Dependency dependency)
                 {
-                    Dependency = dependency;
+                    _dependency = dependency;
                 }
             }
 
             public sealed class View
             {
-                public Dependency Dependency { get; private set; }
+                private Dependency _dependency;
+
+                public Dependency Dependency => _dependency;
 
                 [Inject]
                 public void Construct(Dependency dependency)
                 {
-                    Dependency = dependency;
+                    _dependency = dependency;
                 }
             }
 

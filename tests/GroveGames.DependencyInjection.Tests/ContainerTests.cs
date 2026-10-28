@@ -521,11 +521,13 @@ public sealed class ContainerTests
 
     private sealed class TestLog
     {
-        public List<string> Entries { get; }
+        private readonly List<string> _entries;
+
+        public List<string> Entries => _entries;
 
         public TestLog()
         {
-            Entries = [];
+            _entries = [];
         }
     }
 
@@ -539,20 +541,23 @@ public sealed class ContainerTests
 
     private sealed class TestCountingInjectable
     {
-        public int InjectCount { get; private set; }
+        private int _injectCount;
+
+        public int InjectCount => _injectCount;
 
         [Inject]
         public void Construct(TestLog log)
         {
-            InjectCount++;
+            _injectCount++;
         }
     }
 
     private sealed class TestReentrantInjectable
     {
         private readonly TestReentrantInjectable? _inner;
+        private TestLog? _log;
 
-        public TestLog? Log { get; private set; }
+        public TestLog? Log => _log;
 
         public TestReentrantInjectable(TestReentrantInjectable? inner)
         {
@@ -567,18 +572,20 @@ public sealed class ContainerTests
                 resolver.Inject(_inner);
             }
 
-            Log = log;
+            _log = log;
         }
     }
 
     private sealed class TestInjectable
     {
-        public TestLog? Log { get; private set; }
+        private TestLog? _log;
+
+        public TestLog? Log => _log;
 
         [Inject]
         public void Construct(TestLog log)
         {
-            Log = log;
+            _log = log;
         }
     }
 
@@ -651,29 +658,32 @@ public sealed class ContainerTests
 
     private sealed class TestSettings : IInitializable
     {
-        public bool IsLoaded { get; private set; }
+        private bool _isLoaded;
+
+        public bool IsLoaded => _isLoaded;
 
         public void Initialize()
         {
-            IsLoaded = true;
+            _isLoaded = true;
         }
     }
 
     private sealed class TestConsumer : IAsyncInitializable
     {
         private readonly TestSettings _settings;
+        private bool _sawLoadedSettings;
 
         public TestConsumer(TestSettings settings)
         {
             _settings = settings;
         }
 
-        public bool SawLoadedSettings { get; private set; }
+        public bool SawLoadedSettings => _sawLoadedSettings;
 
         public async ValueTask InitializeAsync(CancellationToken cancellationToken)
         {
             await Task.Yield();
-            SawLoadedSettings = _settings.IsLoaded;
+            _sawLoadedSettings = _settings.IsLoaded;
         }
     }
 
