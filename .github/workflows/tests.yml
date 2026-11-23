@@ -20,3 +20,34 @@ jobs:
     with:
       dotnet-project: tests/GroveGames.DependencyInjection.Tests
       global-json-file: global.json
+
+  skills:
+    name: 🧪 Agent Skills
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: 📂 Checkout Code
+        uses: actions/checkout@v7
+
+      - name: ✅ Check Engine Skills
+        shell: bash
+        run: bash scripts/build_skills.sh --check
+
+      - name: ✅ Check Agent Skills
+        uses: grovegs/actions/.github/actions/check-agent-skills@v1.10.0
+        with:
+          path: .
+
+      - name: 🔧 Setup .NET
+        uses: grovegs/actions/.github/actions/setup-dotnet@v1.10.0
+        with:
+          global-json-file: global.json
+
+      - name: 📦 Check The Skill Ships In The NuGet Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet pack src/GroveGames.DependencyInjection --configuration Release --output "${RUNNER_TEMP}/packages"
+          unzip -l "${RUNNER_TEMP}"/packages/GroveGames.DependencyInjection.[0-9]*.nupkg | grep -F "skills/"
+          unzip -l "${RUNNER_TEMP}"/packages/GroveGames.DependencyInjection.[0-9]*.nupkg | grep -q -F "skills/grovegames-dependencyinjection/SKILL.md"
