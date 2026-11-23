@@ -35,7 +35,6 @@
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="/" />
     <None Include="$(MSBuildThisFileDirectory)Icon.png" Pack="true" PackagePath="/" />
     <None Include="$(MSBuildThisFileDirectory)skills/**/SKILL.md" Pack="true" PackagePath="skills/" />
-    <None Include="$(MSBuildThisFileDirectory)buildTransitive/AgentSkills.targets" Pack="true" PackagePath="buildTransitive/$(MSBuildProjectName).targets" />
   </ItemGroup>
 
   <ItemGroup>
