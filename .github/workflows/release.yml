@@ -32,7 +32,7 @@ permissions:
 jobs:
   release:
     name: Release Package
-    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.10.1
+    uses: grovegs/workflows/.github/workflows/package-release.yml@v1.11.0
     with:
       package-name: Dependency Injection
       version-type: ${{ inputs.version-type || 'auto' }}
