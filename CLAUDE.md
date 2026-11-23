@@ -100,3 +100,9 @@ dotnet pack -c Release
 - ResourceLoader.Load() for runtime (path from ProjectSettings)
 - Factory accepts settings instance for DI-friendly architecture
 - Optional: Reference same resource via [Export] in nodes for DI
+
+## Agent Skills
+
+- The rules for game code that uses this package are an agent skill. Its source is `skills/grovegames-dependencyinjection/`: `SKILL.md` holds the rules that apply everywhere, `unity.md` and `godot.md` hold only what differs in that engine. An engine file is optional.
+- `scripts/build_skills.sh` writes the skill each engine package ships: `SKILL.md` followed by the engine file, when there is one. Run it after every edit and commit the result. Never edit the copies under `Skills~/` or `addons/`.
+- The NuGet package ships `skills/grovegames-dependencyinjection/SKILL.md` as it is.
