@@ -8,7 +8,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor.Tests
         [Test]
         public void GetOrCreate_ReturnsSettings()
         {
-            var settings = DependencyInjectionSettings.GetOrCreate();
+            var settings = UnityDependencyInjectionSettings.GetOrCreate();
 
             Assert.IsNotNull(settings);
         }
@@ -18,7 +18,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor.Tests
         {
             var asset = DependencyInjectionSettingsAsset.GetOrCreate();
 
-            var settings = DependencyInjectionSettings.GetOrCreate();
+            var settings = UnityDependencyInjectionSettings.GetOrCreate();
 
             Assert.AreSame(asset, settings);
         }

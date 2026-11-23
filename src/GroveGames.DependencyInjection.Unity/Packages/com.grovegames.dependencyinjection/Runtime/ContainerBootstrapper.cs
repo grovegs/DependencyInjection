@@ -54,7 +54,7 @@ namespace GroveGames.DependencyInjection.Unity
             Shutdown();
 
             var builder = new ContainerBuilder();
-            var installer = DependencyInjectionSettings.GetOrCreate().RootInstaller;
+            var installer = UnityDependencyInjectionSettings.GetOrCreate().RootInstaller;
 
             try
             {

@@ -14,46 +14,46 @@ namespace GroveGames.DependencyInjection.Unity.Editor
         [InitializeOnLoadMethod]
         private static void MigrateLegacyAsset()
         {
-            if (File.Exists(LegacyAssetPath) && !EditorBuildSettings.TryGetConfigObject(DependencyInjectionSettings.ConfigName, out DependencyInjectionSettings _))
+            if (File.Exists(LegacyAssetPath) && !EditorBuildSettings.TryGetConfigObject(UnityDependencyInjectionSettings.ConfigName, out UnityDependencyInjectionSettings _))
             {
                 EditorApplication.delayCall += () => GetOrCreate();
             }
         }
 
-        public static DependencyInjectionSettings GetOrCreate()
+        public static UnityDependencyInjectionSettings GetOrCreate()
         {
-            if (!EditorBuildSettings.TryGetConfigObject(DependencyInjectionSettings.ConfigName, out DependencyInjectionSettings settings) || settings == null)
+            if (!EditorBuildSettings.TryGetConfigObject(UnityDependencyInjectionSettings.ConfigName, out UnityDependencyInjectionSettings settings) || settings == null)
             {
                 settings = LoadOrCreate();
-                EditorBuildSettings.AddConfigObject(DependencyInjectionSettings.ConfigName, settings, true);
+                EditorBuildSettings.AddConfigObject(UnityDependencyInjectionSettings.ConfigName, settings, true);
             }
 
             Preload(settings);
             return settings;
         }
 
-        private static DependencyInjectionSettings LoadOrCreate()
+        private static UnityDependencyInjectionSettings LoadOrCreate()
         {
             CreateFolder();
 
-            if (AssetDatabase.LoadAssetAtPath<DependencyInjectionSettings>(AssetPath) == null && AssetDatabase.LoadAssetAtPath<DependencyInjectionSettings>(LegacyAssetPath) != null)
+            if (AssetDatabase.LoadAssetAtPath<UnityDependencyInjectionSettings>(AssetPath) == null && AssetDatabase.LoadAssetAtPath<UnityDependencyInjectionSettings>(LegacyAssetPath) != null)
             {
                 AssetDatabase.MoveAsset(LegacyAssetPath, AssetPath);
             }
 
-            var settings = AssetDatabase.LoadAssetAtPath<DependencyInjectionSettings>(AssetPath);
+            var settings = AssetDatabase.LoadAssetAtPath<UnityDependencyInjectionSettings>(AssetPath);
 
             if (settings != null)
             {
                 return settings;
             }
 
-            AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<DependencyInjectionSettings>(), AssetPath);
+            AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<UnityDependencyInjectionSettings>(), AssetPath);
             AssetDatabase.SaveAssets();
-            return AssetDatabase.LoadAssetAtPath<DependencyInjectionSettings>(AssetPath);
+            return AssetDatabase.LoadAssetAtPath<UnityDependencyInjectionSettings>(AssetPath);
         }
 
-        private static void Preload(DependencyInjectionSettings settings)
+        private static void Preload(UnityDependencyInjectionSettings settings)
         {
             var preloaded = PlayerSettings.GetPreloadedAssets();
             var assets = new List<Object>(preloaded.Length + 1);
@@ -63,7 +63,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor
             {
                 var asset = preloaded[i];
 
-                if (asset is DependencyInjectionSettings && asset != settings)
+                if (asset is UnityDependencyInjectionSettings && asset != settings)
                 {
                     continue;
                 }

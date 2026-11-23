@@ -42,7 +42,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor
 
                     var assetField = new ObjectField("Settings Asset")
                     {
-                        objectType = typeof(DependencyInjectionSettings),
+                        objectType = typeof(UnityDependencyInjectionSettings),
                         value = settings,
                         style = { marginBottom = 10 }
                     };
