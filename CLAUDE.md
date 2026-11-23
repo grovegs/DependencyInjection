@@ -105,4 +105,4 @@ dotnet pack -c Release
 
 - The rules for game code that uses this package are an agent skill. Its source is `skills/grovegames-dependencyinjection/`: `SKILL.md` holds the rules that apply everywhere, `unity.md` and `godot.md` hold only what differs in that engine. An engine file is optional.
 - The release writes the skill each engine package ships, the same way it copies the README and the license: `SKILL.md` followed by the engine file, when there is one. Never edit the copies under `Skills~/` or `addons/`; the next release replaces them.
-- The NuGet package ships `skills/grovegames-dependencyinjection/SKILL.md` as it is. `buildTransitive/AgentSkills.targets` is packed as the package's build targets and copies it into the folder a consuming project names in `GroveGamesAgentSkillsDirectory`. The file is the same in every GroveGames package.
+- The NuGet package ships `skills/grovegames-dependencyinjection/SKILL.md` as it is.

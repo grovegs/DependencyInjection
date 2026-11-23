@@ -352,15 +352,9 @@ These numbers were measured before constructors were source generated; run `sand
 
 The package ships an agent skill, `grovegames-dependencyinjection`, with the rules for game code that uses it.
 
-- **Unity:** the skill is in the package's `Skills~` folder.
-- **Godot:** the skill is in the addon's `skills` folder.
-- **.NET:** set `GroveGamesAgentSkillsDirectory` and every build copies the skill of each GroveGames package the project references into that folder:
-
-```xml
-<PropertyGroup>
-  <GroveGamesAgentSkillsDirectory>$(MSBuildThisFileDirectory).claude/skills</GroveGamesAgentSkillsDirectory>
-</PropertyGroup>
-```
+- **Unity:** the package's `Skills~` folder.
+- **Godot:** the addon's `skills` folder.
+- **.NET:** `skills/grovegames-dependencyinjection/SKILL.md` in the NuGet package.
 
 ## Testing
 
