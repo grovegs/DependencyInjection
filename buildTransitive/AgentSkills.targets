@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup>
+    <GroveGamesAgentSkill Include="$(MSBuildThisFileDirectory)../skills/**/*" />
+  </ItemGroup>
+
+  <Target Name="CopyGroveGamesAgentSkills" BeforeTargets="BeforeBuild" Condition="'$(GroveGamesAgentSkillsDirectory)' != ''">
+    <Copy SourceFiles="@(GroveGamesAgentSkill)" DestinationFiles="@(GroveGamesAgentSkill->'$(GroveGamesAgentSkillsDirectory)/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
