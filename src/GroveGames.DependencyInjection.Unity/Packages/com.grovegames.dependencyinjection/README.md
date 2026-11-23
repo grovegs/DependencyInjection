@@ -254,7 +254,7 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 - **`SceneInstaller`**: MonoBehaviour installer for a scene container
 - **`ContainerBootstrapper`**: Builds and initializes the root and scene containers. `WhenSceneReadyAsync(Scene)` waits for a scene's container
 - **`ContainerRegistry`**: Finds initialized containers: `Root` and `TryGet(Scene)`. Containers are returned as `IObjectResolver`, so they cannot be disposed from outside
-- **`DependencyInjectionSettings`**: ScriptableObject holding the root installer
+- **`UnityDependencyInjectionSettings`**: ScriptableObject holding the root installer; implements the core `IDependencyInjectionSettings`
 - **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
@@ -330,7 +330,7 @@ Godot types live in the `GroveGames.DependencyInjection.Godot` namespace.
 - **`SceneInstaller`**: Node installer for a scene container
 - **`ContainerBootstrapper`**: Autoload that builds containers and calls the [update interfaces](#updates) on their singletons: `PreFrameUpdate` and `FrameUpdate` before any other node's `_Process`, `PostFrameUpdate` after every node's `_Process`, and `PhysicsUpdate` from `_PhysicsProcess`. `WhenSceneReadyAsync(Node)` completes with `true` once the scene containing the node is initialized
 - **`ContainerRegistry`**: Finds initialized containers: `Root`, which is `null` until the root container is initialized, and `TryGet(Node)`, which returns the container of the node's scene, or the root for nodes outside scenes with installers, once it is initialized
-- **`DependencyInjectionSettingsResource`**: Resource holding the root installer
+- **`DependencyInjectionSettingsResource`**: Resource holding the root installer; implements the core `IDependencyInjectionSettings`
 - **`InjectTree`** and **`Instantiate`**: Inject `[Inject]` methods on a node tree
 
 ## Performance
@@ -347,6 +347,14 @@ Measured with BenchmarkDotNet on .NET 10 against Microsoft.Extensions.Dependency
 These numbers were measured before constructors were source generated; run `sandbox/DotnetBenchmark` for current results. Generated code is plain C#, so the same code runs on IL2CPP and Native AOT, where runtime code generation is not available.
 
 ---
+
+## Agent Skills
+
+The package ships an agent skill, `grovegames-dependencyinjection`, with the rules for game code that uses it.
+
+- **Unity:** the package's `Skills~` folder.
+- **Godot:** the addon's `skills` folder.
+- **.NET:** `skills/grovegames-dependencyinjection/SKILL.md` in the NuGet package.
 
 ## Testing
 
