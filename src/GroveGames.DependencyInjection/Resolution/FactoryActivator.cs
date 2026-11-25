@@ -4,20 +4,18 @@ internal sealed class FactoryActivator : InstanceActivator
 {
     private readonly Type _implementationType;
     private readonly Func<IObjectResolver, object> _factory;
-    private readonly IObjectResolver _resolver;
     private bool _isActivating;
     private bool _isValidated;
 
     public override Type ImplementationType => _implementationType;
 
-    public FactoryActivator(Type implementationType, Func<IObjectResolver, object> factory, IObjectResolver resolver)
+    public FactoryActivator(Type implementationType, Func<IObjectResolver, object> factory)
     {
         _implementationType = implementationType;
         _factory = factory;
-        _resolver = resolver;
     }
 
-    public override object Create()
+    public override object Create(Container requester)
     {
         if (_isActivating)
         {
@@ -28,7 +26,7 @@ internal sealed class FactoryActivator : InstanceActivator
 
         try
         {
-            var instance = _factory.Invoke(_resolver);
+            var instance = _factory.Invoke(requester);
 
             if (instance is null)
             {

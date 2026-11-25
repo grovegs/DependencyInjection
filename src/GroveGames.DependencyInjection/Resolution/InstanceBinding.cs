@@ -9,7 +9,7 @@ internal sealed class InstanceBinding : Binding
         _instance = instance;
     }
 
-    public override object Resolve()
+    public override object Resolve(Container requester)
     {
         return _instance;
     }

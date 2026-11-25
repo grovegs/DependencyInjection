@@ -11,13 +11,11 @@ namespace GroveGames.DependencyInjection.Unity.Tests
     public sealed class ContainerPlayerLoopTests
     {
         [UnityTest]
-        public IEnumerator Add_InitializedContainer_UpdatesEveryPhase()
+        public IEnumerator InitializedChildOfRoot_UpdatesEveryPhase()
         {
-            var builder = new ContainerBuilder();
-            builder.AddSingleton<TestUpdatable>();
-            var container = builder.Build();
-            var updatable = container.Resolve<TestUpdatable>();
-            ContainerPlayerLoop.Add(container);
+            yield return WaitForRoot();
+            var child = CreateInitializedChild(builder => builder.AddSingleton<TestUpdatable>());
+            var updatable = child.Resolve<TestUpdatable>();
 
             try
             {
@@ -32,60 +30,55 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             }
             finally
             {
-                ContainerPlayerLoop.Remove(container);
-                container.Dispose();
+                child.Dispose();
             }
         }
 
         [UnityTest]
-        public IEnumerator Remove_AddedContainer_StopsUpdating()
+        public IEnumerator DisposedChildOfRoot_StopsUpdating()
         {
-            var builder = new ContainerBuilder();
-            builder.AddSingleton<TestUpdatable>();
-            var container = builder.Build();
-            var updatable = container.Resolve<TestUpdatable>();
-            ContainerPlayerLoop.Add(container);
+            yield return WaitForRoot();
+            var child = CreateInitializedChild(builder => builder.AddSingleton<TestUpdatable>());
+            var updatable = child.Resolve<TestUpdatable>();
             yield return null;
 
-            ContainerPlayerLoop.Remove(container);
+            child.Dispose();
             var updateCount = updatable.FrameUpdateCount;
             yield return null;
             yield return null;
 
             Assert.AreEqual(updateCount, updatable.FrameUpdateCount);
-            container.Dispose();
         }
 
         [UnityTest]
-        public IEnumerator Add_DisposedContainer_IsIgnored()
+        public IEnumerator ChildOfRootNotInitialized_IsNotUpdated()
         {
-            var builder = new ContainerBuilder();
-            builder.AddSingleton<TestUpdatable>();
-            var container = builder.Build();
-            var updatable = container.Resolve<TestUpdatable>();
-            container.Dispose();
+            yield return WaitForRoot();
+            var child = Root.CreateChild(builder => builder.AddSingleton<TestUpdatable>());
+            var updatable = child.Resolve<TestUpdatable>();
 
-            ContainerPlayerLoop.Add(container);
+            yield return null;
             yield return null;
 
             Assert.AreEqual(0, updatable.FrameUpdateCount);
-            ContainerPlayerLoop.Remove(container);
+            child.Dispose();
         }
 
         [UnityTest]
-        public IEnumerator FrameUpdate_MultipleContainers_RunsEveryPreFrameUpdateBeforeAnyFrameUpdate()
+        public IEnumerator FrameUpdate_MultipleChildren_RunsEveryPreFrameUpdateBeforeAnyFrameUpdate()
         {
+            yield return WaitForRoot();
             var log = new List<string>();
-            var first = new ContainerBuilder();
-            first.AddSingleton(log);
-            first.AddSingleton<TestLoggingFrameUpdatable>();
-            var firstContainer = first.Build();
-            var second = new ContainerBuilder();
-            second.AddSingleton(log);
-            second.AddSingleton<TestLoggingPreFrameUpdatable>();
-            var secondContainer = second.Build();
-            ContainerPlayerLoop.Add(firstContainer);
-            ContainerPlayerLoop.Add(secondContainer);
+            var first = CreateInitializedChild(builder =>
+            {
+                builder.AddSingleton(log);
+                builder.AddSingleton<TestLoggingFrameUpdatable>();
+            });
+            var second = CreateInitializedChild(builder =>
+            {
+                builder.AddSingleton(log);
+                builder.AddSingleton<TestLoggingPreFrameUpdatable>();
+            });
 
             try
             {
@@ -102,11 +95,28 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             }
             finally
             {
-                ContainerPlayerLoop.Remove(firstContainer);
-                ContainerPlayerLoop.Remove(secondContainer);
-                firstContainer.Dispose();
-                secondContainer.Dispose();
+                first.Dispose();
+                second.Dispose();
             }
+        }
+
+        private static IContainer Root => (IContainer)ContainerRegistry.Root!;
+
+        private static IContainer CreateInitializedChild(System.Action<IContainerBuilder> configure)
+        {
+            var child = Root.CreateChild(configure);
+            child.InitializeAsync().AsTask().GetAwaiter().GetResult();
+            return child;
+        }
+
+        private static IEnumerator WaitForRoot()
+        {
+            for (var i = 0; i < 100 && ContainerRegistry.Root == null; i++)
+            {
+                yield return null;
+            }
+
+            Assert.IsNotNull(ContainerRegistry.Root);
         }
 
         private sealed class TestLoggingFrameUpdatable : IFrameUpdatable

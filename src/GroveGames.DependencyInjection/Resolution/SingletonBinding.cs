@@ -14,14 +14,14 @@ internal sealed class SingletonBinding : Binding
         _owner = owner;
     }
 
-    public override object Resolve()
+    public override object Resolve(Container requester)
     {
         return _instance ?? Create();
     }
 
     private object Create()
     {
-        var instance = _activator.Create();
+        var instance = _activator.Create(_owner);
         _instance = instance;
         _owner.OwnSingleton(instance);
         return instance;

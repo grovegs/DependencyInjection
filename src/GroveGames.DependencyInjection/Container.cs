@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
 using GroveGames.DependencyInjection.Registration;
 using GroveGames.DependencyInjection.Resolution;
@@ -10,14 +9,18 @@ internal sealed class Container : IContainer
 {
     private readonly Container? _parent;
     private readonly InjectorCache _injectors;
-    private FrozenDictionary<Type, Binding> _bindings;
+    private Dictionary<Type, Binding> _bindings;
     private readonly List<IDisposable> _disposables;
     private readonly HashSet<object> _owned;
     private readonly CancellationTokenSource _disposeCancellation;
     private Type[] _singletonTypes;
     private Binding[] _singletonBindings;
     private Container[] _children;
-    private bool _isInitializing;
+    private IPreFrameUpdatable[] _preFrameUpdatables;
+    private IFrameUpdatable[] _frameUpdatables;
+    private IPostFrameUpdatable[] _postFrameUpdatables;
+    private IPhysicsUpdatable[] _physicsUpdatables;
+    private bool _hasStartedInitialization;
     private bool _isInitialized;
     private bool _isDisposed;
 
@@ -29,18 +32,22 @@ internal sealed class Container : IContainer
     {
         _parent = parent;
         _injectors = injectors;
-        _bindings = FrozenDictionary<Type, Binding>.Empty;
+        _bindings = [];
         _disposables = [];
         _owned = new HashSet<object>(ReferenceEqualityComparer.Instance);
         _disposeCancellation = new CancellationTokenSource();
         _singletonTypes = [];
         _singletonBindings = [];
         _children = [];
+        _preFrameUpdatables = [];
+        _frameUpdatables = [];
+        _postFrameUpdatables = [];
+        _physicsUpdatables = [];
     }
 
     internal void SetBindings(Dictionary<Type, Binding> bindings)
     {
-        _bindings = bindings.ToFrozenDictionary();
+        _bindings = bindings;
     }
 
     internal void SetSingletons(Type[] implementationTypes, Binding[] bindings)
@@ -142,7 +149,7 @@ internal sealed class Container : IContainer
         ArgumentNullException.ThrowIfNull(serviceType);
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         var binding = FindBinding(serviceType) ?? throw new RegistrationNotFoundException(serviceType);
-        return binding.Resolve();
+        return binding.Resolve(this);
     }
 
     public bool TryResolve(Type serviceType, [NotNullWhen(true)] out object? instance)
@@ -157,7 +164,7 @@ internal sealed class Container : IContainer
             return false;
         }
 
-        instance = binding.Resolve();
+        instance = binding.Resolve(this);
         return true;
     }
 
@@ -190,10 +197,14 @@ internal sealed class Container : IContainer
     public IReadOnlyList<T> ResolveAll<T>()
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
+        return ResolveAllArray<T>();
+    }
+
+    private T[] ResolveAllArray<T>()
+    {
         var types = _singletonTypes;
         var bindings = _singletonBindings;
-        List<T>? result = null;
-        HashSet<object>? seen = null;
+        List<object>? found = null;
 
         for (var i = 0; i < types.Length; i++)
         {
@@ -202,22 +213,29 @@ internal sealed class Container : IContainer
                 continue;
             }
 
-            var instance = bindings[i].Resolve();
+            var instance = bindings[i].Resolve(this);
 
-            if (instance is not T item || (_parent is not null && _parent.IsOwned(instance)))
+            if (instance is not T || (_parent is not null && _parent.IsOwned(instance)) || (found is not null && ContainsReference(found, instance)))
             {
                 continue;
             }
 
-            seen ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
-
-            if (seen.Add(instance))
-            {
-                (result ??= []).Add(item);
-            }
+            (found ??= []).Add(instance);
         }
 
-        return result is null ? [] : result.ToArray();
+        if (found is null)
+        {
+            return Array.Empty<T>();
+        }
+
+        var result = new T[found.Count];
+
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = (T)found[i];
+        }
+
+        return result;
     }
 
     public void AddDisposable(IDisposable disposable)
@@ -240,9 +258,9 @@ internal sealed class Container : IContainer
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-        if (_isInitializing || _isInitialized)
+        if (_hasStartedInitialization)
         {
-            throw new InvalidOperationException("Container is already initialized.");
+            throw new InvalidOperationException(_isInitialized ? "Container is already initialized." : "Container initialization already ran and did not complete; build a new container to retry.");
         }
 
         if (_parent is not null && !_parent._isInitialized)
@@ -250,73 +268,89 @@ internal sealed class Container : IContainer
             throw new InvalidOperationException("Parent container must be initialized first.");
         }
 
-        _isInitializing = true;
+        _hasStartedInitialization = true;
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCancellation.Token);
+        var token = cancellation.Token;
+        token.ThrowIfCancellationRequested();
+        var instances = ResolveEntryPoints();
 
-        try
+        for (var i = 0; i < instances.Length; i++)
         {
-            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCancellation.Token);
-            var token = cancellation.Token;
-            token.ThrowIfCancellationRequested();
-            var instances = ResolveEntryPoints();
-
-            for (var i = 0; i < instances.Length; i++)
+            if (instances[i] is IPreInitializable initializable)
             {
-                if (instances[i] is IPreInitializable initializable)
-                {
-                    initializable.PreInitialize();
-                }
+                initializable.PreInitialize();
             }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IAsyncPreInitializable initializable)
-                {
-                    await initializable.PreInitializeAsync(token);
-                    token.ThrowIfCancellationRequested();
-                }
-            }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IInitializable initializable)
-                {
-                    initializable.Initialize();
-                }
-            }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IAsyncInitializable initializable)
-                {
-                    await initializable.InitializeAsync(token);
-                    token.ThrowIfCancellationRequested();
-                }
-            }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IPostInitializable initializable)
-                {
-                    initializable.PostInitialize();
-                }
-            }
-
-            for (var i = 0; i < instances.Length; i++)
-            {
-                if (instances[i] is IAsyncPostInitializable initializable)
-                {
-                    await initializable.PostInitializeAsync(token);
-                    token.ThrowIfCancellationRequested();
-                }
-            }
-
-            token.ThrowIfCancellationRequested();
-            _isInitialized = true;
         }
-        finally
+
+        for (var i = 0; i < instances.Length; i++)
         {
-            _isInitializing = false;
+            if (instances[i] is IAsyncPreInitializable initializable)
+            {
+                await initializable.PreInitializeAsync(token);
+                token.ThrowIfCancellationRequested();
+            }
         }
+
+        for (var i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] is IInitializable initializable)
+            {
+                initializable.Initialize();
+            }
+        }
+
+        for (var i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] is IAsyncInitializable initializable)
+            {
+                await initializable.InitializeAsync(token);
+                token.ThrowIfCancellationRequested();
+            }
+        }
+
+        for (var i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] is IPostInitializable initializable)
+            {
+                initializable.PostInitialize();
+            }
+        }
+
+        for (var i = 0; i < instances.Length; i++)
+        {
+            if (instances[i] is IAsyncPostInitializable initializable)
+            {
+                await initializable.PostInitializeAsync(token);
+                token.ThrowIfCancellationRequested();
+            }
+        }
+
+        token.ThrowIfCancellationRequested();
+        _preFrameUpdatables = ResolveAllArray<IPreFrameUpdatable>();
+        _frameUpdatables = ResolveAllArray<IFrameUpdatable>();
+        _postFrameUpdatables = ResolveAllArray<IPostFrameUpdatable>();
+        _physicsUpdatables = ResolveAllArray<IPhysicsUpdatable>();
+        _isInitialized = true;
+    }
+
+    public void PreFrameUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._preFrameUpdatables, static (updatable, time) => updatable.PreFrameUpdate(time));
+    }
+
+    public void FrameUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._frameUpdatables, static (updatable, time) => updatable.FrameUpdate(time));
+    }
+
+    public void PostFrameUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._postFrameUpdatables, static (updatable, time) => updatable.PostFrameUpdate(time));
+    }
+
+    public void PhysicsUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._physicsUpdatables, static (updatable, time) => updatable.PhysicsUpdate(time));
     }
 
     public void Dispose()
@@ -327,10 +361,24 @@ internal sealed class Container : IContainer
         }
 
         _isDisposed = true;
-        _disposeCancellation.Cancel();
+        List<Exception>? exceptions = null;
+
+        try
+        {
+            _disposeCancellation.Cancel();
+        }
+        catch (Exception exception)
+        {
+            (exceptions ??= []).Add(exception);
+        }
+
+        _disposeCancellation.Dispose();
         _singletonTypes = [];
         _singletonBindings = [];
-        List<Exception>? exceptions = null;
+        _preFrameUpdatables = [];
+        _frameUpdatables = [];
+        _postFrameUpdatables = [];
+        _physicsUpdatables = [];
         var children = _children;
         _children = [];
 
@@ -360,12 +408,65 @@ internal sealed class Container : IContainer
 
         _disposables.Clear();
         _owned.Clear();
-        _bindings = FrozenDictionary<Type, Binding>.Empty;
+        _bindings = [];
         _parent?.RemoveChild(this);
 
         if (exceptions is not null)
         {
             throw new AggregateException(exceptions);
+        }
+    }
+
+    private static bool ContainsReference(List<object> items, object instance)
+    {
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (ReferenceEquals(items[i], instance))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void Update<T>(float deltaTime, Func<Container, T[]> select, Action<T, float> call)
+    {
+        List<Exception>? exceptions = null;
+        Update(deltaTime, select, call, ref exceptions);
+
+        if (exceptions is not null)
+        {
+            throw new AggregateException(exceptions);
+        }
+    }
+
+    private void Update<T>(float deltaTime, Func<Container, T[]> select, Action<T, float> call, ref List<Exception>? exceptions)
+    {
+        if (_isDisposed || !_isInitialized)
+        {
+            return;
+        }
+
+        var updatables = select(this);
+
+        for (var i = 0; i < updatables.Length && !_isDisposed; i++)
+        {
+            try
+            {
+                call(updatables[i], deltaTime);
+            }
+            catch (Exception exception)
+            {
+                (exceptions ??= []).Add(exception);
+            }
+        }
+
+        var children = _children;
+
+        for (var i = 0; i < children.Length && !_isDisposed; i++)
+        {
+            children[i].Update(deltaTime, select, call, ref exceptions);
         }
     }
 
@@ -383,7 +484,7 @@ internal sealed class Container : IContainer
                 continue;
             }
 
-            var instance = bindings[i].Resolve();
+            var instance = bindings[i].Resolve(this);
 
             if (!seen.Add(instance) || (_parent is not null && _parent.IsOwned(instance)))
             {

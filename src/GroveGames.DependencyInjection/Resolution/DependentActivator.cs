@@ -28,7 +28,7 @@ internal abstract class DependentActivator : InstanceActivator
         }
     }
 
-    public sealed override object Create()
+    public sealed override object Create(Container requester)
     {
         if (_isActivating)
         {
@@ -41,7 +41,7 @@ internal abstract class DependentActivator : InstanceActivator
         {
             for (var i = 0; i < _dependencies.Length; i++)
             {
-                _arguments[i] = _dependencies[i].Resolve();
+                _arguments[i] = _dependencies[i].Resolve(requester);
             }
 
             return Instantiate(_arguments);

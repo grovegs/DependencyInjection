@@ -71,7 +71,7 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            ContainerPlayerLoop.Install();
+            ContainerPlayerLoop.Install(s_root);
             SceneManager.activeSceneChanged += OnActiveSceneChanged;
             Application.quitting += Shutdown;
             s_rootInitialization = InitializeRootAsync(s_root);
@@ -82,7 +82,6 @@ namespace GroveGames.DependencyInjection.Unity
             try
             {
                 await root.InitializeAsync();
-                ContainerPlayerLoop.Add(root);
 
                 if (ReferenceEquals(s_root, root))
                 {
@@ -227,7 +226,6 @@ namespace GroveGames.DependencyInjection.Unity
                     return;
                 }
 
-                ContainerPlayerLoop.Add(container);
                 ContainerRegistry.SetSceneContainer(state.Scene, container);
                 Complete(state, true);
             }
@@ -286,7 +284,6 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             s_containerScenes.Remove(container);
-            ContainerPlayerLoop.Remove(container);
 
             try
             {

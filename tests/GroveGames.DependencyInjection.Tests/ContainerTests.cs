@@ -437,6 +437,179 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public void Dispose_ChildResolvedParentTransient_DisposesTransientWithChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddTransient<TestOtherDisposable>();
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+        child.Resolve<TestOtherDisposable>();
+
+        child.Dispose();
+
+        Assert.Equal(["Other.Dispose"], parent.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public void Dispose_Child_KeepsTransientOfParentSingleton()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddTransient<TestOtherDisposable>();
+        builder.AddSingleton<TestDisposableHolder>();
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+        child.Resolve<TestDisposableHolder>();
+
+        child.Dispose();
+
+        Assert.Empty(parent.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_AfterFailedInitialization_ThrowsWithoutRunningPhasesAgain()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestFailingOnce>();
+        using var container = builder.Build();
+        await Assert.ThrowsAsync<NotSupportedException>(() => container.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        var exception = await Record.ExceptionAsync(() => container.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        Assert.IsType<InvalidOperationException>(exception);
+        Assert.Equal(1, container.Resolve<TestFailingOnce>().Calls);
+    }
+
+    [Fact]
+    public void Dispose_ChildResolvedParentFactoryTransient_DisposesFactoryDependenciesWithChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddTransient<TestOtherDisposable>();
+        builder.AddTransient(resolver => new TestDisposableHolder(resolver.Resolve<TestOtherDisposable>()));
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+        child.Resolve<TestDisposableHolder>();
+
+        child.Dispose();
+
+        Assert.Equal(["Other.Dispose"], parent.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public void ResolveAll_ValueTypeRegisteredTwice_ReturnsInstanceOnce()
+    {
+        var builder = new ContainerBuilder();
+        object boxed = new TestValueTickable();
+        builder.AddSingleton(typeof(ITestTickable), boxed);
+        builder.AddSingleton(typeof(TestValueTickable), boxed);
+        using var container = builder.Build();
+
+        var tickables = container.ResolveAll<TestValueTickable>();
+
+        Assert.Single(tickables);
+    }
+
+    [Fact]
+    public async Task Dispose_CancellationCallbackThrows_StillDisposesInstances()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton<TestOtherDisposable>();
+        builder.AddSingleton<TestThrowingOnCancel>();
+        var container = builder.Build();
+        var log = container.Resolve<TestLog>();
+        container.Resolve<TestOtherDisposable>();
+        var initialization = container.InitializeAsync(TestContext.Current.CancellationToken).AsTask();
+
+        var exception = Record.Exception(container.Dispose);
+
+        Assert.IsType<AggregateException>(exception);
+        Assert.Equal(["Other.Dispose"], log.Entries);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => initialization);
+    }
+
+    [Fact]
+    public async Task FrameUpdate_InitializedChild_UpdatesParentThenChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton(resolver => new TestNamedUpdatable("Root", resolver.Resolve<TestLog>()));
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = root.CreateChild(child => child.AddSingleton(resolver => new TestNamedUpdatable("Child", resolver.Resolve<TestLog>())));
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+
+        root.PreFrameUpdate(1f);
+        root.FrameUpdate(1f);
+        root.PostFrameUpdate(1f);
+        root.PhysicsUpdate(1f);
+
+        Assert.Equal(["Root.Pre", "Child.Pre", "Root.Frame", "Child.Frame", "Root.Post", "Child.Post", "Root.Physics", "Child.Physics"], root.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task FrameUpdate_ChildNotInitialized_SkipsChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+        root.CreateChild(child => child.AddSingleton(resolver => new TestNamedUpdatable("Child", resolver.Resolve<TestLog>())));
+
+        root.FrameUpdate(1f);
+
+        Assert.Empty(root.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task FrameUpdate_ChildDisposed_StopsUpdatingChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = root.CreateChild(child => child.AddSingleton(resolver => new TestNamedUpdatable("Child", resolver.Resolve<TestLog>())));
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+        child.Dispose();
+
+        root.FrameUpdate(1f);
+
+        Assert.Empty(root.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task FrameUpdate_UpdatableThrows_RunsTheRestThenThrowsAggregateException()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton<TestThrowingUpdatable>();
+        builder.AddSingleton(resolver => new TestNamedUpdatable("Root", resolver.Resolve<TestLog>()));
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+
+        var exception = Record.Exception(() => root.FrameUpdate(1f));
+
+        var aggregate = Assert.IsType<AggregateException>(exception);
+        Assert.IsType<NotSupportedException>(Assert.Single(aggregate.InnerExceptions));
+        Assert.Equal(["Root.Frame"], root.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public void FrameUpdate_NotInitialized_DoesNotUpdate()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton(resolver => new TestNamedUpdatable("Root", resolver.Resolve<TestLog>()));
+        using var root = builder.Build();
+
+        root.FrameUpdate(1f);
+
+        Assert.Empty(root.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
     public void Dispose_Parent_DisposesChildrenFirst()
     {
         var log = new TestLog();
@@ -765,6 +938,83 @@ public sealed class ContainerTests
         public void Dispose()
         {
             _log.Entries.Add("Other.Dispose");
+        }
+    }
+
+    private sealed class TestDisposableHolder
+    {
+        public TestDisposableHolder(TestOtherDisposable other)
+        {
+            Other = other;
+        }
+
+        public TestOtherDisposable Other { get; }
+    }
+
+    private sealed class TestFailingOnce : IInitializable
+    {
+        public int Calls { get; private set; }
+
+        public void Initialize()
+        {
+            if (++Calls == 1)
+            {
+                throw new NotSupportedException();
+            }
+        }
+    }
+
+    private readonly struct TestValueTickable : ITestTickable
+    {
+    }
+
+    private sealed class TestThrowingOnCancel : IAsyncInitializable
+    {
+        public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+        {
+            var never = new TaskCompletionSource<bool>();
+            cancellationToken.Register(() => throw new NotSupportedException());
+            await never.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    private sealed class TestNamedUpdatable : IPreFrameUpdatable, IFrameUpdatable, IPostFrameUpdatable, IPhysicsUpdatable
+    {
+        private readonly string _name;
+        private readonly TestLog _log;
+
+        public TestNamedUpdatable(string name, TestLog log)
+        {
+            _name = name;
+            _log = log;
+        }
+
+        public void PreFrameUpdate(float deltaTime)
+        {
+            _log.Entries.Add($"{_name}.Pre");
+        }
+
+        public void FrameUpdate(float deltaTime)
+        {
+            _log.Entries.Add($"{_name}.Frame");
+        }
+
+        public void PostFrameUpdate(float deltaTime)
+        {
+            _log.Entries.Add($"{_name}.Post");
+        }
+
+        public void PhysicsUpdate(float deltaTime)
+        {
+            _log.Entries.Add($"{_name}.Physics");
+        }
+    }
+
+    private sealed class TestThrowingUpdatable : IFrameUpdatable
+    {
+        public void FrameUpdate(float deltaTime)
+        {
+            throw new NotSupportedException();
         }
     }
 
