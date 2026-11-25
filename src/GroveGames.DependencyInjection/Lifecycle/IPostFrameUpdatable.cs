@@ -2,5 +2,5 @@
 
 public interface IPostFrameUpdatable
 {
-    public void PostFrameUpdate(float deltaTime);
+    public void PostFrameUpdate(DeltaTime deltaTime);
 }

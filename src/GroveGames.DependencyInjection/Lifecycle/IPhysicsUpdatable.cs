@@ -2,5 +2,5 @@
 
 public interface IPhysicsUpdatable
 {
-    public void PhysicsUpdate(float deltaTime);
+    public void PhysicsUpdate(DeltaTime deltaTime);
 }

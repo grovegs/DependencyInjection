@@ -541,10 +541,10 @@ public sealed class ContainerTests
         var child = root.CreateChild(child => child.AddSingleton(resolver => new TestNamedUpdatable("Child", resolver.Resolve<TestLog>())));
         await child.InitializeAsync(TestContext.Current.CancellationToken);
 
-        root.PreFrameUpdate(1f);
-        root.FrameUpdate(1f);
-        root.PostFrameUpdate(1f);
-        root.PhysicsUpdate(1f);
+        root.PreFrameUpdate(new DeltaTime(1f, 1f));
+        root.FrameUpdate(new DeltaTime(1f, 1f));
+        root.PostFrameUpdate(new DeltaTime(1f, 1f));
+        root.PhysicsUpdate(new DeltaTime(1f, 1f));
 
         Assert.Equal(["Root.Pre", "Child.Pre", "Root.Frame", "Child.Frame", "Root.Post", "Child.Post", "Root.Physics", "Child.Physics"], root.Resolve<TestLog>().Entries);
     }
@@ -558,7 +558,7 @@ public sealed class ContainerTests
         await root.InitializeAsync(TestContext.Current.CancellationToken);
         root.CreateChild(child => child.AddSingleton(resolver => new TestNamedUpdatable("Child", resolver.Resolve<TestLog>())));
 
-        root.FrameUpdate(1f);
+        root.FrameUpdate(new DeltaTime(1f, 1f));
 
         Assert.Empty(root.Resolve<TestLog>().Entries);
     }
@@ -574,7 +574,7 @@ public sealed class ContainerTests
         await child.InitializeAsync(TestContext.Current.CancellationToken);
         child.Dispose();
 
-        root.FrameUpdate(1f);
+        root.FrameUpdate(new DeltaTime(1f, 1f));
 
         Assert.Empty(root.Resolve<TestLog>().Entries);
     }
@@ -589,11 +589,42 @@ public sealed class ContainerTests
         using var root = builder.Build();
         await root.InitializeAsync(TestContext.Current.CancellationToken);
 
-        var exception = Record.Exception(() => root.FrameUpdate(1f));
+        var exception = Record.Exception(() => root.FrameUpdate(new DeltaTime(1f, 1f)));
 
         var aggregate = Assert.IsType<AggregateException>(exception);
         Assert.IsType<NotSupportedException>(Assert.Single(aggregate.InnerExceptions));
         Assert.Equal(["Root.Frame"], root.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task FrameUpdate_DeltaTime_PassesScaledAndUnscaledToEveryUpdatable()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestDeltaRecorder>();
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = root.CreateChild(child => child.AddSingleton<TestDeltaRecorder>());
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+
+        root.FrameUpdate(new DeltaTime(0.25f, 0.5f));
+
+        Assert.Equal((0.25f, 0.5f), (root.Resolve<TestDeltaRecorder>().Scaled, root.Resolve<TestDeltaRecorder>().Unscaled));
+        Assert.Equal((0.25f, 0.5f), (child.Resolve<TestDeltaRecorder>().Scaled, child.Resolve<TestDeltaRecorder>().Unscaled));
+    }
+
+    [Fact]
+    public async Task FrameUpdate_CalledFromInsideItsOwnUpdate_ThrowsInvalidOperationException()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestReentrantUpdatable>();
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+
+        var exception = Record.Exception(() => root.FrameUpdate(new DeltaTime(1f, 1f)));
+
+        var aggregate = Assert.IsType<AggregateException>(exception);
+        Assert.IsType<InvalidOperationException>(Assert.Single(aggregate.InnerExceptions));
+        Assert.Equal(1, root.Resolve<TestReentrantUpdatable>().Calls);
     }
 
     [Fact]
@@ -604,7 +635,7 @@ public sealed class ContainerTests
         builder.AddSingleton(resolver => new TestNamedUpdatable("Root", resolver.Resolve<TestLog>()));
         using var root = builder.Build();
 
-        root.FrameUpdate(1f);
+        root.FrameUpdate(new DeltaTime(1f, 1f));
 
         Assert.Empty(root.Resolve<TestLog>().Entries);
     }
@@ -989,30 +1020,60 @@ public sealed class ContainerTests
             _log = log;
         }
 
-        public void PreFrameUpdate(float deltaTime)
+        public void PreFrameUpdate(DeltaTime deltaTime)
         {
             _log.Entries.Add($"{_name}.Pre");
         }
 
-        public void FrameUpdate(float deltaTime)
+        public void FrameUpdate(DeltaTime deltaTime)
         {
             _log.Entries.Add($"{_name}.Frame");
         }
 
-        public void PostFrameUpdate(float deltaTime)
+        public void PostFrameUpdate(DeltaTime deltaTime)
         {
             _log.Entries.Add($"{_name}.Post");
         }
 
-        public void PhysicsUpdate(float deltaTime)
+        public void PhysicsUpdate(DeltaTime deltaTime)
         {
             _log.Entries.Add($"{_name}.Physics");
         }
     }
 
+    private sealed class TestDeltaRecorder : IFrameUpdatable
+    {
+        public float Scaled { get; private set; }
+        public float Unscaled { get; private set; }
+
+        public void FrameUpdate(DeltaTime deltaTime)
+        {
+            Scaled = deltaTime.Scaled;
+            Unscaled = deltaTime.Unscaled;
+        }
+    }
+
+    private sealed class TestReentrantUpdatable : IFrameUpdatable
+    {
+        private readonly IContainer _container;
+
+        public TestReentrantUpdatable(IContainer container)
+        {
+            _container = container;
+        }
+
+        public int Calls { get; private set; }
+
+        public void FrameUpdate(DeltaTime deltaTime)
+        {
+            Calls++;
+            _container.FrameUpdate(deltaTime);
+        }
+    }
+
     private sealed class TestThrowingUpdatable : IFrameUpdatable
     {
-        public void FrameUpdate(float deltaTime)
+        public void FrameUpdate(DeltaTime deltaTime)
         {
             throw new NotSupportedException();
         }

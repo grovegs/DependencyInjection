@@ -67,7 +67,7 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            var deltaTime = Time.deltaTime;
+            var deltaTime = new DeltaTime(Time.deltaTime, Time.unscaledDeltaTime);
 
             try
             {
@@ -99,7 +99,7 @@ namespace GroveGames.DependencyInjection.Unity
 
             try
             {
-                root.PhysicsUpdate(Time.fixedDeltaTime);
+                root.PhysicsUpdate(new DeltaTime(Time.fixedDeltaTime, Time.fixedUnscaledDeltaTime));
             }
             catch (Exception exception)
             {
@@ -118,7 +118,7 @@ namespace GroveGames.DependencyInjection.Unity
 
             try
             {
-                root.PostFrameUpdate(Time.deltaTime);
+                root.PostFrameUpdate(new DeltaTime(Time.deltaTime, Time.unscaledDeltaTime));
             }
             catch (Exception exception)
             {
@@ -134,9 +134,11 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            for (var i = 0; i < aggregate.InnerExceptions.Count; i++)
+            var flattened = aggregate.Flatten();
+
+            for (var i = 0; i < flattened.InnerExceptions.Count; i++)
             {
-                Debug.LogException(aggregate.InnerExceptions[i]);
+                Debug.LogException(flattened.InnerExceptions[i]);
             }
         }
 

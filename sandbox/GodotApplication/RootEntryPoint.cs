@@ -26,7 +26,7 @@ public sealed class RootEntryPoint : IAsyncInitializable, IInitializable, IFrame
         GD.Print("Root initialized.");
     }
 
-    public void FrameUpdate(float deltaTime)
+    public void FrameUpdate(DeltaTime deltaTime)
     {
         if (++_frameCount == 10)
         {
