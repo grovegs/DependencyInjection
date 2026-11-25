@@ -1,9 +1,7 @@
 ﻿namespace GroveGames.DependencyInjection;
 
-public interface IContainer : IObjectResolver, IDisposable
+public interface IContainer : IObjectResolver, IDisposable, IPreFrameUpdatable, IFrameUpdatable, IPostFrameUpdatable, IPhysicsUpdatable
 {
-    public event Action<IContainer>? DescendantInitialized;
-    public event Action<IContainer>? DescendantDisposed;
     public IContainer? Parent { get; }
     public bool IsDisposed { get; }
     public ValueTask InitializeAsync(CancellationToken cancellationToken = default);

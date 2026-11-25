@@ -24,51 +24,11 @@ namespace GroveGames.DependencyInjection.Unity
         {
         }
 
-        private sealed class Entry
+        private static IContainer? s_root;
+
+        public static void Install(IContainer root)
         {
-            private readonly IContainer _container;
-            private readonly IPreFrameUpdatable[] _preFrameUpdatables;
-            private readonly IFrameUpdatable[] _frameUpdatables;
-            private readonly IPostFrameUpdatable[] _postFrameUpdatables;
-            private readonly IPhysicsUpdatable[] _physicsUpdatables;
-
-            public IContainer Container => _container;
-            public IPreFrameUpdatable[] PreFrameUpdatables => _preFrameUpdatables;
-            public IFrameUpdatable[] FrameUpdatables => _frameUpdatables;
-            public IPostFrameUpdatable[] PostFrameUpdatables => _postFrameUpdatables;
-            public IPhysicsUpdatable[] PhysicsUpdatables => _physicsUpdatables;
-
-            public Entry(IContainer container)
-            {
-                _container = container;
-                _preFrameUpdatables = ToArray(container.ResolveAll<IPreFrameUpdatable>());
-                _frameUpdatables = ToArray(container.ResolveAll<IFrameUpdatable>());
-                _postFrameUpdatables = ToArray(container.ResolveAll<IPostFrameUpdatable>());
-                _physicsUpdatables = ToArray(container.ResolveAll<IPhysicsUpdatable>());
-            }
-
-            private static T[] ToArray<T>(IReadOnlyList<T> items)
-            {
-                if (items is T[] array)
-                {
-                    return array;
-                }
-
-                var result = new T[items.Count];
-
-                for (var i = 0; i < result.Length; i++)
-                {
-                    result[i] = items[i];
-                }
-
-                return result;
-            }
-        }
-
-        private static Entry[] s_entries = Array.Empty<Entry>();
-
-        public static void Install()
-        {
+            s_root = root;
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
             AddSystem(ref playerLoop, typeof(UnityEngine.PlayerLoop.Initialization), typeof(ContainerInitialization), Initialization);
@@ -80,56 +40,10 @@ namespace GroveGames.DependencyInjection.Unity
 
         public static void Uninstall()
         {
-            s_entries = Array.Empty<Entry>();
+            s_root = null;
             var playerLoop = PlayerLoop.GetCurrentPlayerLoop();
             RemoveSystems(ref playerLoop);
             PlayerLoop.SetPlayerLoop(playerLoop);
-        }
-
-        public static void Add(IContainer container)
-        {
-            if (container.IsDisposed || IndexOf(container) >= 0)
-            {
-                return;
-            }
-
-            var entry = new Entry(container);
-            var entries = s_entries;
-            var newEntries = new Entry[entries.Length + 1];
-            Array.Copy(entries, newEntries, entries.Length);
-            newEntries[entries.Length] = entry;
-            s_entries = newEntries;
-        }
-
-        public static void Remove(IContainer container)
-        {
-            var index = IndexOf(container);
-
-            if (index < 0)
-            {
-                return;
-            }
-
-            var entries = s_entries;
-            var newEntries = new Entry[entries.Length - 1];
-            Array.Copy(entries, 0, newEntries, 0, index);
-            Array.Copy(entries, index + 1, newEntries, index, entries.Length - index - 1);
-            s_entries = newEntries;
-        }
-
-        private static int IndexOf(IContainer container)
-        {
-            var entries = s_entries;
-
-            for (var i = 0; i < entries.Length; i++)
-            {
-                if (ReferenceEquals(entries[i].Container, container))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private static void Initialization()
@@ -146,93 +60,83 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void FrameUpdate()
         {
-            var deltaTime = Time.deltaTime;
-            var entries = s_entries;
+            var root = s_root;
 
-            for (var i = 0; i < entries.Length; i++)
+            if (root == null)
             {
-                var entry = entries[i];
-                var preFrameUpdatables = entry.PreFrameUpdatables;
-
-                for (var j = 0; j < preFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
-                {
-                    try
-                    {
-                        preFrameUpdatables[j].PreFrameUpdate(deltaTime);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogException(exception);
-                    }
-                }
+                return;
             }
 
-            entries = s_entries;
+            var deltaTime = Time.deltaTime;
 
-            for (var i = 0; i < entries.Length; i++)
+            try
             {
-                var entry = entries[i];
-                var frameUpdatables = entry.FrameUpdatables;
+                root.PreFrameUpdate(deltaTime);
+            }
+            catch (Exception exception)
+            {
+                Log(exception);
+            }
 
-                for (var j = 0; j < frameUpdatables.Length && !entry.Container.IsDisposed; j++)
-                {
-                    try
-                    {
-                        frameUpdatables[j].FrameUpdate(deltaTime);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogException(exception);
-                    }
-                }
+            try
+            {
+                root.FrameUpdate(deltaTime);
+            }
+            catch (Exception exception)
+            {
+                Log(exception);
             }
         }
 
         private static void PhysicsUpdate()
         {
-            var deltaTime = Time.fixedDeltaTime;
-            var entries = s_entries;
+            var root = s_root;
 
-            for (var i = 0; i < entries.Length; i++)
+            if (root == null)
             {
-                var entry = entries[i];
-                var physicsUpdatables = entry.PhysicsUpdatables;
+                return;
+            }
 
-                for (var j = 0; j < physicsUpdatables.Length && !entry.Container.IsDisposed; j++)
-                {
-                    try
-                    {
-                        physicsUpdatables[j].PhysicsUpdate(deltaTime);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogException(exception);
-                    }
-                }
+            try
+            {
+                root.PhysicsUpdate(Time.fixedDeltaTime);
+            }
+            catch (Exception exception)
+            {
+                Log(exception);
             }
         }
 
         private static void PostFrameUpdate()
         {
-            var deltaTime = Time.deltaTime;
-            var entries = s_entries;
+            var root = s_root;
 
-            for (var i = 0; i < entries.Length; i++)
+            if (root == null)
             {
-                var entry = entries[i];
-                var postFrameUpdatables = entry.PostFrameUpdatables;
+                return;
+            }
 
-                for (var j = 0; j < postFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
-                {
-                    try
-                    {
-                        postFrameUpdatables[j].PostFrameUpdate(deltaTime);
-                    }
-                    catch (Exception exception)
-                    {
-                        Debug.LogException(exception);
-                    }
-                }
+            try
+            {
+                root.PostFrameUpdate(Time.deltaTime);
+            }
+            catch (Exception exception)
+            {
+                Log(exception);
+            }
+        }
+
+        private static void Log(Exception exception)
+        {
+            if (exception is not AggregateException aggregate)
+            {
+                Debug.LogException(exception);
+                return;
+            }
+
+            for (var i = 0; i < aggregate.InnerExceptions.Count; i++)
+            {
+                Debug.LogException(aggregate.InnerExceptions[i]);
             }
         }
 

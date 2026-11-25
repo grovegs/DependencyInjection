@@ -76,7 +76,7 @@ Each phase finishes before the next one starts: its sync methods run first, then
 | `IPostFrameUpdatable` | `void PostFrameUpdate(float deltaTime)` |
 | `IPhysicsUpdatable`   | `void PhysicsUpdate(float deltaTime)`   |
 
-The core only declares these interfaces; the Unity and Godot packages call them on the singletons of every initialized container until it is disposed, including child containers you create with `CreateChild` once their `InitializeAsync` completes. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
+A container implements these interfaces too: its `PreFrameUpdate`, `FrameUpdate`, `PostFrameUpdate` and `PhysicsUpdate` run that method on its own singletons, then on each initialized child container, until it is disposed. A container that has not finished `InitializeAsync` is skipped. The Unity and Godot packages call them on the root container every frame, so scene containers and child containers you create with `CreateChild` are updated once initialized; a plain .NET host calls them itself. If an updatable throws, the rest still run, and the errors are thrown together as an `AggregateException` after the phase. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
 
 ### Child Containers
 
@@ -90,8 +90,6 @@ Disposing a container cancels a pending initialization, disposes its children an
 A transient belongs to the container it is resolved from, so a parent's transient resolved from a scene container is disposed with the scene, and a transient's factory receives that container, so what it resolves belongs to it too. A transient created for a singleton belongs to the singleton's container. A container keeps every `IDisposable` transient it creates until it is disposed, so resolve many short-lived disposables from a child container you dispose, rather than from the root.
 
 `InitializeAsync` runs once. If it fails or is cancelled, it can't be run again on the same container, because some instances may already have run their phases; build a new container instead.
-
-`DescendantInitialized` and `DescendantDisposed` are raised on every ancestor when a child, grandchild or deeper container finishes `InitializeAsync` or is disposed. The engine integrations subscribe to them on the root to update child containers.
 
 ### Resolving All Implementations
 
@@ -150,7 +148,7 @@ Missing registrations and circular dependencies are only known once installers a
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
-- **`IContainer`**: Resolves services, runs lifecycle phases and owns created instances; `AddDisposable` hands any other cleanup to the container, and `DescendantInitialized` and `DescendantDisposed` report child containers
+- **`IContainer`**: Resolves services, runs lifecycle phases, runs per-frame updates for itself and its children, and owns created instances; `AddDisposable` hands any other cleanup to the container
 - **`IObjectResolver`**: `Resolve`, `ResolveAll`, `Inject` and `AddDisposable`; it is what factories and services receive
 - **`IInstaller`**: Groups registrations for a container or child container
 

@@ -9,7 +9,6 @@ namespace GroveGames.DependencyInjection.Godot;
 public sealed partial class ContainerBootstrapper : Node
 {
     private static readonly Dictionary<Node, SceneState> s_scenes = new();
-    private static ProcessEntry[] s_processEntries = Array.Empty<ProcessEntry>();
     private static IContainer s_root;
     private static Task s_rootInitialization;
 
@@ -50,8 +49,6 @@ public sealed partial class ContainerBootstrapper : Node
             }
 
             s_root = builder.Build();
-            s_root.DescendantInitialized += OnDescendantInitialized;
-            s_root.DescendantDisposed += RemoveProcessEntry;
         }
         catch (Exception exception)
         {
@@ -66,7 +63,6 @@ public sealed partial class ContainerBootstrapper : Node
     public override void _ExitTree()
     {
         GetTree().NodeAdded -= OnNodeAdded;
-        s_processEntries = Array.Empty<ProcessEntry>();
 
         foreach (var state in s_scenes.Values)
         {
@@ -96,149 +92,84 @@ public sealed partial class ContainerBootstrapper : Node
 
     public override void _Process(double delta)
     {
-        var deltaTime = (float)delta;
+        var root = s_root;
 
-        var entries = s_processEntries;
-
-        for (var i = 0; i < entries.Length; i++)
+        if (root == null)
         {
-            var entry = entries[i];
-
-            for (var j = 0; j < entry.PreFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
-            {
-                try
-                {
-                    entry.PreFrameUpdatables[j].PreFrameUpdate(deltaTime);
-                }
-                catch (Exception exception)
-                {
-                    GD.PushError(exception.ToString());
-                }
-            }
+            return;
         }
 
-        entries = s_processEntries;
+        var deltaTime = (float)delta;
 
-        for (var i = 0; i < entries.Length; i++)
+        try
         {
-            var entry = entries[i];
+            root.PreFrameUpdate(deltaTime);
+        }
+        catch (Exception exception)
+        {
+            PushError(exception);
+        }
 
-            for (var j = 0; j < entry.FrameUpdatables.Length && !entry.Container.IsDisposed; j++)
-            {
-                try
-                {
-                    entry.FrameUpdatables[j].FrameUpdate(deltaTime);
-                }
-                catch (Exception exception)
-                {
-                    GD.PushError(exception.ToString());
-                }
-            }
+        try
+        {
+            root.FrameUpdate(deltaTime);
+        }
+        catch (Exception exception)
+        {
+            PushError(exception);
         }
     }
 
     public override void _PhysicsProcess(double delta)
     {
-        var deltaTime = (float)delta;
+        var root = s_root;
 
-        var entries = s_processEntries;
-
-        for (var i = 0; i < entries.Length; i++)
+        if (root == null)
         {
-            var entry = entries[i];
+            return;
+        }
 
-            for (var j = 0; j < entry.PhysicsUpdatables.Length && !entry.Container.IsDisposed; j++)
-            {
-                try
-                {
-                    entry.PhysicsUpdatables[j].PhysicsUpdate(deltaTime);
-                }
-                catch (Exception exception)
-                {
-                    GD.PushError(exception.ToString());
-                }
-            }
+        try
+        {
+            root.PhysicsUpdate((float)delta);
+        }
+        catch (Exception exception)
+        {
+            PushError(exception);
         }
     }
 
     private static void PostFrameUpdate(float deltaTime)
     {
-        var entries = s_processEntries;
+        var root = s_root;
 
-        for (var i = 0; i < entries.Length; i++)
-        {
-            var entry = entries[i];
-
-            for (var j = 0; j < entry.PostFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
-            {
-                try
-                {
-                    entry.PostFrameUpdatables[j].PostFrameUpdate(deltaTime);
-                }
-                catch (Exception exception)
-                {
-                    GD.PushError(exception.ToString());
-                }
-            }
-        }
-    }
-
-    private static void AddProcessEntry(IContainer container)
-    {
-        if (container.IsDisposed || IndexOfProcessEntry(container) >= 0)
+        if (root == null)
         {
             return;
         }
 
-        var entry = new ProcessEntry(container);
-        var entries = s_processEntries;
-        var newEntries = new ProcessEntry[entries.Length + 1];
-        Array.Copy(entries, newEntries, entries.Length);
-        newEntries[entries.Length] = entry;
-        s_processEntries = newEntries;
-    }
-
-    private static void OnDescendantInitialized(IContainer container)
-    {
         try
         {
-            AddProcessEntry(container);
+            root.PostFrameUpdate(deltaTime);
         }
         catch (Exception exception)
         {
-            GD.PushError(exception.ToString());
+            PushError(exception);
         }
     }
 
-    private static void RemoveProcessEntry(IContainer container)
+    private static void PushError(Exception exception)
     {
-        var index = IndexOfProcessEntry(container);
-
-        if (index < 0)
+        if (exception is not AggregateException aggregate)
         {
+            GD.PushError(exception.ToString());
             return;
         }
 
-        var entries = s_processEntries;
-        var newEntries = new ProcessEntry[entries.Length - 1];
-        Array.Copy(entries, 0, newEntries, 0, index);
-        Array.Copy(entries, index + 1, newEntries, index, entries.Length - index - 1);
-        s_processEntries = newEntries;
-    }
-
-    private static int IndexOfProcessEntry(IContainer container)
-    {
-        var entries = s_processEntries;
-
-        for (var i = 0; i < entries.Length; i++)
+        for (var i = 0; i < aggregate.InnerExceptions.Count; i++)
         {
-            if (ReferenceEquals(entries[i].Container, container))
-            {
-                return i;
-            }
+            GD.PushError(aggregate.InnerExceptions[i].ToString());
         }
-
-        return -1;
     }
 
     private static async Task InitializeRootAsync(IContainer root)
@@ -246,7 +177,6 @@ public sealed partial class ContainerBootstrapper : Node
         try
         {
             await root.InitializeAsync();
-            AddProcessEntry(root);
 
             if (ReferenceEquals(s_root, root))
             {
@@ -353,7 +283,6 @@ public sealed partial class ContainerBootstrapper : Node
                 return;
             }
 
-            AddProcessEntry(state.Container);
             ContainerRegistry.SetSceneContainer(state.Scope, state.Container);
             Complete(state, true);
         }
@@ -393,8 +322,6 @@ public sealed partial class ContainerBootstrapper : Node
         {
             return;
         }
-
-        RemoveProcessEntry(container);
 
         try
         {
@@ -496,47 +423,6 @@ public sealed partial class ContainerBootstrapper : Node
             _scope = scope;
             _processMode = scope.ProcessMode;
             _ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        }
-    }
-
-    private sealed class ProcessEntry
-    {
-        private readonly IContainer _container;
-        private readonly IPreFrameUpdatable[] _preFrameUpdatables;
-        private readonly IFrameUpdatable[] _frameUpdatables;
-        private readonly IPostFrameUpdatable[] _postFrameUpdatables;
-        private readonly IPhysicsUpdatable[] _physicsUpdatables;
-
-        public IContainer Container => _container;
-        public IPreFrameUpdatable[] PreFrameUpdatables => _preFrameUpdatables;
-        public IFrameUpdatable[] FrameUpdatables => _frameUpdatables;
-        public IPostFrameUpdatable[] PostFrameUpdatables => _postFrameUpdatables;
-        public IPhysicsUpdatable[] PhysicsUpdatables => _physicsUpdatables;
-
-        public ProcessEntry(IContainer container)
-        {
-            _container = container;
-            _preFrameUpdatables = ToArray(container.ResolveAll<IPreFrameUpdatable>());
-            _frameUpdatables = ToArray(container.ResolveAll<IFrameUpdatable>());
-            _postFrameUpdatables = ToArray(container.ResolveAll<IPostFrameUpdatable>());
-            _physicsUpdatables = ToArray(container.ResolveAll<IPhysicsUpdatable>());
-        }
-
-        private static T[] ToArray<T>(IReadOnlyList<T> items)
-        {
-            if (items is T[] array)
-            {
-                return array;
-            }
-
-            var result = new T[items.Count];
-
-            for (var i = 0; i < result.Length; i++)
-            {
-                result[i] = items[i];
-            }
-
-            return result;
         }
     }
 

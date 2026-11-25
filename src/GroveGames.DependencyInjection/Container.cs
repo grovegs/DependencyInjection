@@ -16,12 +16,13 @@ internal sealed class Container : IContainer
     private Type[] _singletonTypes;
     private Binding[] _singletonBindings;
     private Container[] _children;
+    private IPreFrameUpdatable[] _preFrameUpdatables;
+    private IFrameUpdatable[] _frameUpdatables;
+    private IPostFrameUpdatable[] _postFrameUpdatables;
+    private IPhysicsUpdatable[] _physicsUpdatables;
     private bool _hasStartedInitialization;
     private bool _isInitialized;
     private bool _isDisposed;
-
-    public event Action<IContainer>? DescendantInitialized;
-    public event Action<IContainer>? DescendantDisposed;
 
     public IContainer? Parent => _parent;
     public bool IsDisposed => _isDisposed;
@@ -38,6 +39,10 @@ internal sealed class Container : IContainer
         _singletonTypes = [];
         _singletonBindings = [];
         _children = [];
+        _preFrameUpdatables = [];
+        _frameUpdatables = [];
+        _postFrameUpdatables = [];
+        _physicsUpdatables = [];
     }
 
     internal void SetBindings(Dictionary<Type, Binding> bindings)
@@ -192,6 +197,11 @@ internal sealed class Container : IContainer
     public IReadOnlyList<T> ResolveAll<T>()
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
+        return ResolveAllArray<T>();
+    }
+
+    private T[] ResolveAllArray<T>()
+    {
         var types = _singletonTypes;
         var bindings = _singletonBindings;
         List<object>? found = null;
@@ -316,8 +326,31 @@ internal sealed class Container : IContainer
         }
 
         token.ThrowIfCancellationRequested();
+        _preFrameUpdatables = ResolveAllArray<IPreFrameUpdatable>();
+        _frameUpdatables = ResolveAllArray<IFrameUpdatable>();
+        _postFrameUpdatables = ResolveAllArray<IPostFrameUpdatable>();
+        _physicsUpdatables = ResolveAllArray<IPhysicsUpdatable>();
         _isInitialized = true;
-        Notify(this, static (container, initialized) => container.DescendantInitialized?.Invoke(initialized));
+    }
+
+    public void PreFrameUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._preFrameUpdatables, static (updatable, time) => updatable.PreFrameUpdate(time));
+    }
+
+    public void FrameUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._frameUpdatables, static (updatable, time) => updatable.FrameUpdate(time));
+    }
+
+    public void PostFrameUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._postFrameUpdatables, static (updatable, time) => updatable.PostFrameUpdate(time));
+    }
+
+    public void PhysicsUpdate(float deltaTime)
+    {
+        Update(deltaTime, static container => container._physicsUpdatables, static (updatable, time) => updatable.PhysicsUpdate(time));
     }
 
     public void Dispose()
@@ -342,6 +375,10 @@ internal sealed class Container : IContainer
         _disposeCancellation.Dispose();
         _singletonTypes = [];
         _singletonBindings = [];
+        _preFrameUpdatables = [];
+        _frameUpdatables = [];
+        _postFrameUpdatables = [];
+        _physicsUpdatables = [];
         var children = _children;
         _children = [];
 
@@ -374,15 +411,6 @@ internal sealed class Container : IContainer
         _bindings = [];
         _parent?.RemoveChild(this);
 
-        try
-        {
-            Notify(this, static (container, disposed) => container.DescendantDisposed?.Invoke(disposed));
-        }
-        catch (Exception exception)
-        {
-            (exceptions ??= []).Add(exception);
-        }
-
         if (exceptions is not null)
         {
             throw new AggregateException(exceptions);
@@ -402,15 +430,31 @@ internal sealed class Container : IContainer
         return false;
     }
 
-    private void Notify(Container source, Action<Container, IContainer> raise)
+    private void Update<T>(float deltaTime, Func<Container, T[]> select, Action<T, float> call)
     {
         List<Exception>? exceptions = null;
+        Update(deltaTime, select, call, ref exceptions);
 
-        for (var container = _parent; container is not null; container = container._parent)
+        if (exceptions is not null)
+        {
+            throw new AggregateException(exceptions);
+        }
+    }
+
+    private void Update<T>(float deltaTime, Func<Container, T[]> select, Action<T, float> call, ref List<Exception>? exceptions)
+    {
+        if (_isDisposed || !_isInitialized)
+        {
+            return;
+        }
+
+        var updatables = select(this);
+
+        for (var i = 0; i < updatables.Length && !_isDisposed; i++)
         {
             try
             {
-                raise(container, source);
+                call(updatables[i], deltaTime);
             }
             catch (Exception exception)
             {
@@ -418,9 +462,11 @@ internal sealed class Container : IContainer
             }
         }
 
-        if (exceptions is not null)
+        var children = _children;
+
+        for (var i = 0; i < children.Length && !_isDisposed; i++)
         {
-            throw new AggregateException(exceptions);
+            children[i].Update(deltaTime, select, call, ref exceptions);
         }
     }
 
