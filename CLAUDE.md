@@ -33,7 +33,7 @@ dotnet pack -c Release
 - Prefer structs for small data types (< 16 bytes)
 - Use ArrayPool\<T\> for temporary buffers
 - Use stackalloc for small allocations (< 1KB)
-- Use FrozenDictionary/FrozenSet for read-only lookups after initialization
+- Use FrozenDictionary/FrozenSet only when a collection is built once and read many times per entry; it costs about 10× more to build than Dictionary, and on netstandard2.1 it is a plain Dictionary copy
 - Use ImmutableArray for immutable collections
 - Use List\<T\> for mutable collections
 - Prefer ValueTask over Task when result is often synchronous
