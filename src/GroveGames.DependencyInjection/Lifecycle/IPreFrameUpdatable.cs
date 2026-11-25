@@ -2,5 +2,5 @@
 
 public interface IPreFrameUpdatable
 {
-    public void PreFrameUpdate(float deltaTime);
+    public void PreFrameUpdate(DeltaTime deltaTime);
 }

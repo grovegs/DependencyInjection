@@ -128,7 +128,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 _log = log;
             }
 
-            public void FrameUpdate(float deltaTime)
+            public void FrameUpdate(DeltaTime deltaTime)
             {
                 _log.Add("FrameUpdate");
             }
@@ -143,12 +143,12 @@ namespace GroveGames.DependencyInjection.Unity.Tests
                 _log = log;
             }
 
-            public void PreFrameUpdate(float deltaTime)
+            public void PreFrameUpdate(DeltaTime deltaTime)
             {
                 _log.Add("PreFrameUpdate");
             }
 
-            public void PostFrameUpdate(float deltaTime)
+            public void PostFrameUpdate(DeltaTime deltaTime)
             {
                 _log.Add("PostFrameUpdate");
             }
@@ -166,22 +166,22 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             public int PreFrameUpdateCount => _preFrameUpdateCount;
             public int PostFrameUpdateCount => _postFrameUpdateCount;
 
-            public void FrameUpdate(float deltaTime)
+            public void FrameUpdate(DeltaTime deltaTime)
             {
                 _frameUpdateCount++;
             }
 
-            public void PhysicsUpdate(float deltaTime)
+            public void PhysicsUpdate(DeltaTime deltaTime)
             {
                 _physicsUpdateCount++;
             }
 
-            public void PreFrameUpdate(float deltaTime)
+            public void PreFrameUpdate(DeltaTime deltaTime)
             {
                 _preFrameUpdateCount++;
             }
 
-            public void PostFrameUpdate(float deltaTime)
+            public void PostFrameUpdate(DeltaTime deltaTime)
             {
                 _postFrameUpdateCount++;
             }

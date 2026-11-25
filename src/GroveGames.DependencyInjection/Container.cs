@@ -333,22 +333,22 @@ internal sealed class Container : IContainer
         _isInitialized = true;
     }
 
-    public void PreFrameUpdate(float deltaTime)
+    public void PreFrameUpdate(DeltaTime deltaTime)
     {
         Update(deltaTime, static container => container._preFrameUpdatables, static (updatable, time) => updatable.PreFrameUpdate(time));
     }
 
-    public void FrameUpdate(float deltaTime)
+    public void FrameUpdate(DeltaTime deltaTime)
     {
         Update(deltaTime, static container => container._frameUpdatables, static (updatable, time) => updatable.FrameUpdate(time));
     }
 
-    public void PostFrameUpdate(float deltaTime)
+    public void PostFrameUpdate(DeltaTime deltaTime)
     {
         Update(deltaTime, static container => container._postFrameUpdatables, static (updatable, time) => updatable.PostFrameUpdate(time));
     }
 
-    public void PhysicsUpdate(float deltaTime)
+    public void PhysicsUpdate(DeltaTime deltaTime)
     {
         Update(deltaTime, static container => container._physicsUpdatables, static (updatable, time) => updatable.PhysicsUpdate(time));
     }
@@ -430,7 +430,7 @@ internal sealed class Container : IContainer
         return false;
     }
 
-    private void Update<T>(float deltaTime, Func<Container, T[]> select, Action<T, float> call)
+    private void Update<T>(DeltaTime deltaTime, Func<Container, T[]> select, Action<T, DeltaTime> call)
     {
         List<Exception>? exceptions = null;
         Update(deltaTime, select, call, ref exceptions);
@@ -441,7 +441,7 @@ internal sealed class Container : IContainer
         }
     }
 
-    private void Update<T>(float deltaTime, Func<Container, T[]> select, Action<T, float> call, ref List<Exception>? exceptions)
+    private void Update<T>(DeltaTime deltaTime, Func<Container, T[]> select, Action<T, DeltaTime> call, ref List<Exception>? exceptions)
     {
         if (_isDisposed || !_isInitialized)
         {

@@ -29,7 +29,7 @@ namespace Sandbox
             Debug.Log(_greeter.Greet("root"));
         }
 
-        public void FrameUpdate(float deltaTime)
+        public void FrameUpdate(DeltaTime deltaTime)
         {
             if (++_frameCount == 10)
             {

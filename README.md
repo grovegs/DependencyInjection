@@ -69,12 +69,22 @@ Each phase finishes before the next one starts: its sync methods run first, then
 
 ### Updates
 
-| Interface             | Method                                  |
-| --------------------- | --------------------------------------- |
-| `IPreFrameUpdatable`  | `void PreFrameUpdate(float deltaTime)`  |
-| `IFrameUpdatable`     | `void FrameUpdate(float deltaTime)`     |
-| `IPostFrameUpdatable` | `void PostFrameUpdate(float deltaTime)` |
-| `IPhysicsUpdatable`   | `void PhysicsUpdate(float deltaTime)`   |
+| Interface             | Method                                      |
+| --------------------- | ------------------------------------------- |
+| `IPreFrameUpdatable`  | `void PreFrameUpdate(DeltaTime deltaTime)`  |
+| `IFrameUpdatable`     | `void FrameUpdate(DeltaTime deltaTime)`     |
+| `IPostFrameUpdatable` | `void PostFrameUpdate(DeltaTime deltaTime)` |
+| `IPhysicsUpdatable`   | `void PhysicsUpdate(DeltaTime deltaTime)`   |
+
+`DeltaTime` carries both times, and each use says which one it means: `Scaled` follows the engine's time scale, for gameplay, and `Unscaled` is real time, for UI, pause menus and anything that must keep moving while the game is slowed or paused. In `PhysicsUpdate` they are the fixed physics step with and without the time scale.
+
+```csharp
+public void FrameUpdate(DeltaTime deltaTime)
+{
+    _position += _velocity * deltaTime.Scaled;
+    _pauseMenu.Animate(deltaTime.Unscaled);
+}
+```
 
 A container implements these interfaces too: its `PreFrameUpdate`, `FrameUpdate`, `PostFrameUpdate` and `PhysicsUpdate` run that method on its own singletons, then on each initialized child container, until it is disposed. A container that has not finished `InitializeAsync` is skipped. The Unity and Godot packages call them on the root container every frame, so scene containers and child containers you create with `CreateChild` are updated once initialized; a plain .NET host calls them itself. If an updatable throws, the rest still run, and the errors are thrown together as an `AggregateException` after the phase. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
 

@@ -10,6 +10,8 @@ public sealed partial class ContainerBootstrapper : Node
 {
     private static readonly Dictionary<Node, SceneState> s_scenes = new();
     private static IContainer s_root;
+    private static ulong s_lastProcessTicks;
+    private static float s_unscaledFrameTime;
     private static Task s_rootInitialization;
 
     public ContainerBootstrapper()
@@ -74,6 +76,7 @@ public sealed partial class ContainerBootstrapper : Node
         s_rootInitialization = null;
         var root = s_root;
         s_root = null;
+        s_lastProcessTicks = 0;
 
         if (root == null)
         {
@@ -99,7 +102,10 @@ public sealed partial class ContainerBootstrapper : Node
             return;
         }
 
-        var deltaTime = (float)delta;
+        var now = Time.GetTicksUsec();
+        s_unscaledFrameTime = s_lastProcessTicks == 0 ? (float)delta : (now - s_lastProcessTicks) / 1_000_000f;
+        s_lastProcessTicks = now;
+        var deltaTime = new DeltaTime((float)delta, s_unscaledFrameTime);
 
         try
         {
@@ -131,7 +137,7 @@ public sealed partial class ContainerBootstrapper : Node
 
         try
         {
-            root.PhysicsUpdate((float)delta);
+            root.PhysicsUpdate(new DeltaTime((float)delta, 1f / Engine.PhysicsTicksPerSecond));
         }
         catch (Exception exception)
         {
@@ -139,7 +145,7 @@ public sealed partial class ContainerBootstrapper : Node
         }
     }
 
-    private static void PostFrameUpdate(float deltaTime)
+    private static void PostFrameUpdate(DeltaTime deltaTime)
     {
         var root = s_root;
 
@@ -435,7 +441,7 @@ public sealed partial class ContainerBootstrapper : Node
 
         public override void _Process(double delta)
         {
-            PostFrameUpdate((float)delta);
+            PostFrameUpdate(new DeltaTime((float)delta, s_unscaledFrameTime));
         }
     }
 }

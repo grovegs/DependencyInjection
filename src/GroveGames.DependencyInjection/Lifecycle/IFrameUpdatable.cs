@@ -2,5 +2,5 @@
 
 public interface IFrameUpdatable
 {
-    public void FrameUpdate(float deltaTime);
+    public void FrameUpdate(DeltaTime deltaTime);
 }
