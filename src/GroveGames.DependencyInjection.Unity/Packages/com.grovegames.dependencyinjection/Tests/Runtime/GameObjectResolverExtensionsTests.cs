@@ -80,7 +80,7 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             var kept = container.Instantiate<TestBehaviour>();
 
             Assert.IsTrue(GameObjectLifetime.TryGet(container, out var lifetime));
-            Assert.LessOrEqual(lifetime.Count, 41);
+            Assert.LessOrEqual(lifetime!.Count, 41);
             container.Dispose();
             yield return null;
 

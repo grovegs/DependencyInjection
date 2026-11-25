@@ -87,7 +87,7 @@ await scene.InitializeAsync(cancellationToken);
 
 Disposing a container cancels a pending initialization, disposes its children and then disposes every instance it created in reverse creation order. Instances passed to `AddSingleton(instance)` are owned by the caller and are not disposed.
 
-A transient belongs to the container it is resolved from, so a parent's transient resolved from a scene container is disposed with the scene. A transient created for a singleton belongs to the singleton's container. A container keeps every `IDisposable` transient it creates until it is disposed, so resolve many short-lived disposables from a child container you dispose, rather than from the root.
+A transient belongs to the container it is resolved from, so a parent's transient resolved from a scene container is disposed with the scene, and a transient's factory receives that container, so what it resolves belongs to it too. A transient created for a singleton belongs to the singleton's container. A container keeps every `IDisposable` transient it creates until it is disposed, so resolve many short-lived disposables from a child container you dispose, rather than from the root.
 
 `InitializeAsync` runs once. If it fails or is cancelled, it can't be run again on the same container, because some instances may already have run their phases; build a new container instead.
 

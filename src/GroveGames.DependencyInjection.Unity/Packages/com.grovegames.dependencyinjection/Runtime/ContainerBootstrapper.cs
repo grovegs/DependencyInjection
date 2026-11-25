@@ -64,7 +64,7 @@ namespace GroveGames.DependencyInjection.Unity
                 }
 
                 s_root = builder.Build();
-                s_root.DescendantInitialized += ContainerPlayerLoop.Add;
+                s_root.DescendantInitialized += OnDescendantInitialized;
                 s_root.DescendantDisposed += ContainerPlayerLoop.Remove;
             }
             catch (Exception exception)
@@ -77,6 +77,18 @@ namespace GroveGames.DependencyInjection.Unity
             SceneManager.activeSceneChanged += OnActiveSceneChanged;
             Application.quitting += Shutdown;
             s_rootInitialization = InitializeRootAsync(s_root);
+        }
+
+        private static void OnDescendantInitialized(IContainer container)
+        {
+            try
+            {
+                ContainerPlayerLoop.Add(container);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+            }
         }
 
         private static async Task InitializeRootAsync(IContainer root)

@@ -194,7 +194,7 @@ internal sealed class Container : IContainer
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         var types = _singletonTypes;
         var bindings = _singletonBindings;
-        List<T>? result = null;
+        List<object>? found = null;
 
         for (var i = 0; i < types.Length; i++)
         {
@@ -205,15 +205,27 @@ internal sealed class Container : IContainer
 
             var instance = bindings[i].Resolve(this);
 
-            if (instance is not T item || (_parent is not null && _parent.IsOwned(instance)) || (result is not null && ContainsReference(result, instance)))
+            if (instance is not T || (_parent is not null && _parent.IsOwned(instance)) || (found is not null && ContainsReference(found, instance)))
             {
                 continue;
             }
 
-            (result ??= []).Add(item);
+            (found ??= []).Add(instance);
         }
 
-        return result is null ? Array.Empty<T>() : result.ToArray();
+        if (found is null)
+        {
+            return Array.Empty<T>();
+        }
+
+        var result = new T[found.Count];
+
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = (T)found[i];
+        }
+
+        return result;
     }
 
     public void AddDisposable(IDisposable disposable)
@@ -316,11 +328,20 @@ internal sealed class Container : IContainer
         }
 
         _isDisposed = true;
-        _disposeCancellation.Cancel();
+        List<Exception>? exceptions = null;
+
+        try
+        {
+            _disposeCancellation.Cancel();
+        }
+        catch (Exception exception)
+        {
+            (exceptions ??= []).Add(exception);
+        }
+
         _disposeCancellation.Dispose();
         _singletonTypes = [];
         _singletonBindings = [];
-        List<Exception>? exceptions = null;
         var children = _children;
         _children = [];
 
@@ -368,7 +389,7 @@ internal sealed class Container : IContainer
         }
     }
 
-    private static bool ContainsReference<T>(List<T> items, object instance)
+    private static bool ContainsReference(List<object> items, object instance)
     {
         for (var i = 0; i < items.Count; i++)
         {
@@ -383,9 +404,23 @@ internal sealed class Container : IContainer
 
     private void Notify(Container source, Action<Container, IContainer> raise)
     {
+        List<Exception>? exceptions = null;
+
         for (var container = _parent; container is not null; container = container._parent)
         {
-            raise(container, source);
+            try
+            {
+                raise(container, source);
+            }
+            catch (Exception exception)
+            {
+                (exceptions ??= []).Add(exception);
+            }
+        }
+
+        if (exceptions is not null)
+        {
+            throw new AggregateException(exceptions);
         }
     }
 

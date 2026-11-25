@@ -9,7 +9,7 @@ namespace GroveGames.DependencyInjection.Godot;
 public sealed partial class ContainerBootstrapper : Node
 {
     private static readonly Dictionary<Node, SceneState> s_scenes = new();
-    private static readonly List<ProcessEntry> s_processEntries = new();
+    private static ProcessEntry[] s_processEntries = Array.Empty<ProcessEntry>();
     private static IContainer s_root;
     private static Task s_rootInitialization;
 
@@ -50,7 +50,7 @@ public sealed partial class ContainerBootstrapper : Node
             }
 
             s_root = builder.Build();
-            s_root.DescendantInitialized += AddProcessEntry;
+            s_root.DescendantInitialized += OnDescendantInitialized;
             s_root.DescendantDisposed += RemoveProcessEntry;
         }
         catch (Exception exception)
@@ -66,7 +66,7 @@ public sealed partial class ContainerBootstrapper : Node
     public override void _ExitTree()
     {
         GetTree().NodeAdded -= OnNodeAdded;
-        s_processEntries.Clear();
+        s_processEntries = Array.Empty<ProcessEntry>();
 
         foreach (var state in s_scenes.Values)
         {
@@ -98,9 +98,11 @@ public sealed partial class ContainerBootstrapper : Node
     {
         var deltaTime = (float)delta;
 
-        for (var i = 0; i < s_processEntries.Count; i++)
+        var entries = s_processEntries;
+
+        for (var i = 0; i < entries.Length; i++)
         {
-            var entry = s_processEntries[i];
+            var entry = entries[i];
 
             for (var j = 0; j < entry.PreFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
@@ -115,9 +117,11 @@ public sealed partial class ContainerBootstrapper : Node
             }
         }
 
-        for (var i = 0; i < s_processEntries.Count; i++)
+        entries = s_processEntries;
+
+        for (var i = 0; i < entries.Length; i++)
         {
-            var entry = s_processEntries[i];
+            var entry = entries[i];
 
             for (var j = 0; j < entry.FrameUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
@@ -137,9 +141,11 @@ public sealed partial class ContainerBootstrapper : Node
     {
         var deltaTime = (float)delta;
 
-        for (var i = 0; i < s_processEntries.Count; i++)
+        var entries = s_processEntries;
+
+        for (var i = 0; i < entries.Length; i++)
         {
-            var entry = s_processEntries[i];
+            var entry = entries[i];
 
             for (var j = 0; j < entry.PhysicsUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
@@ -157,9 +163,11 @@ public sealed partial class ContainerBootstrapper : Node
 
     private static void PostFrameUpdate(float deltaTime)
     {
-        for (var i = 0; i < s_processEntries.Count; i++)
+        var entries = s_processEntries;
+
+        for (var i = 0; i < entries.Length; i++)
         {
-            var entry = s_processEntries[i];
+            var entry = entries[i];
 
             for (var j = 0; j < entry.PostFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
@@ -177,32 +185,60 @@ public sealed partial class ContainerBootstrapper : Node
 
     private static void AddProcessEntry(IContainer container)
     {
-        if (container.IsDisposed)
+        if (container.IsDisposed || IndexOfProcessEntry(container) >= 0)
         {
             return;
         }
 
-        for (var i = 0; i < s_processEntries.Count; i++)
-        {
-            if (ReferenceEquals(s_processEntries[i].Container, container))
-            {
-                return;
-            }
-        }
+        var entry = new ProcessEntry(container);
+        var entries = s_processEntries;
+        var newEntries = new ProcessEntry[entries.Length + 1];
+        Array.Copy(entries, newEntries, entries.Length);
+        newEntries[entries.Length] = entry;
+        s_processEntries = newEntries;
+    }
 
-        s_processEntries.Add(new ProcessEntry(container));
+    private static void OnDescendantInitialized(IContainer container)
+    {
+        try
+        {
+            AddProcessEntry(container);
+        }
+        catch (Exception exception)
+        {
+            GD.PushError(exception.ToString());
+        }
     }
 
     private static void RemoveProcessEntry(IContainer container)
     {
-        for (var i = 0; i < s_processEntries.Count; i++)
+        var index = IndexOfProcessEntry(container);
+
+        if (index < 0)
         {
-            if (ReferenceEquals(s_processEntries[i].Container, container))
+            return;
+        }
+
+        var entries = s_processEntries;
+        var newEntries = new ProcessEntry[entries.Length - 1];
+        Array.Copy(entries, 0, newEntries, 0, index);
+        Array.Copy(entries, index + 1, newEntries, index, entries.Length - index - 1);
+        s_processEntries = newEntries;
+    }
+
+    private static int IndexOfProcessEntry(IContainer container)
+    {
+        var entries = s_processEntries;
+
+        for (var i = 0; i < entries.Length; i++)
+        {
+            if (ReferenceEquals(entries[i].Container, container))
             {
-                s_processEntries.RemoveAt(i);
-                return;
+                return i;
             }
         }
+
+        return -1;
     }
 
     private static async Task InitializeRootAsync(IContainer root)

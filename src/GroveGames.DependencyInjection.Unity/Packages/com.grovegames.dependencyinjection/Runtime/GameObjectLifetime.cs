@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace GroveGames.DependencyInjection.Unity
     {
         private const int MinimumPruneCount = 16;
 
-        private static readonly Dictionary<IObjectResolver, GameObjectLifetime> s_lifetimes = new();
+        private static readonly ConditionalWeakTable<IObjectResolver, GameObjectLifetime> s_lifetimes = new();
 
         private readonly IObjectResolver _resolver;
         private readonly List<GameObject> _gameObjects;
@@ -38,7 +39,7 @@ namespace GroveGames.DependencyInjection.Unity
             lifetime.Add(gameObject);
         }
 
-        internal static bool TryGet(IObjectResolver resolver, out GameObjectLifetime lifetime)
+        internal static bool TryGet(IObjectResolver resolver, out GameObjectLifetime? lifetime)
         {
             return s_lifetimes.TryGetValue(resolver, out lifetime);
         }

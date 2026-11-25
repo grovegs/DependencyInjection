@@ -184,7 +184,7 @@ public sealed class ContainerBuilder : IContainerBuilder
         }
 
         var activator = registration.Factory is not null
-            ? new FactoryActivator(registration.ImplementationType, registration.Factory, container)
+            ? new FactoryActivator(registration.ImplementationType, registration.Factory)
             : CreateConstructorActivator(registration.ImplementationType);
 
         return registration.Lifetime == Lifetime.Singleton

@@ -512,6 +512,73 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public void Dispose_ChildResolvedParentFactoryTransient_DisposesFactoryDependenciesWithChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddTransient<TestOtherDisposable>();
+        builder.AddTransient(resolver => new TestDisposableHolder(resolver.Resolve<TestOtherDisposable>()));
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+        child.Resolve<TestDisposableHolder>();
+
+        child.Dispose();
+
+        Assert.Equal(["Other.Dispose"], parent.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task DescendantInitialized_HandlerThrows_StillNotifiesOtherAncestors()
+    {
+        using var root = new ContainerBuilder().Build();
+        var raised = new List<IContainer>();
+        root.DescendantInitialized += raised.Add;
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+        var middle = root.CreateChild(_ => { });
+        await middle.InitializeAsync(TestContext.Current.CancellationToken);
+        middle.DescendantInitialized += _ => throw new NotSupportedException();
+        var leaf = middle.CreateChild(_ => { });
+
+        var exception = await Record.ExceptionAsync(() => leaf.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        Assert.IsType<AggregateException>(exception);
+        Assert.Equal([middle, leaf], raised);
+    }
+
+    [Fact]
+    public void ResolveAll_ValueTypeRegisteredTwice_ReturnsInstanceOnce()
+    {
+        var builder = new ContainerBuilder();
+        object boxed = new TestValueTickable();
+        builder.AddSingleton(typeof(ITestTickable), boxed);
+        builder.AddSingleton(typeof(TestValueTickable), boxed);
+        using var container = builder.Build();
+
+        var tickables = container.ResolveAll<TestValueTickable>();
+
+        Assert.Single(tickables);
+    }
+
+    [Fact]
+    public async Task Dispose_CancellationCallbackThrows_StillDisposesInstances()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddSingleton<TestOtherDisposable>();
+        builder.AddSingleton<TestThrowingOnCancel>();
+        var container = builder.Build();
+        var log = container.Resolve<TestLog>();
+        container.Resolve<TestOtherDisposable>();
+        var initialization = container.InitializeAsync(TestContext.Current.CancellationToken).AsTask();
+
+        var exception = Record.Exception(container.Dispose);
+
+        Assert.IsType<AggregateException>(exception);
+        Assert.Equal(["Other.Dispose"], log.Entries);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => initialization);
+    }
+
+    [Fact]
     public void Dispose_Parent_DisposesChildrenFirst()
     {
         var log = new TestLog();
@@ -863,6 +930,20 @@ public sealed class ContainerTests
             {
                 throw new NotSupportedException();
             }
+        }
+    }
+
+    private readonly struct TestValueTickable : ITestTickable
+    {
+    }
+
+    private sealed class TestThrowingOnCancel : IAsyncInitializable
+    {
+        public async ValueTask InitializeAsync(CancellationToken cancellationToken)
+        {
+            var never = new TaskCompletionSource<bool>();
+            cancellationToken.Register(() => throw new NotSupportedException());
+            await never.Task.WaitAsync(cancellationToken);
         }
     }
 
