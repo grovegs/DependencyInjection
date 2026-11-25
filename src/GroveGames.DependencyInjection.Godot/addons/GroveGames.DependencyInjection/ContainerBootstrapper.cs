@@ -14,6 +14,8 @@ public sealed partial class ContainerBootstrapper : Node
     private static float s_unscaledFrameTime;
     private static Task s_rootInitialization;
 
+    private PostFrameUpdater _postFrameUpdater;
+
     public ContainerBootstrapper()
     {
         ProcessPriority = int.MinValue;
@@ -39,7 +41,11 @@ public sealed partial class ContainerBootstrapper : Node
 
     public override void _EnterTree()
     {
-        AddChild(new PostFrameUpdater());
+        if (_postFrameUpdater == null)
+        {
+            _postFrameUpdater = new PostFrameUpdater();
+            AddChild(_postFrameUpdater);
+        }
         var builder = new ContainerBuilder();
         var installer = DependencyInjectionSettingsResource.GetOrCreate().RootInstaller;
 
@@ -102,9 +108,7 @@ public sealed partial class ContainerBootstrapper : Node
             return;
         }
 
-        var now = Time.GetTicksUsec();
-        s_unscaledFrameTime = s_lastProcessTicks == 0 ? (float)delta : (now - s_lastProcessTicks) / 1_000_000f;
-        s_lastProcessTicks = now;
+        s_unscaledFrameTime = GetUnscaledFrameTime(delta);
         var deltaTime = new DeltaTime((float)delta, s_unscaledFrameTime);
 
         try
@@ -164,6 +168,27 @@ public sealed partial class ContainerBootstrapper : Node
         }
     }
 
+    private static float GetUnscaledFrameTime(double delta)
+    {
+        var now = Time.GetTicksUsec();
+        var last = s_lastProcessTicks;
+        s_lastProcessTicks = now;
+        var timeScale = Engine.TimeScale;
+
+        if (timeScale > 0)
+        {
+            return (float)(delta / timeScale);
+        }
+
+        if (last == 0)
+        {
+            return 0f;
+        }
+
+        var maximum = (float)Engine.MaxPhysicsStepsPerFrame / Engine.PhysicsTicksPerSecond;
+        return Math.Min((now - last) / 1_000_000f, maximum);
+    }
+
     private static void PushError(Exception exception)
     {
         if (exception is not AggregateException aggregate)
@@ -172,9 +197,11 @@ public sealed partial class ContainerBootstrapper : Node
             return;
         }
 
-        for (var i = 0; i < aggregate.InnerExceptions.Count; i++)
+        var flattened = aggregate.Flatten();
+
+        for (var i = 0; i < flattened.InnerExceptions.Count; i++)
         {
-            GD.PushError(aggregate.InnerExceptions[i].ToString());
+            GD.PushError(flattened.InnerExceptions[i].ToString());
         }
     }
 

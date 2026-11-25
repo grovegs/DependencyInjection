@@ -23,6 +23,7 @@ internal sealed class Container : IContainer
     private bool _hasStartedInitialization;
     private bool _isInitialized;
     private bool _isDisposed;
+    private bool _isUpdating;
 
     public IContainer? Parent => _parent;
     public bool IsDisposed => _isDisposed;
@@ -432,6 +433,11 @@ internal sealed class Container : IContainer
 
     private void Update<T>(DeltaTime deltaTime, Func<Container, T[]> select, Action<T, DeltaTime> call)
     {
+        if (_isUpdating)
+        {
+            throw new InvalidOperationException("A container cannot be updated again from inside its own update.");
+        }
+
         List<Exception>? exceptions = null;
         Update(deltaTime, select, call, ref exceptions);
 
@@ -448,25 +454,34 @@ internal sealed class Container : IContainer
             return;
         }
 
-        var updatables = select(this);
+        _isUpdating = true;
 
-        for (var i = 0; i < updatables.Length && !_isDisposed; i++)
+        try
         {
-            try
+            var updatables = select(this);
+
+            for (var i = 0; i < updatables.Length && !_isDisposed; i++)
             {
-                call(updatables[i], deltaTime);
+                try
+                {
+                    call(updatables[i], deltaTime);
+                }
+                catch (Exception exception)
+                {
+                    (exceptions ??= []).Add(exception);
+                }
             }
-            catch (Exception exception)
+
+            var children = _children;
+
+            for (var i = 0; i < children.Length && !_isDisposed; i++)
             {
-                (exceptions ??= []).Add(exception);
+                children[i].Update(deltaTime, select, call, ref exceptions);
             }
         }
-
-        var children = _children;
-
-        for (var i = 0; i < children.Length && !_isDisposed; i++)
+        finally
         {
-            children[i].Update(deltaTime, select, call, ref exceptions);
+            _isUpdating = false;
         }
     }
 

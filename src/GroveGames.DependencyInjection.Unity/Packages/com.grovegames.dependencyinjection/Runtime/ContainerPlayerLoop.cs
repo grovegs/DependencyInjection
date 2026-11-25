@@ -134,9 +134,11 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            for (var i = 0; i < aggregate.InnerExceptions.Count; i++)
+            var flattened = aggregate.Flatten();
+
+            for (var i = 0; i < flattened.InnerExceptions.Count; i++)
             {
-                Debug.LogException(aggregate.InnerExceptions[i]);
+                Debug.LogException(flattened.InnerExceptions[i]);
             }
         }
 

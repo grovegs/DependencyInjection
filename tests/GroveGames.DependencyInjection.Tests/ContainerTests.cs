@@ -613,6 +613,21 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public async Task FrameUpdate_CalledFromInsideItsOwnUpdate_ThrowsInvalidOperationException()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestReentrantUpdatable>();
+        using var root = builder.Build();
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+
+        var exception = Record.Exception(() => root.FrameUpdate(new DeltaTime(1f, 1f)));
+
+        var aggregate = Assert.IsType<AggregateException>(exception);
+        Assert.IsType<InvalidOperationException>(Assert.Single(aggregate.InnerExceptions));
+        Assert.Equal(1, root.Resolve<TestReentrantUpdatable>().Calls);
+    }
+
+    [Fact]
     public void FrameUpdate_NotInitialized_DoesNotUpdate()
     {
         var builder = new ContainerBuilder();
@@ -1035,6 +1050,24 @@ public sealed class ContainerTests
         {
             Scaled = deltaTime.Scaled;
             Unscaled = deltaTime.Unscaled;
+        }
+    }
+
+    private sealed class TestReentrantUpdatable : IFrameUpdatable
+    {
+        private readonly IContainer _container;
+
+        public TestReentrantUpdatable(IContainer container)
+        {
+            _container = container;
+        }
+
+        public int Calls { get; private set; }
+
+        public void FrameUpdate(DeltaTime deltaTime)
+        {
+            Calls++;
+            _container.FrameUpdate(deltaTime);
         }
     }
 

@@ -76,7 +76,7 @@ Each phase finishes before the next one starts: its sync methods run first, then
 | `IPostFrameUpdatable` | `void PostFrameUpdate(DeltaTime deltaTime)` |
 | `IPhysicsUpdatable`   | `void PhysicsUpdate(DeltaTime deltaTime)`   |
 
-`DeltaTime` carries both times, and each use says which one it means: `Scaled` follows the engine's time scale, for gameplay, and `Unscaled` is real time, for UI, pause menus and anything that must keep moving while the game is slowed or paused. In `PhysicsUpdate` they are the fixed physics step with and without the time scale.
+`DeltaTime` carries both times, and each use says which one it means: `Scaled` follows the engine's time scale, for gameplay, and `Unscaled` is real time, for UI, pause menus and anything that must keep moving while the game is slowed or paused. In `PhysicsUpdate` they are the fixed physics step with and without the time scale. A paused Godot `SceneTree` stops these updates entirely; `Unscaled` keeps moving when the time scale is 0.
 
 ```csharp
 public void FrameUpdate(DeltaTime deltaTime)
@@ -86,7 +86,7 @@ public void FrameUpdate(DeltaTime deltaTime)
 }
 ```
 
-A container implements these interfaces too: its `PreFrameUpdate`, `FrameUpdate`, `PostFrameUpdate` and `PhysicsUpdate` run that method on its own singletons, then on each initialized child container, until it is disposed. A container that has not finished `InitializeAsync` is skipped. The Unity and Godot packages call them on the root container every frame, so scene containers and child containers you create with `CreateChild` are updated once initialized; a plain .NET host calls them itself. If an updatable throws, the rest still run, and the errors are thrown together as an `AggregateException` after the phase. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
+A container implements these interfaces too: its `PreFrameUpdate`, `FrameUpdate`, `PostFrameUpdate` and `PhysicsUpdate` run that method on its own singletons, then on each initialized child container, until it is disposed. A container that has not finished `InitializeAsync` is skipped. The Unity and Godot packages call them on the root container every frame, so scene containers and child containers you create with `CreateChild` are updated once initialized; a plain .NET host calls them itself. If an updatable throws, the rest still run, and the errors are thrown together as an `AggregateException` after the phase. A container that finishes initializing during a frame starts updating from the next phase. Don't forward updates to child containers yourself, since their parent already updates them, and don't update a container from inside its own update: that throws `InvalidOperationException`. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
 
 ### Child Containers
 
@@ -224,7 +224,7 @@ public sealed class BattleInstaller : SceneInstaller
 }
 ```
 
-The [update interfaces](#updates) are called from the player loop, so no `MonoBehaviour` lifecycle methods are needed: `PreFrameUpdate` and `FrameUpdate` at the start of `Update`, `PostFrameUpdate` after all `MonoBehaviour.Update` calls, and `PhysicsUpdate` on the fixed timestep.
+The [update interfaces](#updates) are called from the player loop, so no `MonoBehaviour` lifecycle methods are needed: `PreFrameUpdate` and `FrameUpdate` after every `MonoBehaviour.Update`, `PostFrameUpdate` after every `LateUpdate`, and `PhysicsUpdate` on the fixed timestep.
 
 #### Loading Scenes
 
