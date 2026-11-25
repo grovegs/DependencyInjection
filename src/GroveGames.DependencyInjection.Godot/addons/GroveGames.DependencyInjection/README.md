@@ -76,7 +76,7 @@ Each phase finishes before the next one starts: its sync methods run first, then
 | `IPostFrameUpdatable` | `void PostFrameUpdate(float deltaTime)` |
 | `IPhysicsUpdatable`   | `void PhysicsUpdate(float deltaTime)`   |
 
-The core only declares these interfaces; the Unity and Godot packages call them on the singletons of every initialized container until it is disposed. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
+A container implements these interfaces too: its `PreFrameUpdate`, `FrameUpdate`, `PostFrameUpdate` and `PhysicsUpdate` run that method on its own singletons, then on each initialized child container, until it is disposed. A container that has not finished `InitializeAsync` is skipped. The Unity and Godot packages call them on the root container every frame, so scene containers and child containers you create with `CreateChild` are updated once initialized; a plain .NET host calls them itself. If an updatable throws, the rest still run, and the errors are thrown together as an `AggregateException` after the phase. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
 
 ### Child Containers
 
@@ -86,6 +86,10 @@ await scene.InitializeAsync(cancellationToken);
 ```
 
 Disposing a container cancels a pending initialization, disposes its children and then disposes every instance it created in reverse creation order. Instances passed to `AddSingleton(instance)` are owned by the caller and are not disposed.
+
+A transient belongs to the container it is resolved from, so a parent's transient resolved from a scene container is disposed with the scene, and a transient's factory receives that container, so what it resolves belongs to it too. A transient created for a singleton belongs to the singleton's container. A container keeps every `IDisposable` transient it creates until it is disposed, so resolve many short-lived disposables from a child container you dispose, rather than from the root.
+
+`InitializeAsync` runs once. If it fails or is cancelled, it can't be run again on the same container, because some instances may already have run their phases; build a new container instead.
 
 ### Resolving All Implementations
 
@@ -144,7 +148,7 @@ Missing registrations and circular dependencies are only known once installers a
 ### Core Components
 
 - **`ContainerBuilder`**: Collects registrations and builds a validated root container
-- **`IContainer`**: Resolves services, runs lifecycle phases and owns created instances; `AddDisposable` hands any other cleanup to the container
+- **`IContainer`**: Resolves services, runs lifecycle phases, runs per-frame updates for itself and its children, and owns created instances; `AddDisposable` hands any other cleanup to the container
 - **`IObjectResolver`**: `Resolve`, `ResolveAll`, `Inject` and `AddDisposable`; it is what factories and services receive
 - **`IInstaller`**: Groups registrations for a container or child container
 
@@ -255,12 +259,12 @@ Unity types live in the `GroveGames.DependencyInjection.Unity` namespace.
 - **`ContainerBootstrapper`**: Builds and initializes the root and scene containers. `WhenSceneReadyAsync(Scene)` waits for a scene's container
 - **`ContainerRegistry`**: Finds initialized containers: `Root` and `TryGet(Scene)`. Containers are returned as `IObjectResolver`, so they cannot be disposed from outside
 - **`UnityDependencyInjectionSettings`**: ScriptableObject holding the root installer; implements the core `IDependencyInjectionSettings`
-- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
+- **`Instantiate`**: Creates a component from a prefab or on a new GameObject and injects `[Inject]` methods on every `MonoBehaviour` of it before `Awake` runs. The container that created it owns the GameObject and destroys it when disposed, after the component itself; GameObjects the game destroys first are dropped from the container, so spawning and destroying objects does not grow it. Without a parent, it is placed in the scene of a scene container, or kept across scene loads for the root container
 - **`InjectGameObject`**: Injects `[Inject]` methods on every `MonoBehaviour` of an existing hierarchy
 
 ### Code Stripping
 
-`[Inject]` methods are only called through reflection, so the editor adds every `[Inject]` method to the linker's preserve list when a player is built. They survive managed code stripping at every level without a `link.xml` or `[Preserve]` in game code.
+`[Inject]` methods that the source generator can't call directly are called through reflection, so the editor adds every `[Inject]` method to the linker's preserve list when a player is built. They survive managed code stripping at every level without a `link.xml` or `[Preserve]` in game code.
 
 ## Godot
 
