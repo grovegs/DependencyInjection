@@ -3,20 +3,18 @@
 internal sealed class TransientBinding : Binding
 {
     private readonly InstanceActivator _activator;
-    private readonly Container _owner;
 
     public override InstanceActivator? Activator => _activator;
 
-    public TransientBinding(InstanceActivator activator, Container owner)
+    public TransientBinding(InstanceActivator activator)
     {
         _activator = activator;
-        _owner = owner;
     }
 
-    public override object Resolve()
+    public override object Resolve(Container requester)
     {
-        var instance = _activator.Create();
-        _owner.OwnTransient(instance);
+        var instance = _activator.Create(requester);
+        requester.OwnTransient(instance);
         return instance;
     }
 }

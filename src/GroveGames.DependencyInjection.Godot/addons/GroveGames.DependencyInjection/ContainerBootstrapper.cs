@@ -50,6 +50,8 @@ public sealed partial class ContainerBootstrapper : Node
             }
 
             s_root = builder.Build();
+            s_root.DescendantInitialized += AddProcessEntry;
+            s_root.DescendantDisposed += RemoveProcessEntry;
         }
         catch (Exception exception)
         {
@@ -100,7 +102,7 @@ public sealed partial class ContainerBootstrapper : Node
         {
             var entry = s_processEntries[i];
 
-            for (var j = 0; j < entry.PreFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+            for (var j = 0; j < entry.PreFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
                 try
                 {
@@ -117,7 +119,7 @@ public sealed partial class ContainerBootstrapper : Node
         {
             var entry = s_processEntries[i];
 
-            for (var j = 0; j < entry.FrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+            for (var j = 0; j < entry.FrameUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
                 try
                 {
@@ -139,7 +141,7 @@ public sealed partial class ContainerBootstrapper : Node
         {
             var entry = s_processEntries[i];
 
-            for (var j = 0; j < entry.PhysicsUpdatables.Count && !entry.Container.IsDisposed; j++)
+            for (var j = 0; j < entry.PhysicsUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
                 try
                 {
@@ -159,7 +161,7 @@ public sealed partial class ContainerBootstrapper : Node
         {
             var entry = s_processEntries[i];
 
-            for (var j = 0; j < entry.PostFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+            for (var j = 0; j < entry.PostFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
             {
                 try
                 {
@@ -178,6 +180,14 @@ public sealed partial class ContainerBootstrapper : Node
         if (container.IsDisposed)
         {
             return;
+        }
+
+        for (var i = 0; i < s_processEntries.Count; i++)
+        {
+            if (ReferenceEquals(s_processEntries[i].Container, container))
+            {
+                return;
+            }
         }
 
         s_processEntries.Add(new ProcessEntry(container));
@@ -456,24 +466,41 @@ public sealed partial class ContainerBootstrapper : Node
     private sealed class ProcessEntry
     {
         private readonly IContainer _container;
-        private readonly IReadOnlyList<IPreFrameUpdatable> _preFrameUpdatables;
-        private readonly IReadOnlyList<IFrameUpdatable> _frameUpdatables;
-        private readonly IReadOnlyList<IPostFrameUpdatable> _postFrameUpdatables;
-        private readonly IReadOnlyList<IPhysicsUpdatable> _physicsUpdatables;
+        private readonly IPreFrameUpdatable[] _preFrameUpdatables;
+        private readonly IFrameUpdatable[] _frameUpdatables;
+        private readonly IPostFrameUpdatable[] _postFrameUpdatables;
+        private readonly IPhysicsUpdatable[] _physicsUpdatables;
 
         public IContainer Container => _container;
-        public IReadOnlyList<IPreFrameUpdatable> PreFrameUpdatables => _preFrameUpdatables;
-        public IReadOnlyList<IFrameUpdatable> FrameUpdatables => _frameUpdatables;
-        public IReadOnlyList<IPostFrameUpdatable> PostFrameUpdatables => _postFrameUpdatables;
-        public IReadOnlyList<IPhysicsUpdatable> PhysicsUpdatables => _physicsUpdatables;
+        public IPreFrameUpdatable[] PreFrameUpdatables => _preFrameUpdatables;
+        public IFrameUpdatable[] FrameUpdatables => _frameUpdatables;
+        public IPostFrameUpdatable[] PostFrameUpdatables => _postFrameUpdatables;
+        public IPhysicsUpdatable[] PhysicsUpdatables => _physicsUpdatables;
 
         public ProcessEntry(IContainer container)
         {
             _container = container;
-            _preFrameUpdatables = container.ResolveAll<IPreFrameUpdatable>();
-            _frameUpdatables = container.ResolveAll<IFrameUpdatable>();
-            _postFrameUpdatables = container.ResolveAll<IPostFrameUpdatable>();
-            _physicsUpdatables = container.ResolveAll<IPhysicsUpdatable>();
+            _preFrameUpdatables = ToArray(container.ResolveAll<IPreFrameUpdatable>());
+            _frameUpdatables = ToArray(container.ResolveAll<IFrameUpdatable>());
+            _postFrameUpdatables = ToArray(container.ResolveAll<IPostFrameUpdatable>());
+            _physicsUpdatables = ToArray(container.ResolveAll<IPhysicsUpdatable>());
+        }
+
+        private static T[] ToArray<T>(IReadOnlyList<T> items)
+        {
+            if (items is T[] array)
+            {
+                return array;
+            }
+
+            var result = new T[items.Count];
+
+            for (var i = 0; i < result.Length; i++)
+            {
+                result[i] = items[i];
+            }
+
+            return result;
         }
     }
 

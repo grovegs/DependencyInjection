@@ -17,7 +17,7 @@ internal sealed class FactoryActivator : InstanceActivator
         _resolver = resolver;
     }
 
-    public override object Create()
+    public override object Create(Container requester)
     {
         if (_isActivating)
         {

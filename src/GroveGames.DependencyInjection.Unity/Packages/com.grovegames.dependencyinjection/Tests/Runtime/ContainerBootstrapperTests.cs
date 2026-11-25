@@ -268,6 +268,27 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             return installer;
         }
 
+        [UnityTest]
+        public IEnumerator CreateChild_InitializedChildOfRoot_IsUpdatedUntilDisposed()
+        {
+            yield return WaitForRoot();
+            var root = (IContainer)ContainerRegistry.Root!;
+            var child = root.CreateChild(builder => builder.AddSingleton<TestFrameCounter>());
+            var counter = child.Resolve<TestFrameCounter>();
+
+            yield return WaitFor(child.InitializeAsync().AsTask());
+            yield return null;
+            yield return null;
+
+            Assert.Greater(counter.Count, 0);
+            child.Dispose();
+            var count = counter.Count;
+            yield return null;
+            yield return null;
+
+            Assert.AreEqual(count, counter.Count);
+        }
+
         private static IEnumerator WaitForRoot()
         {
             for (var i = 0; i < 100 && ContainerRegistry.Root == null; i++)
@@ -362,6 +383,16 @@ namespace GroveGames.DependencyInjection.Unity.Tests
             public void Construct(TestService service)
             {
                 _service = service;
+            }
+        }
+
+        private sealed class TestFrameCounter : IFrameUpdatable
+        {
+            public int Count { get; private set; }
+
+            public void FrameUpdate(float deltaTime)
+            {
+                Count++;
             }
         }
 

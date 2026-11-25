@@ -73,7 +73,7 @@ namespace GroveGames.DependencyInjection.Unity
 
         private static void Activate(IObjectResolver resolver, GameObject gameObject, Transform? parent)
         {
-            resolver.AddDisposable(new GameObjectLifetime(gameObject));
+            GameObjectLifetime.Track(resolver, gameObject);
             resolver.InjectGameObject(gameObject);
 
             if (parent != null || !Application.isPlaying)

@@ -437,6 +437,81 @@ public sealed class ContainerTests
     }
 
     [Fact]
+    public void Dispose_ChildResolvedParentTransient_DisposesTransientWithChild()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddTransient<TestOtherDisposable>();
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+        child.Resolve<TestOtherDisposable>();
+
+        child.Dispose();
+
+        Assert.Equal(["Other.Dispose"], parent.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public void Dispose_Child_KeepsTransientOfParentSingleton()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestLog>();
+        builder.AddTransient<TestOtherDisposable>();
+        builder.AddSingleton<TestDisposableHolder>();
+        using var parent = builder.Build();
+        var child = parent.CreateChild(_ => { });
+        child.Resolve<TestDisposableHolder>();
+
+        child.Dispose();
+
+        Assert.Empty(parent.Resolve<TestLog>().Entries);
+    }
+
+    [Fact]
+    public async Task DescendantInitialized_ChildAndGrandchild_RaisedOnRootForEach()
+    {
+        using var root = new ContainerBuilder().Build();
+        var raised = new List<IContainer>();
+        root.DescendantInitialized += raised.Add;
+        await root.InitializeAsync(TestContext.Current.CancellationToken);
+        var child = root.CreateChild(_ => { });
+        await child.InitializeAsync(TestContext.Current.CancellationToken);
+        var grandchild = child.CreateChild(_ => { });
+
+        await grandchild.InitializeAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal([child, grandchild], raised);
+    }
+
+    [Fact]
+    public void DescendantDisposed_ChildWithGrandchild_RaisedForEachChildFirst()
+    {
+        using var root = new ContainerBuilder().Build();
+        var raised = new List<IContainer>();
+        root.DescendantDisposed += raised.Add;
+        var child = root.CreateChild(_ => { });
+        var grandchild = child.CreateChild(_ => { });
+
+        child.Dispose();
+
+        Assert.Equal([grandchild, child], raised);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_AfterFailedInitialization_ThrowsWithoutRunningPhasesAgain()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestFailingOnce>();
+        using var container = builder.Build();
+        await Assert.ThrowsAsync<NotSupportedException>(() => container.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        var exception = await Record.ExceptionAsync(() => container.InitializeAsync(TestContext.Current.CancellationToken).AsTask());
+
+        Assert.IsType<InvalidOperationException>(exception);
+        Assert.Equal(1, container.Resolve<TestFailingOnce>().Calls);
+    }
+
+    [Fact]
     public void Dispose_Parent_DisposesChildrenFirst()
     {
         var log = new TestLog();
@@ -765,6 +840,29 @@ public sealed class ContainerTests
         public void Dispose()
         {
             _log.Entries.Add("Other.Dispose");
+        }
+    }
+
+    private sealed class TestDisposableHolder
+    {
+        public TestDisposableHolder(TestOtherDisposable other)
+        {
+            Other = other;
+        }
+
+        public TestOtherDisposable Other { get; }
+    }
+
+    private sealed class TestFailingOnce : IInitializable
+    {
+        public int Calls { get; private set; }
+
+        public void Initialize()
+        {
+            if (++Calls == 1)
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 

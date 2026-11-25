@@ -64,6 +64,8 @@ namespace GroveGames.DependencyInjection.Unity
                 }
 
                 s_root = builder.Build();
+                s_root.DescendantInitialized += ContainerPlayerLoop.Add;
+                s_root.DescendantDisposed += ContainerPlayerLoop.Remove;
             }
             catch (Exception exception)
             {

@@ -27,24 +27,41 @@ namespace GroveGames.DependencyInjection.Unity
         private sealed class Entry
         {
             private readonly IContainer _container;
-            private readonly IReadOnlyList<IPreFrameUpdatable> _preFrameUpdatables;
-            private readonly IReadOnlyList<IFrameUpdatable> _frameUpdatables;
-            private readonly IReadOnlyList<IPostFrameUpdatable> _postFrameUpdatables;
-            private readonly IReadOnlyList<IPhysicsUpdatable> _physicsUpdatables;
+            private readonly IPreFrameUpdatable[] _preFrameUpdatables;
+            private readonly IFrameUpdatable[] _frameUpdatables;
+            private readonly IPostFrameUpdatable[] _postFrameUpdatables;
+            private readonly IPhysicsUpdatable[] _physicsUpdatables;
 
             public IContainer Container => _container;
-            public IReadOnlyList<IPreFrameUpdatable> PreFrameUpdatables => _preFrameUpdatables;
-            public IReadOnlyList<IFrameUpdatable> FrameUpdatables => _frameUpdatables;
-            public IReadOnlyList<IPostFrameUpdatable> PostFrameUpdatables => _postFrameUpdatables;
-            public IReadOnlyList<IPhysicsUpdatable> PhysicsUpdatables => _physicsUpdatables;
+            public IPreFrameUpdatable[] PreFrameUpdatables => _preFrameUpdatables;
+            public IFrameUpdatable[] FrameUpdatables => _frameUpdatables;
+            public IPostFrameUpdatable[] PostFrameUpdatables => _postFrameUpdatables;
+            public IPhysicsUpdatable[] PhysicsUpdatables => _physicsUpdatables;
 
             public Entry(IContainer container)
             {
                 _container = container;
-                _preFrameUpdatables = container.ResolveAll<IPreFrameUpdatable>();
-                _frameUpdatables = container.ResolveAll<IFrameUpdatable>();
-                _postFrameUpdatables = container.ResolveAll<IPostFrameUpdatable>();
-                _physicsUpdatables = container.ResolveAll<IPhysicsUpdatable>();
+                _preFrameUpdatables = ToArray(container.ResolveAll<IPreFrameUpdatable>());
+                _frameUpdatables = ToArray(container.ResolveAll<IFrameUpdatable>());
+                _postFrameUpdatables = ToArray(container.ResolveAll<IPostFrameUpdatable>());
+                _physicsUpdatables = ToArray(container.ResolveAll<IPhysicsUpdatable>());
+            }
+
+            private static T[] ToArray<T>(IReadOnlyList<T> items)
+            {
+                if (items is T[] array)
+                {
+                    return array;
+                }
+
+                var result = new T[items.Count];
+
+                for (var i = 0; i < result.Length; i++)
+                {
+                    result[i] = items[i];
+                }
+
+                return result;
             }
         }
 
@@ -137,7 +154,7 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var preFrameUpdatables = entry.PreFrameUpdatables;
 
-                for (var j = 0; j < preFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < preFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
@@ -157,7 +174,7 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var frameUpdatables = entry.FrameUpdatables;
 
-                for (var j = 0; j < frameUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < frameUpdatables.Length && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
@@ -181,7 +198,7 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var physicsUpdatables = entry.PhysicsUpdatables;
 
-                for (var j = 0; j < physicsUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < physicsUpdatables.Length && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {
@@ -205,7 +222,7 @@ namespace GroveGames.DependencyInjection.Unity
                 var entry = entries[i];
                 var postFrameUpdatables = entry.PostFrameUpdatables;
 
-                for (var j = 0; j < postFrameUpdatables.Count && !entry.Container.IsDisposed; j++)
+                for (var j = 0; j < postFrameUpdatables.Length && !entry.Container.IsDisposed; j++)
                 {
                     try
                     {

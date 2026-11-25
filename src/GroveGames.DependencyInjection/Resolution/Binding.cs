@@ -4,5 +4,5 @@ internal abstract class Binding
 {
     public virtual InstanceActivator? Activator => null;
 
-    public abstract object Resolve();
+    public abstract object Resolve(Container requester);
 }

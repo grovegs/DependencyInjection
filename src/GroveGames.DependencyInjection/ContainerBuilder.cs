@@ -189,7 +189,7 @@ public sealed class ContainerBuilder : IContainerBuilder
 
         return registration.Lifetime == Lifetime.Singleton
             ? new SingletonBinding(activator, container)
-            : new TransientBinding(activator, container);
+            : new TransientBinding(activator);
     }
 
     private static InstanceActivator CreateConstructorActivator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)

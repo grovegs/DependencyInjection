@@ -61,6 +61,34 @@ namespace GroveGames.DependencyInjection.Unity.Tests
         }
 
         [UnityTest]
+        public IEnumerator Instantiate_DestroyedByGame_StopsTrackingThem()
+        {
+            var builder = new ContainerBuilder();
+            builder.AddSingleton<TestService>();
+            var container = builder.Build();
+
+            for (var round = 0; round < 5; round++)
+            {
+                for (var i = 0; i < 20; i++)
+                {
+                    Object.Destroy(container.Instantiate<TestBehaviour>().gameObject);
+                }
+
+                yield return null;
+            }
+
+            var kept = container.Instantiate<TestBehaviour>();
+
+            Assert.IsTrue(GameObjectLifetime.TryGet(container, out var lifetime));
+            Assert.LessOrEqual(lifetime.Count, 41);
+            container.Dispose();
+            yield return null;
+
+            Assert.IsTrue(kept == null);
+            Assert.IsFalse(GameObjectLifetime.TryGet(container, out _));
+        }
+
+        [UnityTest]
         public IEnumerator Instantiate_Component_CreatesNamedGameObjectOwnedByContainer()
         {
             var builder = new ContainerBuilder();
