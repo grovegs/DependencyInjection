@@ -48,3 +48,5 @@ The container builds every object first, then runs three phases. Each phase fini
 ### Disposal
 
 - The container disposes its services on `Application.quitting`, before `OnDisable` and `OnDestroy` run. Game code must not use a service in `OnDestroy` or `OnDisable` during quit.
+- A scene's container is disposed when its first `SceneInstaller` is destroyed, before the scene's other `OnDestroy` calls, so they must not use scene services either.
+- iOS and Android usually end the app without `Application.quitting`, so `Dispose` does not run there. Save state when the app is paused or loses focus, not in `Dispose`.
