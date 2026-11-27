@@ -65,7 +65,7 @@ A container never disposes or initializes an instance that it or a parent contai
 | 5     | `IPostInitializable`      | `void PostInitialize()`                            |
 | 6     | `IAsyncPostInitializable` | `ValueTask PostInitializeAsync(CancellationToken)` |
 
-Each phase finishes before the next one starts: its sync methods run first, then its async methods are awaited one at a time. Entries run in registration order within a step. Every entry point is constructed, with its dependencies injected, before any phase runs, so a constructor only receives dependencies and must not use them. To use another service's initialized state, initialize in a later step than it: an `InitializeAsync` can rely on any `Initialize`, but an `Initialize` that needs an `InitializeAsync` result belongs in `PostInitialize`. Lifecycle interfaces are detected on singletons only.
+Each phase finishes before the next one starts: its sync methods run first, then its async methods are awaited one at a time. Entries run in registration order within a step. Every entry point is constructed, with its dependencies injected, before any phase runs, so a constructor only receives dependencies and must not use them. To use another service's initialized state, initialize in a later step than it: an `InitializeAsync` can rely on any `Initialize`, but an `Initialize` that needs an `InitializeAsync` result belongs in `PostInitialize`. Lifecycle interfaces are detected on singletons only, on the registered type: a factory registered as a type with no lifecycle interface, such as `AddSingleton<IGateway>(r => new Gateway(...))`, is not initialized or updated even when `Gateway` implements them, so register it as `Gateway` (the analyzer warns, GGDI008). When the registered type has any lifecycle interface, every interface of the created object runs. If any initializer throws, the container never finishes initializing, so neither it nor its children are ever updated; build a new container.
 
 ### Updates
 
@@ -76,7 +76,7 @@ Each phase finishes before the next one starts: its sync methods run first, then
 | `IPostFrameUpdatable` | `void PostFrameUpdate(DeltaTime deltaTime)` |
 | `IPhysicsUpdatable`   | `void PhysicsUpdate(DeltaTime deltaTime)`   |
 
-`DeltaTime` carries both times, and each use says which one it means: `Scaled` follows the engine's time scale, for gameplay, and `Unscaled` is real time, for UI, pause menus and anything that must keep moving while the game is slowed or paused. In `PhysicsUpdate` they are the fixed physics step with and without the time scale. A paused Godot `SceneTree` stops these updates entirely; `Unscaled` keeps moving when the time scale is 0.
+`DeltaTime` carries both times, and each use says which one it means: `Scaled` follows the engine's time scale, for gameplay, and `Unscaled` is real time, for UI, pause menus and anything that must keep moving while the game is slowed or paused. In `PhysicsUpdate` they are the fixed physics step with and without the time scale. A paused Godot `SceneTree` stops these updates entirely; `Unscaled` keeps moving when the time scale is 0. In Unity, `Unscaled` is capped at `Time.maximumDeltaTime`, as Unity caps the scaled delta, so a long frame does not make real-time animations jump to their end.
 
 ```csharp
 public void FrameUpdate(DeltaTime deltaTime)
@@ -85,6 +85,8 @@ public void FrameUpdate(DeltaTime deltaTime)
     _pauseMenu.Animate(deltaTime.Unscaled);
 }
 ```
+
+Containers are not thread-safe: resolve, inject and update a container from one thread.
 
 A container implements these interfaces too: its `PreFrameUpdate`, `FrameUpdate`, `PostFrameUpdate` and `PhysicsUpdate` run that method on its own singletons, then on each initialized child container, until it is disposed. A container that has not finished `InitializeAsync` is skipped. The Unity and Godot packages call them on the root container every frame, so scene containers and child containers you create with `CreateChild` are updated once initialized; a plain .NET host calls them itself. If an updatable throws, the rest still run, and the errors are thrown together as an `AggregateException` after the phase. A container that finishes initializing during a frame starts updating from the next phase. Don't forward updates to child containers yourself, since their parent already updates them, and don't update a container from inside its own update: that throws `InvalidOperationException`. Each frame every container runs `PreFrameUpdate` before any container runs `FrameUpdate`, `PostFrameUpdate` runs after the engine's own per-frame scripts, and `PhysicsUpdate` runs on the physics step.
 
@@ -111,7 +113,7 @@ var tickables = container.ResolveAll<ITickable>();
 
 ### Method Injection
 
-Objects the container does not construct, such as engine components, receive dependencies through `[Inject]` methods:
+Objects the container does not construct, such as engine components, receive dependencies through `[Inject]` methods. A type the container constructs gets its dependencies through the constructor only; its `[Inject]` methods are never called (the analyzer warns, GGDI007). Methods declared on a base class run before the derived class's:
 
 ```csharp
 public sealed class HealthBar
@@ -131,7 +133,7 @@ Instances passed to `AddSingleton(instance)` are injected once when the containe
 
 The package includes a source generator that runs in every project referencing it, with nothing to configure. For each type registered with `AddSingleton<T>()`, `AddTransient<T>()`, their two type argument forms or `typeof(...)`, and for each class with `[Inject]` methods, it generates code that calls the constructor and the methods directly. The container picks the generated code up when it is built.
 
-Anything the generator cannot call directly still works through reflection: private types and types nested in them, types registered only from an assembly other than the one that defines them, and registrations inside generic methods such as `AddSingleton<T>()` with a type parameter. On IL2CPP with a high managed stripping level, preserve those types with `[Preserve]` or a `link.xml`. `[Inject]` constructors and methods never need it, because `InjectAttribute` derives from a `PreserveAttribute`, which Unity's linker keeps.
+Anything the generator cannot call directly still works through reflection: private types and types nested in them, types registered only from an assembly other than the one that defines them, and registrations inside generic methods such as `AddSingleton<T>()` with a type parameter. On IL2CPP with a high managed stripping level, preserve those types with `[Preserve]` or a `link.xml`. `[Inject]` constructors and methods never need it, because the Unity package writes them to a `link.xml` before every build.
 
 ### Analyzers
 
@@ -145,6 +147,9 @@ The package also reports mistakes the compiler can already see, instead of leavi
 | GGDI004 | Error    | A constructor or `[Inject]` method with a `ref`, `in` or `out` parameter                                   |
 | GGDI005 | Warning  | More than one `[Inject]` constructor on a type                                                             |
 | GGDI006 | Disabled | A registered type that is constructed through reflection instead of generated code                         |
+| GGDI007 | Warning  | A registered type has `[Inject]` methods, which are never called on types the container constructs         |
+| GGDI008 | Warning  | A factory registered as an interface creates a type whose lifecycle interfaces the registered type lacks   |
+| GGDI009 | Error    | An open generic type is registered                                                                         |
 
 GGDI006 lists the types that the [source generator](#source-generation) cannot cover, which are the ones to preserve for IL2CPP code stripping. Turn it on in `.editorconfig`:
 
@@ -224,7 +229,7 @@ public sealed class BattleInstaller : SceneInstaller
 }
 ```
 
-The [update interfaces](#updates) are called from the player loop, so no `MonoBehaviour` lifecycle methods are needed: `PreFrameUpdate` and `FrameUpdate` after every `MonoBehaviour.Update`, `PostFrameUpdate` after every `LateUpdate`, and `PhysicsUpdate` on the fixed timestep.
+The [update interfaces](#updates) are called from the player loop, so no `MonoBehaviour` lifecycle methods are needed: `PreFrameUpdate` and `FrameUpdate` after every `MonoBehaviour.Update`, `PostFrameUpdate` after every `LateUpdate`, and `PhysicsUpdate` on the fixed timestep after the physics simulation step, so forces set there take effect on the next step. The names order the container's own phases, not Unity's: `PreFrameUpdate` runs after `MonoBehaviour.Update`, not before it.
 
 #### Loading Scenes
 

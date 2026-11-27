@@ -17,17 +17,18 @@ public partial class DependencyInjectionSettingsResource : Resource, IDependency
         {
             var resourcePath = ProjectSettings.GetSetting(ProjectSettingsKey).AsString();
 
-            if (ResourceLoader.Exists(resourcePath))
+            if (ResourceLoader.Exists(resourcePath) && ResourceLoader.Load<DependencyInjectionSettingsResource>(resourcePath) is { } configured)
             {
-                return ResourceLoader.Load<DependencyInjectionSettingsResource>(resourcePath);
+                return configured;
             }
         }
 
-        if (ResourceLoader.Exists(DefaultResourcePath))
+        if (ResourceLoader.Exists(DefaultResourcePath) && ResourceLoader.Load<DependencyInjectionSettingsResource>(DefaultResourcePath) is { } settings)
         {
-            return ResourceLoader.Load<DependencyInjectionSettingsResource>(DefaultResourcePath);
+            return settings;
         }
 
+        GD.PushWarning("The dependency injection settings resource was not found or could not be loaded, so the root container has no installer.");
         return new DependencyInjectionSettingsResource();
     }
 

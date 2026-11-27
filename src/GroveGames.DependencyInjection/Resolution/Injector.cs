@@ -47,6 +47,8 @@ internal sealed class Injector
             }
         }
 
+        SortBaseFirst(injectMethods);
+
         var parameterTypes = new Type[injectMethods.Count][];
         var invokers = new Action<object, object?[]>[injectMethods.Count];
 
@@ -126,5 +128,36 @@ internal sealed class Injector
             ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
             throw;
         }
+    }
+
+    // GetMethods has no defined order, so methods are ordered from the base type down, as the generated injectors are.
+    private static void SortBaseFirst(List<MethodInfo> methods)
+    {
+        for (var i = 1; i < methods.Count; i++)
+        {
+            var method = methods[i];
+            var depth = Depth(method.DeclaringType);
+            var j = i - 1;
+
+            while (j >= 0 && Depth(methods[j].DeclaringType) > depth)
+            {
+                methods[j + 1] = methods[j];
+                j--;
+            }
+
+            methods[j + 1] = method;
+        }
+    }
+
+    private static int Depth(Type? type)
+    {
+        var depth = 0;
+
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            depth++;
+        }
+
+        return depth;
     }
 }

@@ -15,6 +15,7 @@ public sealed partial class ContainerBootstrapper : Node
     private static Task s_rootInitialization;
 
     private PostFrameUpdater _postFrameUpdater;
+    private bool _isNodeAddedConnected;
 
     public ContainerBootstrapper()
     {
@@ -65,12 +66,17 @@ public sealed partial class ContainerBootstrapper : Node
         }
 
         GetTree().NodeAdded += OnNodeAdded;
+        _isNodeAddedConnected = true;
         s_rootInitialization = InitializeRootAsync(s_root);
     }
 
     public override void _ExitTree()
     {
-        GetTree().NodeAdded -= OnNodeAdded;
+        if (_isNodeAddedConnected)
+        {
+            GetTree().NodeAdded -= OnNodeAdded;
+            _isNodeAddedConnected = false;
+        }
 
         foreach (var state in s_scenes.Values)
         {

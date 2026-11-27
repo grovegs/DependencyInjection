@@ -20,11 +20,68 @@ namespace GroveGames.DependencyInjection.Unity.Editor
         public string GenerateAdditionalLinkXmlFile(BuildReport report, UnityLinkerBuildPipelineData data)
         {
             var path = Path.Combine(data.inputDirectory, FileName);
-            File.WriteAllText(path, BuildLinkXml(TypeCache.GetMethodsWithAttribute<InjectAttribute>()));
+            var members = new List<MethodBase>(TypeCache.GetMethodsWithAttribute<InjectAttribute>());
+            AddInjectConstructors(members);
+            File.WriteAllText(path, BuildLinkXml(members));
             return path;
         }
 
-        public static string BuildLinkXml(IEnumerable<MethodInfo> methods)
+        // UnityLinker keeps members marked with an attribute named exactly PreserveAttribute, not one derived from it, so
+        // [Inject] constructors, which TypeCache cannot list, are found here and written out like the methods.
+        private static void AddInjectConstructors(List<MethodBase> members)
+        {
+            var injectAssembly = typeof(InjectAttribute).Assembly.GetName().Name;
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!References(assembly, injectAssembly))
+                {
+                    continue;
+                }
+
+                Type[] types;
+
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException exception)
+                {
+                    types = Array.FindAll(exception.Types, static type => type != null)!;
+                }
+
+                foreach (var type in types)
+                {
+                    foreach (var constructor in type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                    {
+                        if (constructor.IsDefined(typeof(InjectAttribute), false))
+                        {
+                            members.Add(constructor);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool References(Assembly assembly, string name)
+        {
+            if (assembly.GetName().Name == name)
+            {
+                return true;
+            }
+
+            foreach (var reference in assembly.GetReferencedAssemblies())
+            {
+                if (reference.Name == name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static string BuildLinkXml(IEnumerable<MethodBase> methods)
         {
             var assemblies = new SortedDictionary<string, SortedDictionary<string, SortedSet<string>>>(StringComparer.Ordinal);
 

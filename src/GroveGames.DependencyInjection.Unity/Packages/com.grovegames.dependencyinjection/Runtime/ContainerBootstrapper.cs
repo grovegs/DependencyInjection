@@ -117,7 +117,9 @@ namespace GroveGames.DependencyInjection.Unity
             s_scenes.Add(scene.handle, state);
             ContainerRegistry.AddScene(scene);
 
-            if (scene == SceneManager.GetActiveScene())
+            // Without a root nothing would drain the pending list, so a scene that is not active starts at once and completes
+            // as not ready instead of staying deactivated while its loader waits.
+            if (scene == SceneManager.GetActiveScene() || s_rootInitialization == null)
             {
                 Start(state);
                 return;

@@ -101,6 +101,11 @@ internal sealed class Container : IContainer
         _disposables.Add(disposable);
     }
 
+    internal bool IsOwnedByParent(object instance)
+    {
+        return _parent is not null && _parent.IsOwned(instance);
+    }
+
     private bool IsOwned(object instance)
     {
         for (var container = this; container is not null; container = container._parent)

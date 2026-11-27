@@ -29,6 +29,7 @@ namespace GroveGames.DependencyInjection.Unity
 #endif
             if (s_instance == null)
             {
+                Debug.LogWarning("The dependency injection settings asset was not found, so the root container has no installer. Open Project Settings > GroveGames > Dependency Injection to create it.");
                 s_instance = CreateInstance<UnityDependencyInjectionSettings>();
                 s_instance.hideFlags = HideFlags.DontSave;
             }
