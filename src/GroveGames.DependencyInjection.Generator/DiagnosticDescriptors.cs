@@ -60,4 +60,31 @@ internal static class DiagnosticDescriptors
         DiagnosticSeverity.Info,
         false,
         helpLinkUri: HelpLinkUri);
+
+    public static readonly DiagnosticDescriptor UncalledInjectMethod = new(
+        "GGDI007",
+        "Inject method is never called",
+        "'{0}' is created by the container, which does not call its [Inject] method '{1}'; take the dependencies through the constructor",
+        Category,
+        DiagnosticSeverity.Warning,
+        true,
+        helpLinkUri: HelpLinkUri);
+
+    public static readonly DiagnosticDescriptor HiddenLifecycle = new(
+        "GGDI008",
+        "Factory hides lifecycle interfaces",
+        "The factory registered as '{0}' returns '{1}', which implements '{2}', but the container looks lifecycle interfaces up on '{0}', so '{2}' is never called; register it as '{1}'",
+        Category,
+        DiagnosticSeverity.Warning,
+        true,
+        helpLinkUri: HelpLinkUri);
+
+    public static readonly DiagnosticDescriptor OpenGeneric = new(
+        "GGDI009",
+        "Open generic type cannot be registered",
+        "'{0}' is an open generic type, which the container cannot create; register each closed type instead",
+        Category,
+        DiagnosticSeverity.Error,
+        true,
+        helpLinkUri: HelpLinkUri);
 }

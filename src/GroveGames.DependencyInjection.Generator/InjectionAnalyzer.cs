@@ -15,7 +15,28 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.IgnoredInject,
         DiagnosticDescriptors.RefParameter,
         DiagnosticDescriptors.MultipleInjectConstructors,
-        DiagnosticDescriptors.ReflectionFallback);
+        DiagnosticDescriptors.ReflectionFallback,
+        DiagnosticDescriptors.UncalledInjectMethod,
+        DiagnosticDescriptors.HiddenLifecycle,
+        DiagnosticDescriptors.OpenGeneric);
+
+    private static readonly string[] s_initializationInterfaces =
+    [
+        "GroveGames.DependencyInjection.IAsyncPreInitializable",
+        "GroveGames.DependencyInjection.IAsyncInitializable",
+        "GroveGames.DependencyInjection.IAsyncPostInitializable",
+        "GroveGames.DependencyInjection.IPreInitializable",
+        "GroveGames.DependencyInjection.IInitializable",
+        "GroveGames.DependencyInjection.IPostInitializable"
+    ];
+
+    private static readonly string[] s_updateInterfaces =
+    [
+        "GroveGames.DependencyInjection.IPreFrameUpdatable",
+        "GroveGames.DependencyInjection.IFrameUpdatable",
+        "GroveGames.DependencyInjection.IPostFrameUpdatable",
+        "GroveGames.DependencyInjection.IPhysicsUpdatable"
+    ];
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => s_supportedDiagnostics;
 
@@ -49,6 +70,7 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
 
         if (implementationType is null)
         {
+            AnalyzeFactory(context, invocation);
             return;
         }
 
@@ -66,6 +88,12 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        if (type.IsUnboundGenericType)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.OpenGeneric, location, name));
+            return;
+        }
+
         if (type.TypeKind == TypeKind.Interface || (type.TypeKind == TypeKind.Class && type.IsAbstract))
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.AbstractImplementation, location, name));
@@ -77,6 +105,7 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        ReportUncalledInjectMethod(context, type, location);
         var constructor = TypeAnalyzer.SelectConstructor(type);
 
         if (constructor is null)
@@ -99,6 +128,123 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ReflectionFallback, location, name));
         }
+    }
+
+    private static void ReportUncalledInjectMethod(OperationAnalysisContext context, INamedTypeSymbol type, Location location)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers())
+            {
+                if (member is IMethodSymbol { MethodKind: MethodKind.Ordinary, IsStatic: false } method && TypeAnalyzer.HasInjectAttribute(method))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UncalledInjectMethod, location, type.ToDisplayString(), method.Name));
+                    return;
+                }
+            }
+        }
+    }
+
+    // Lifecycle interfaces are looked up on the registered type so factories need not run at startup, the same way the
+    // container does: a singleton is initialized when the registered type has any initialization interface, and is added
+    // to an update list only when the registered type has that update interface.
+    private static void AnalyzeFactory(OperationAnalysisContext context, IInvocationOperation invocation)
+    {
+        var method = invocation.TargetMethod;
+
+        if (!RegistrationMethods.IsSingletonFactory(method) || method.TypeArguments[0] is not INamedTypeSymbol serviceType)
+        {
+            return;
+        }
+
+        foreach (var argument in invocation.Arguments)
+        {
+            if (argument.Value is not IDelegateCreationOperation { Target: IAnonymousFunctionOperation function } || GetCreatedType(function.Body) is not { } createdType)
+            {
+                continue;
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(createdType, serviceType))
+            {
+                return;
+            }
+
+            var hidden = FindHiddenLifecycle(context.Compilation, serviceType, createdType);
+
+            if (hidden is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.HiddenLifecycle, invocation.Syntax.GetLocation(), serviceType.ToDisplayString(), createdType.ToDisplayString(), hidden.Name));
+            }
+        }
+    }
+
+    private static INamedTypeSymbol? FindHiddenLifecycle(Compilation compilation, ITypeSymbol serviceType, ITypeSymbol createdType)
+    {
+        var isEntryPoint = false;
+        INamedTypeSymbol? hiddenInitialization = null;
+
+        foreach (var name in s_initializationInterfaces)
+        {
+            if (compilation.GetTypeByMetadataName(name) is not { } lifecycle)
+            {
+                continue;
+            }
+
+            isEntryPoint |= Implements(serviceType, lifecycle);
+
+            if (hiddenInitialization is null && Implements(createdType, lifecycle))
+            {
+                hiddenInitialization = lifecycle;
+            }
+        }
+
+        if (!isEntryPoint && hiddenInitialization is not null)
+        {
+            return hiddenInitialization;
+        }
+
+        foreach (var name in s_updateInterfaces)
+        {
+            if (compilation.GetTypeByMetadataName(name) is { } lifecycle && Implements(createdType, lifecycle) && !Implements(serviceType, lifecycle))
+            {
+                return lifecycle;
+            }
+        }
+
+        return null;
+    }
+
+    private static ITypeSymbol? GetCreatedType(IBlockOperation body)
+    {
+        if (body.Operations.Length != 1 || body.Operations[0] is not IReturnOperation { ReturnedValue: { } value })
+        {
+            return null;
+        }
+
+        while (value is IConversionOperation conversion)
+        {
+            value = conversion.Operand;
+        }
+
+        return value is IObjectCreationOperation creation ? creation.Type : null;
+    }
+
+    private static bool Implements(ITypeSymbol type, INamedTypeSymbol contract)
+    {
+        if (SymbolEqualityComparer.Default.Equals(type, contract))
+        {
+            return true;
+        }
+
+        foreach (var implemented in type.AllInterfaces)
+        {
+            if (SymbolEqualityComparer.Default.Equals(implemented, contract))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AnalyzeMethod(SymbolAnalysisContext context)

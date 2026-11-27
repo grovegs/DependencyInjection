@@ -58,6 +58,13 @@ namespace GroveGames.DependencyInjection.Unity
             }
         }
 
+        // Unity caps Time.deltaTime at maximumDeltaTime but not the unscaled delta, so a long frame would make unscaled
+        // animations jump to their end.
+        private static DeltaTime CreateDeltaTime()
+        {
+            return new DeltaTime(Time.deltaTime, Mathf.Min(Time.unscaledDeltaTime, Time.maximumDeltaTime));
+        }
+
         private static void FrameUpdate()
         {
             var root = s_root;
@@ -67,7 +74,7 @@ namespace GroveGames.DependencyInjection.Unity
                 return;
             }
 
-            var deltaTime = new DeltaTime(Time.deltaTime, Time.unscaledDeltaTime);
+            var deltaTime = CreateDeltaTime();
 
             try
             {
@@ -118,7 +125,7 @@ namespace GroveGames.DependencyInjection.Unity
 
             try
             {
-                root.PostFrameUpdate(new DeltaTime(Time.deltaTime, Time.unscaledDeltaTime));
+                root.PostFrameUpdate(CreateDeltaTime());
             }
             catch (Exception exception)
             {

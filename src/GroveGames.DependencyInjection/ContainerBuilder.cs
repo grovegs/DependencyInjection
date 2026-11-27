@@ -135,19 +135,30 @@ public sealed class ContainerBuilder : IContainerBuilder
 
         try
         {
+            var injected = new HashSet<object>(ReferenceEqualityComparer.Instance);
+
             for (var i = 0; i < _registrations.Count; i++)
             {
                 var instance = _registrations[i].Instance;
 
-                if (instance is not null)
+                // One instance registered under several services, or already injected by a parent, is injected once.
+                if (instance is not null && injected.Add(instance) && !container.IsOwnedByParent(instance))
                 {
                     container.InjectInstance(instance);
                 }
             }
         }
-        catch
+        catch (Exception exception)
         {
-            container.Dispose();
+            try
+            {
+                container.Dispose();
+            }
+            catch (Exception disposeException)
+            {
+                throw new AggregateException("Building the container failed, and disposing what it had created failed too.", exception, disposeException);
+            }
+
             throw;
         }
 
@@ -170,6 +181,11 @@ public sealed class ContainerBuilder : IContainerBuilder
         if (_isBuilt)
         {
             throw new InvalidOperationException("Container is already built.");
+        }
+
+        if (registration.ServiceType.ContainsGenericParameters || registration.ImplementationType.ContainsGenericParameters)
+        {
+            throw new ArgumentException($"{registration.ServiceType} is an open generic type, which cannot be registered; register each closed type instead.", nameof(registration));
         }
 
         _registrations.Add(registration);

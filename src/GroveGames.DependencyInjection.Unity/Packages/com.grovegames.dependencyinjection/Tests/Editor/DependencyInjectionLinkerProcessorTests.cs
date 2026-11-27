@@ -25,9 +25,21 @@ namespace GroveGames.DependencyInjection.Unity.Editor.Tests
         }
 
         [Test]
+        public void BuildLinkXml_InjectConstructor_PreservesItAsCtor()
+        {
+            var constructor = typeof(TestConstructed).GetConstructors().Single();
+
+            var linker = XElement.Parse(DependencyInjectionLinkerProcessor.BuildLinkXml(new System.Reflection.MethodBase[] { constructor }));
+
+            var type = linker.Elements("assembly").Single().Elements("type").Single();
+            Assert.AreEqual(typeof(TestConstructed).FullName!.Replace('+', '/'), (string)type.Attribute("fullname"));
+            CollectionAssert.AreEqual(new[] { ".ctor" }, type.Elements("method").Select(method => (string)method.Attribute("name")));
+        }
+
+        [Test]
         public void BuildLinkXml_NoMethods_ReturnsEmptyLinker()
         {
-            var linker = XElement.Parse(DependencyInjectionLinkerProcessor.BuildLinkXml(Enumerable.Empty<System.Reflection.MethodInfo>()));
+            var linker = XElement.Parse(DependencyInjectionLinkerProcessor.BuildLinkXml(Enumerable.Empty<System.Reflection.MethodBase>()));
 
             Assert.AreEqual("linker", linker.Name.LocalName);
             Assert.IsFalse(linker.HasElements);
@@ -46,6 +58,14 @@ namespace GroveGames.DependencyInjection.Unity.Editor.Tests
             }
 
             public void NotInjected()
+            {
+            }
+        }
+
+        private sealed class TestConstructed
+        {
+            [Inject]
+            public TestConstructed(TestInjected injected)
             {
             }
         }

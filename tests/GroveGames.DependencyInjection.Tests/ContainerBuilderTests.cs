@@ -3,6 +3,52 @@
 public sealed class ContainerBuilderTests
 {
     [Fact]
+    public void Build_InstanceRegisteredTwice_InjectsOnce()
+    {
+        var builder = new ContainerBuilder();
+        var instance = new TestCountingInjected();
+        builder.AddSingleton(instance);
+        builder.AddSingleton<ITestCounted>(instance);
+
+        using var container = builder.Build();
+
+        Assert.Equal(1, instance.InjectCount);
+    }
+
+    [Fact]
+    public void Build_InjectionAndDisposeThrow_KeepsTheInjectionError()
+    {
+        var builder = new ContainerBuilder();
+        builder.AddSingleton<TestThrowingDisposable>();
+        builder.AddSingleton(new TestThrowingInjected());
+
+        var exception = Assert.Throws<AggregateException>(() => builder.Build());
+
+        Assert.IsType<InvalidOperationException>(exception.InnerExceptions[0]);
+    }
+
+    [Fact]
+    public void AddSingleton_OpenGenericType_Throws()
+    {
+        var builder = new ContainerBuilder();
+        var open = typeof(TestGeneric<>);
+
+        Assert.Throws<ArgumentException>(() => builder.AddSingleton(open, open));
+    }
+
+    [Fact]
+    public void Build_DerivedInjectMethod_RunsAfterTheBaseOne()
+    {
+        var builder = new ContainerBuilder();
+        var instance = new TestDerivedInjected();
+        builder.AddSingleton(instance);
+
+        using var container = builder.Build();
+
+        Assert.Equal("base,derived", string.Join(",", instance.Calls));
+    }
+
+    [Fact]
     public void Build_SingletonType_ResolvesSameInstance()
     {
         var builder = new ContainerBuilder();
@@ -422,6 +468,62 @@ public sealed class ContainerBuilderTests
         public void Construct(TestService service)
         {
             _service = service;
+        }
+    }
+
+    public interface ITestCounted
+    {
+    }
+
+    public sealed class TestCountingInjected : ITestCounted
+    {
+        public int InjectCount { get; private set; }
+
+        [Inject]
+        public void Construct(IObjectResolver resolver)
+        {
+            InjectCount++;
+        }
+    }
+
+    public sealed class TestThrowingInjected
+    {
+        [Inject]
+        public void Construct(TestThrowingDisposable disposable)
+        {
+            throw new InvalidOperationException("inject failed");
+        }
+    }
+
+    public sealed class TestThrowingDisposable : IDisposable
+    {
+        public void Dispose()
+        {
+            throw new NotSupportedException("dispose failed");
+        }
+    }
+
+    public sealed class TestGeneric<T>
+    {
+    }
+
+    public class TestBaseInjected
+    {
+        public List<string> Calls { get; } = new();
+
+        [Inject]
+        public void ConstructBase(IObjectResolver resolver)
+        {
+            Calls.Add("base");
+        }
+    }
+
+    public sealed class TestDerivedInjected : TestBaseInjected
+    {
+        [Inject]
+        public void ConstructDerived(IObjectResolver resolver)
+        {
+            Calls.Add("derived");
         }
     }
 }

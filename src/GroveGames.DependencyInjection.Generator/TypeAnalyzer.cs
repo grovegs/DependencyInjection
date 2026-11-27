@@ -106,11 +106,14 @@ internal static class TypeAnalyzer
 
     private static EquatableArray<MethodModel> AnalyzeInjectMethods(INamedTypeSymbol type, Compilation compilation)
     {
-        var methods = ImmutableArray.CreateBuilder<MethodModel>();
+        var levels = new List<List<MethodModel>>();
         var overridden = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
 
         for (var current = type; current is not null; current = current.BaseType)
         {
+            var level = new List<MethodModel>();
+            levels.Add(level);
+
             foreach (var member in current.GetMembers())
             {
                 if (member is not IMethodSymbol method
@@ -141,8 +144,17 @@ internal static class TypeAnalyzer
                     return new EquatableArray<MethodModel>([]);
                 }
 
-                methods.Add(new MethodModel(method.Name, parameterTypes.Value));
+                level.Add(new MethodModel(method.Name, parameterTypes.Value));
             }
+        }
+
+        // Members are walked from the derived type down to find overrides, then emitted base first, so a derived [Inject]
+        // method can rely on what the base one set up.
+        var methods = ImmutableArray.CreateBuilder<MethodModel>();
+
+        for (var i = levels.Count - 1; i >= 0; i--)
+        {
+            methods.AddRange(levels[i]);
         }
 
         return new EquatableArray<MethodModel>(methods.ToArray());

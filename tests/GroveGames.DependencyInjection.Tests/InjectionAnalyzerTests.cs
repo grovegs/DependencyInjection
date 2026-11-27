@@ -269,11 +269,6 @@ public sealed class InjectionAnalyzerTests
                 public Service()
                 {
                 }
-
-                [Inject]
-                public void Construct(IObjectResolver resolver)
-                {
-                }
             }
 
             public static class Installer
@@ -291,6 +286,251 @@ public sealed class InjectionAnalyzerTests
         var diagnostics = await AnalyzeAsync(source, "GGDI006");
 
         Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public async Task Analyze_OpenGenericRegistered_ReportsGGDI009()
+    {
+        const string source = """
+            using GroveGames.DependencyInjection;
+
+            public sealed class Repository<T>
+            {
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton(typeof(Repository<>), typeof(Repository<>));
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.Equal(["GGDI009"], Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_RegisteredTypeWithInjectMethod_ReportsGGDI007()
+    {
+        const string source = """
+            using GroveGames.DependencyInjection;
+
+            public sealed class Dependency
+            {
+            }
+
+            public sealed class Service
+            {
+                [Inject]
+                public void Construct(Dependency dependency)
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton<Service>();
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.Contains("GGDI007", Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_FactoryHidesInitializable_ReportsGGDI008()
+    {
+        const string source = """
+            using GroveGames.DependencyInjection;
+
+            public interface IGateway
+            {
+            }
+
+            public sealed class Gateway : IGateway, IInitializable
+            {
+                public void Initialize()
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton<IGateway>(resolver => new Gateway());
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.Contains("GGDI008", Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_FactoryRegisteredAsInitializableHidesUpdate_ReportsGGDI008()
+    {
+        const string source = """
+            using System;
+            using GroveGames.DependencyInjection;
+
+            public sealed class Both : IInitializable, IFrameUpdatable
+            {
+                public void Initialize()
+                {
+                }
+
+                public void FrameUpdate(DeltaTime deltaTime)
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton<IInitializable>(resolver => new Both());
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.Contains("GGDI008", Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_FactoryHidesPostInitializable_ReportsGGDI008()
+    {
+        const string source = """
+            using System;
+            using GroveGames.DependencyInjection;
+
+            public interface IGateway
+            {
+            }
+
+            public sealed class Gateway : IGateway, IPostInitializable
+            {
+                public void PostInitialize()
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton<IGateway>(resolver => new Gateway());
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.Contains("GGDI008", Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_ForeignAddSingleton_ReportsNothing()
+    {
+        const string source = """
+            using System;
+            using GroveGames.DependencyInjection;
+
+            public interface IGateway
+            {
+            }
+
+            public sealed class Gateway : IGateway, IInitializable
+            {
+                public void Initialize()
+                {
+                }
+            }
+
+            public static class OtherExtensions
+            {
+                public static void AddSingleton<T>(this IContainerBuilder builder, Func<IObjectResolver, T> factory, int order)
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton<IGateway>(resolver => new Gateway(), 0);
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.DoesNotContain("GGDI008", Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_FactoryDelegateRegisteredAsInstance_ReportsNothing()
+    {
+        const string source = """
+            using System;
+            using GroveGames.DependencyInjection;
+
+            public sealed class Gateway : IInitializable
+            {
+                public void Initialize()
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton<Func<IObjectResolver, IInitializable>>(resolver => new Gateway());
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.DoesNotContain("GGDI008", Ids(diagnostics));
+    }
+
+    [Fact]
+    public async Task Analyze_FactoryRegisteredAsCreatedType_ReportsNothing()
+    {
+        const string source = """
+            using GroveGames.DependencyInjection;
+
+            public sealed class Gateway : IInitializable
+            {
+                public void Initialize()
+                {
+                }
+            }
+
+            public static class Installer
+            {
+                public static void Install(IContainerBuilder builder)
+                {
+                    builder.AddSingleton(resolver => new Gateway());
+                }
+            }
+            """;
+
+        var diagnostics = await AnalyzeAsync(source);
+
+        Assert.DoesNotContain("GGDI008", Ids(diagnostics));
     }
 
     private static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source, params string[] enabledIds)
