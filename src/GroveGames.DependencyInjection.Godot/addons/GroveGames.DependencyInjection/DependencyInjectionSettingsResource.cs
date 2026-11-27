@@ -17,13 +17,13 @@ public partial class DependencyInjectionSettingsResource : Resource, IDependency
         {
             var resourcePath = ProjectSettings.GetSetting(ProjectSettingsKey).AsString();
 
-            if (ResourceLoader.Exists(resourcePath) && ResourceLoader.Load<DependencyInjectionSettingsResource>(resourcePath) is { } configured)
+            if (ResourceLoader.Exists(resourcePath) && ResourceLoader.Load(resourcePath) is DependencyInjectionSettingsResource configured)
             {
                 return configured;
             }
         }
 
-        if (ResourceLoader.Exists(DefaultResourcePath) && ResourceLoader.Load<DependencyInjectionSettingsResource>(DefaultResourcePath) is { } settings)
+        if (ResourceLoader.Exists(DefaultResourcePath) && ResourceLoader.Load(DefaultResourcePath) is DependencyInjectionSettingsResource settings)
         {
             return settings;
         }

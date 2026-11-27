@@ -34,7 +34,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (!References(assembly, injectAssembly))
+                if (assembly.IsDynamic || !References(assembly, injectAssembly))
                 {
                     continue;
                 }

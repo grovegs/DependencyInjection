@@ -73,7 +73,7 @@ internal static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor HiddenLifecycle = new(
         "GGDI008",
         "Factory hides lifecycle interfaces",
-        "The factory registered as '{0}' returns '{1}', which implements '{2}', but '{0}' has no lifecycle interface, so the singleton is never initialized or updated; register it as '{1}'",
+        "The factory registered as '{0}' returns '{1}', which implements '{2}', but the container looks lifecycle interfaces up on '{0}', so '{2}' is never called; register it as '{1}'",
         Category,
         DiagnosticSeverity.Warning,
         true,

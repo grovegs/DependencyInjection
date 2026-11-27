@@ -8,6 +8,20 @@ internal static class RegistrationMethods
     private const string BuilderInterfaceName = "GroveGames.DependencyInjection.IContainerBuilder";
     private const string BuilderName = "GroveGames.DependencyInjection.ContainerBuilder";
 
+    public static bool IsSingletonFactory(IMethodSymbol method)
+    {
+        // The unconstructed overload, so a delegate registered as an instance, such as AddSingleton<Func<IObjectResolver, T>>,
+        // is not taken for a factory.
+        var definition = (method.ReducedFrom ?? method).OriginalDefinition;
+
+        return method.Name == "AddSingleton"
+            && method.TypeArguments.Length == 1
+            && definition.ContainingType?.ToDisplayString() == BuilderExtensionsName
+            && definition.Parameters.Length == 2
+            && definition.Parameters[1].Type is INamedTypeSymbol { Name: "Func", TypeArguments.Length: 2 } factory
+            && factory.TypeArguments[0].ToDisplayString() == "GroveGames.DependencyInjection.IObjectResolver";
+    }
+
     public static RegistrationKind Classify(IMethodSymbol method)
     {
         if (method.Name is not ("AddSingleton" or "AddTransient"))

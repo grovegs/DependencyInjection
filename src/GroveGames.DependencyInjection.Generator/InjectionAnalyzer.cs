@@ -20,10 +20,18 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.HiddenLifecycle,
         DiagnosticDescriptors.OpenGeneric);
 
-    private static readonly string[] s_lifecycleInterfaces =
+    private static readonly string[] s_initializationInterfaces =
     [
-        "GroveGames.DependencyInjection.IInitializable",
+        "GroveGames.DependencyInjection.IAsyncPreInitializable",
         "GroveGames.DependencyInjection.IAsyncInitializable",
+        "GroveGames.DependencyInjection.IAsyncPostInitializable",
+        "GroveGames.DependencyInjection.IPreInitializable",
+        "GroveGames.DependencyInjection.IInitializable",
+        "GroveGames.DependencyInjection.IPostInitializable"
+    ];
+
+    private static readonly string[] s_updateInterfaces =
+    [
         "GroveGames.DependencyInjection.IPreFrameUpdatable",
         "GroveGames.DependencyInjection.IFrameUpdatable",
         "GroveGames.DependencyInjection.IPostFrameUpdatable",
@@ -137,13 +145,14 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    // Lifecycle interfaces are looked up on the registered type so factories need not run at startup; a factory that
-    // visibly creates a type with lifecycle interfaces the registered type lacks would never be initialized or updated.
+    // Lifecycle interfaces are looked up on the registered type so factories need not run at startup, the same way the
+    // container does: a singleton is initialized when the registered type has any initialization interface, and is added
+    // to an update list only when the registered type has that update interface.
     private static void AnalyzeFactory(OperationAnalysisContext context, IInvocationOperation invocation)
     {
         var method = invocation.TargetMethod;
 
-        if (method.Name != "AddSingleton" || method.TypeArguments.Length != 1 || method.TypeArguments[0] is not INamedTypeSymbol serviceType)
+        if (!RegistrationMethods.IsSingletonFactory(method) || method.TypeArguments[0] is not INamedTypeSymbol serviceType)
         {
             return;
         }
@@ -160,35 +169,49 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
                 return;
             }
 
-            // A registered type with any lifecycle interface makes the singleton an entry point, and then every interface of
-            // the created object runs; only a registered type with none hides them.
-            INamedTypeSymbol? hidden = null;
-
-            foreach (var name in s_lifecycleInterfaces)
-            {
-                var lifecycle = context.Compilation.GetTypeByMetadataName(name);
-
-                if (lifecycle is null)
-                {
-                    continue;
-                }
-
-                if (Implements(serviceType, lifecycle))
-                {
-                    return;
-                }
-
-                if (hidden is null && Implements(createdType, lifecycle))
-                {
-                    hidden = lifecycle;
-                }
-            }
+            var hidden = FindHiddenLifecycle(context.Compilation, serviceType, createdType);
 
             if (hidden is not null)
             {
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.HiddenLifecycle, invocation.Syntax.GetLocation(), serviceType.ToDisplayString(), createdType.ToDisplayString(), hidden.Name));
             }
         }
+    }
+
+    private static INamedTypeSymbol? FindHiddenLifecycle(Compilation compilation, ITypeSymbol serviceType, ITypeSymbol createdType)
+    {
+        var isEntryPoint = false;
+        INamedTypeSymbol? hiddenInitialization = null;
+
+        foreach (var name in s_initializationInterfaces)
+        {
+            if (compilation.GetTypeByMetadataName(name) is not { } lifecycle)
+            {
+                continue;
+            }
+
+            isEntryPoint |= Implements(serviceType, lifecycle);
+
+            if (hiddenInitialization is null && Implements(createdType, lifecycle))
+            {
+                hiddenInitialization = lifecycle;
+            }
+        }
+
+        if (!isEntryPoint && hiddenInitialization is not null)
+        {
+            return hiddenInitialization;
+        }
+
+        foreach (var name in s_updateInterfaces)
+        {
+            if (compilation.GetTypeByMetadataName(name) is { } lifecycle && Implements(createdType, lifecycle) && !Implements(serviceType, lifecycle))
+            {
+                return lifecycle;
+            }
+        }
+
+        return null;
     }
 
     private static ITypeSymbol? GetCreatedType(IBlockOperation body)
