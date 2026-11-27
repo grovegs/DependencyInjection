@@ -26,8 +26,6 @@ namespace GroveGames.DependencyInjection.Unity.Editor
             return path;
         }
 
-        // UnityLinker keeps members marked with an attribute named exactly PreserveAttribute, not one derived from it, so
-        // [Inject] constructors, which TypeCache cannot list, are found here and written out like the methods.
         private static void AddInjectConstructors(List<MethodBase> members)
         {
             var injectAssembly = typeof(InjectAttribute).Assembly.GetName().Name;

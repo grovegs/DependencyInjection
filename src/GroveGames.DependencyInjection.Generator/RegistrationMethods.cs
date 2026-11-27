@@ -10,8 +10,6 @@ internal static class RegistrationMethods
 
     public static bool IsSingletonFactory(IMethodSymbol method)
     {
-        // The unconstructed overload, so a delegate registered as an instance, such as AddSingleton<Func<IObjectResolver, T>>,
-        // is not taken for a factory.
         var definition = (method.ReducedFrom ?? method).OriginalDefinition;
 
         return method.Name == "AddSingleton"

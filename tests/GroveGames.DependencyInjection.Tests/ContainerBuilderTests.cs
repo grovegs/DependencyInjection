@@ -16,18 +16,6 @@ public sealed class ContainerBuilderTests
     }
 
     [Fact]
-    public void Build_InjectionAndDisposeThrow_KeepsTheInjectionError()
-    {
-        var builder = new ContainerBuilder();
-        builder.AddSingleton<TestThrowingDisposable>();
-        builder.AddSingleton(new TestThrowingInjected());
-
-        var exception = Assert.Throws<AggregateException>(() => builder.Build());
-
-        Assert.IsType<InvalidOperationException>(exception.InnerExceptions[0]);
-    }
-
-    [Fact]
     public void AddSingleton_OpenGenericType_Throws()
     {
         var builder = new ContainerBuilder();
@@ -483,23 +471,6 @@ public sealed class ContainerBuilderTests
         public void Construct(IObjectResolver resolver)
         {
             InjectCount++;
-        }
-    }
-
-    public sealed class TestThrowingInjected
-    {
-        [Inject]
-        public void Construct(TestThrowingDisposable disposable)
-        {
-            throw new InvalidOperationException("inject failed");
-        }
-    }
-
-    public sealed class TestThrowingDisposable : IDisposable
-    {
-        public void Dispose()
-        {
-            throw new NotSupportedException("dispose failed");
         }
     }
 

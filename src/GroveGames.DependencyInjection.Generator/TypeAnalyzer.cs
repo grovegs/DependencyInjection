@@ -148,8 +148,6 @@ internal static class TypeAnalyzer
             }
         }
 
-        // Members are walked from the derived type down to find overrides, then emitted base first, so a derived [Inject]
-        // method can rely on what the base one set up.
         var methods = ImmutableArray.CreateBuilder<MethodModel>();
 
         for (var i = levels.Count - 1; i >= 0; i--)

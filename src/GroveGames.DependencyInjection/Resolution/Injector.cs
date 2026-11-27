@@ -130,7 +130,6 @@ internal sealed class Injector
         }
     }
 
-    // GetMethods has no defined order, so methods are ordered from the base type down, as the generated injectors are.
     private static void SortBaseFirst(List<MethodInfo> methods)
     {
         for (var i = 1; i < methods.Count; i++)

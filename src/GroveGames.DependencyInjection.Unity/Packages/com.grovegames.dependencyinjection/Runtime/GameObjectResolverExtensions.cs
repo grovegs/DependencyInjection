@@ -50,7 +50,8 @@ namespace GroveGames.DependencyInjection.Unity
             var gameObject = new GameObject(typeof(T).Name);
             gameObject.transform.SetParent(GameObjectStaging.Transform, false);
             var instance = gameObject.AddComponent<T>();
-            return Activate(resolver, gameObject, null) ? instance : null!;
+            Activate(resolver, gameObject, null);
+            return instance;
         }
 
         public static T Instantiate<T>(this IObjectResolver resolver, T prefab)
@@ -69,7 +70,8 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
-            return Activate(resolver, instance.gameObject, parent) ? instance : null!;
+            Activate(resolver, instance.gameObject, parent);
+            return instance;
         }
 
         public static GameObject Instantiate(this IObjectResolver resolver, GameObject prefab, Transform? parent = null)
@@ -81,38 +83,19 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             var instance = Object.Instantiate(prefab, GameObjectStaging.Transform, false);
-            return Activate(resolver, instance, parent) ? instance : null!;
+            Activate(resolver, instance, parent);
+            return instance;
         }
 
-        // The clone waits under the hidden, inactive staging object, so one that cannot be tracked or injected is destroyed
-        // instead of staying there until its container is disposed or for good.
-        private static bool Activate(IObjectResolver resolver, GameObject gameObject, Transform? parent)
+        private static void Activate(IObjectResolver resolver, GameObject gameObject, Transform? parent)
         {
-            try
-            {
-                GameObjectLifetime.Track(resolver, gameObject);
-                resolver.InjectGameObject(gameObject);
-            }
-            catch (System.Exception exception)
-            {
-                Debug.LogException(exception);
-
-                if (Application.isPlaying)
-                {
-                    Object.Destroy(gameObject);
-                }
-                else
-                {
-                    Object.DestroyImmediate(gameObject);
-                }
-
-                return false;
-            }
+            GameObjectLifetime.Track(resolver, gameObject);
+            resolver.InjectGameObject(gameObject);
 
             if (parent != null || !Application.isPlaying)
             {
                 gameObject.transform.SetParent(parent, false);
-                return true;
+                return;
             }
 
             var isActive = gameObject.activeSelf;
@@ -129,7 +112,6 @@ namespace GroveGames.DependencyInjection.Unity
             }
 
             gameObject.SetActive(isActive);
-            return true;
         }
     }
 }

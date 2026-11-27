@@ -141,24 +141,15 @@ public sealed class ContainerBuilder : IContainerBuilder
             {
                 var instance = _registrations[i].Instance;
 
-                // One instance registered under several services, or already injected by a parent, is injected once.
                 if (instance is not null && injected.Add(instance) && !container.IsOwnedByParent(instance))
                 {
                     container.InjectInstance(instance);
                 }
             }
         }
-        catch (Exception exception)
+        catch
         {
-            try
-            {
-                container.Dispose();
-            }
-            catch (Exception disposeException)
-            {
-                throw new AggregateException("Building the container failed, and disposing what it had created failed too.", exception, disposeException);
-            }
-
+            container.Dispose();
             throw;
         }
 
