@@ -145,9 +145,6 @@ public sealed class InjectionAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    // Lifecycle interfaces are looked up on the registered type so factories need not run at startup, the same way the
-    // container does: a singleton is initialized when the registered type has any initialization interface, and is added
-    // to an update list only when the registered type has that update interface.
     private static void AnalyzeFactory(OperationAnalysisContext context, IInvocationOperation invocation)
     {
         var method = invocation.TargetMethod;
