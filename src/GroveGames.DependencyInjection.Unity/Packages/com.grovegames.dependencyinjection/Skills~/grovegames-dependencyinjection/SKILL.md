@@ -42,7 +42,6 @@ The container builds every object first, then runs the phases below in order. A 
 - A prefab is registered with a factory lambda: `resolver.Instantiate(_prefab)`.
 - A package exposes its registration as `builder.AddX(...)` from an `Integrations/GroveGames.DependencyInjection/` folder.
 - Per-frame work does not go in `Update()`.
-- A scene's root objects stay inactive until every phase, async ones included, has finished.
 
 ### MonoBehaviours
 
