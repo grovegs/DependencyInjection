@@ -14,14 +14,17 @@ Rules for game code that is wired with this package. They hold in every game. Th
 
 ## Lifecycle
 
-The container builds every object first, then runs three phases. Each phase finishes before the next starts.
+The container builds every object first, then runs the phases below in order. A phase finishes for every object before the next starts. An async phase awaits each object before calling the next one.
 
-| Phase            | Do                                                               | Do not                                               |
-| ---------------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
-| Constructor      | Store dependencies, create collections and delegates             | Call a dependency. It exists but has not initialized |
-| `PreInitialize`  | Load and validate saved state and definitions                    | Raise events or read another service's state         |
-| `Initialize`     | Subscribe to events, render from state loaded in `PreInitialize` | Call a command that raises an event                  |
-| `PostInitialize` | Build the world and start the gameplay                           |                                                      |
+| Phase                 | Do                                                               | Do not                                               |
+| --------------------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
+| Constructor           | Store dependencies, create collections and delegates             | Call a dependency. It exists but has not initialized |
+| `PreInitialize`       | Load and validate saved state and definitions                    | Raise events or read another service's state         |
+| `PreInitializeAsync`  | Load own state that has to be awaited                            | Raise events or read another service's state         |
+| `Initialize`          | Subscribe to events, render from state loaded in `PreInitialize` | Call a command that raises an event                  |
+| `InitializeAsync`     | Await work that needs other services' state                      | Call a command that raises an event                  |
+| `PostInitialize`      | Build the world and start the gameplay                           |                                                      |
+| `PostInitializeAsync` | Await work that runs once the gameplay has started               |                                                      |
 
 - Anything that raises an event belongs one phase after its handlers subscribe.
 - Subscribe in `Initialize` and unsubscribe in `Dispose`.
@@ -39,6 +42,7 @@ The container builds every object first, then runs three phases. Each phase fini
 - A prefab is registered with a factory lambda: `resolver.Instantiate(_prefab)`.
 - A package exposes its registration as `builder.AddX(...)` from an `Integrations/GroveGames.DependencyInjection/` folder.
 - Per-frame work does not go in `Update()`.
+- A scene's root objects stay inactive until every phase, async ones included, has finished.
 
 ### MonoBehaviours
 
