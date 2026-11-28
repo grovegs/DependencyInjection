@@ -24,7 +24,7 @@ The container builds every object first, then runs three phases. Each phase fini
 | `PostInitialize` | Build the world and start the gameplay                           |                                                      |
 
 - Each phase has an async variant, `IAsyncPreInitializable`, `IAsyncInitializable` and `IAsyncPostInitializable`, with the same rules. It runs after every object's sync method of that phase, and each object is awaited before the next one starts.
-- Preload assets in `InitializeAsync`: the state that decides which assets to load is ready, and `PostInitialize` finds them loaded. Start every load first, then await them, so they run together.
+- Inside one async method, start independent operations first and then await them, so they run together.
 - Anything that raises an event belongs one phase after its handlers subscribe.
 - Subscribe in `Initialize` and unsubscribe in `Dispose`.
 - Per-frame work goes through `IFrameUpdatable` and the other update interfaces, not the engine's own update callback.
@@ -41,7 +41,7 @@ The container builds every object first, then runs three phases. Each phase fini
 - A prefab is registered with a factory lambda: `resolver.Instantiate(_prefab)`.
 - A package exposes its registration as `builder.AddX(...)` from an `Integrations/GroveGames.DependencyInjection/` folder.
 - Per-frame work does not go in `Update()`.
-- A scene's root objects stay inactive until every phase, async ones included, has finished, so nothing in the scene runs or shows while a preload in `InitializeAsync` loads.
+- A scene's root objects stay inactive until every phase, async ones included, has finished.
 
 ### MonoBehaviours
 
