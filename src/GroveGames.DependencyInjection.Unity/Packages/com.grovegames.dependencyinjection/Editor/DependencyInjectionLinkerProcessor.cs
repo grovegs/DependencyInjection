@@ -115,7 +115,7 @@ namespace GroveGames.DependencyInjection.Unity.Editor
 
             foreach (var assembly in assemblies)
             {
-                var assemblyElement = new XElement("assembly", new XAttribute("fullname", assembly.Key));
+                var assemblyElement = new XElement("assembly", new XAttribute("fullname", assembly.Key), new XAttribute("ignoreIfMissing", "1"));
 
                 foreach (var type in assembly.Value)
                 {
